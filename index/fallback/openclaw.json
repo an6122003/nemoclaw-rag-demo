@@ -1,0 +1,230 @@
+{
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "inference/qwen3:8b"
+      },
+      "timeoutSeconds": 600,
+      "skipBootstrap": true,
+      "thinkingDefault": "off",
+      "compaction": {
+        "mode": "safeguard",
+        "timeoutSeconds": 120,
+        "maxHistoryShare": 0.35,
+        "recentTurnsPreserve": 1,
+        "qualityGuard": {
+          "enabled": true,
+          "maxRetries": 0
+        },
+        "notifyUser": true,
+        "truncateAfterCompaction": true
+      },
+      "workspace": "/sandbox/.openclaw/workspace",
+      "memorySearch": {
+        "enabled": true,
+        "provider": "ollama-mem",
+        "model": "qwen3-embedding:4b"
+      }
+    },
+    "list": [
+      {
+        "id": "main",
+        "default": true
+      }
+    ]
+  },
+  "models": {
+    "mode": "merge",
+    "providers": {
+      "inference": {
+        "baseUrl": "https://inference.local/v1",
+        "apiKey": "unused",
+        "api": "openai-completions",
+        "timeoutSeconds": 600,
+        "models": [
+          {
+            "compat": {
+              "supportsStore": false
+            },
+            "id": "qwen3:8b",
+            "name": "inference/qwen3:8b",
+            "reasoning": false,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 131072,
+            "maxTokens": 4096
+          }
+        ]
+      },
+      "ollama-mem": {
+        "api": "openai-completions",
+        "baseUrl": "http://host.openshell.internal:11434/v1",
+        "apiKey": "ollama",
+        "models": [
+          {
+            "id": "qwen3-embedding:4b",
+            "name": "Qwen3 embedding 4B"
+          }
+        ]
+      }
+    }
+  },
+  "channels": {
+    "defaults": {},
+    "telegram": {
+      "enabled": false
+    },
+    "discord": {
+      "enabled": false
+    },
+    "openclaw-weixin": {
+      "enabled": false
+    },
+    "slack": {
+      "enabled": false
+    },
+    "whatsapp": {
+      "enabled": false
+    },
+    "msteams": {
+      "enabled": false
+    },
+    "googlechat": {
+      "enabled": false
+    },
+    "imessage": {
+      "enabled": false
+    }
+  },
+  "tools": {
+    "alsoAllow": [
+      "bundle-mcp"
+    ],
+    "toolSearch": {
+      "mode": "tools",
+      "searchDefaultLimit": 8,
+      "maxSearchLimit": 20
+    },
+    "web": {
+      "fetch": {
+        "enabled": true,
+        "useTrustedEnvProxy": true
+      },
+      "search": {
+        "enabled": false
+      }
+    }
+  },
+  "update": {
+    "checkOnStart": false
+  },
+  "security": {
+    "audit": {
+      "suppressions": [
+        {
+          "checkId": "gateway.control_ui.insecure_auth",
+          "reason": "NemoClaw derives this setting from a loopback HTTP CHAT_UI_URL; use HTTPS for non-loopback dashboards."
+        },
+        {
+          "checkId": "config.insecure_or_dangerous_flags",
+          "detailIncludes": "gateway.controlUi.allowInsecureAuth=true",
+          "reason": "NemoClaw derives this setting from a loopback HTTP CHAT_UI_URL; use HTTPS for non-loopback dashboards."
+        },
+        {
+          "checkId": "gateway.control_ui.device_auth_disabled",
+          "reason": "NemoClaw onboarding disables device authentication for immediate dashboard access (managed compatibility behavior; see #1217)."
+        },
+        {
+          "checkId": "config.insecure_or_dangerous_flags",
+          "detailIncludes": "gateway.controlUi.dangerouslyDisableDeviceAuth=true",
+          "reason": "NemoClaw onboarding disables device authentication for immediate dashboard access (managed compatibility behavior; see #1217)."
+        }
+      ]
+    }
+  },
+  "plugins": {
+    "allow": [
+      "nemoclaw",
+      "diagnostics-otel",
+      "brave",
+      "discord",
+      "openclaw-weixin",
+      "slack",
+      "whatsapp",
+      "msteams",
+      "googlechat"
+    ],
+    "entries": {
+      "bonjour": {
+        "enabled": false
+      },
+      "telegram": {
+        "enabled": false
+      },
+      "discord": {
+        "enabled": false
+      },
+      "openclaw-weixin": {
+        "enabled": false
+      },
+      "slack": {
+        "enabled": false
+      },
+      "whatsapp": {
+        "enabled": false
+      },
+      "msteams": {
+        "enabled": false
+      },
+      "googlechat": {
+        "enabled": false
+      },
+      "imessage": {
+        "enabled": false
+      },
+      "diagnostics-otel": {
+        "enabled": false
+      },
+      "brave": {
+        "enabled": false
+      }
+    }
+  },
+  "gateway": {
+    "mode": "local",
+    "port": 18789,
+    "controlUi": {
+      "allowInsecureAuth": true,
+      "dangerouslyDisableDeviceAuth": true,
+      "allowedOrigins": [
+        "http://127.0.0.1:18789"
+      ]
+    },
+    "trustedProxies": [
+      "127.0.0.1",
+      "::1"
+    ],
+    "auth": {
+      "token": "nJAZ9eB2HDFe5_78uf-4UVVhixGstHijnTXlrlHblbo"
+    },
+    "reload": {
+      "mode": "hot"
+    }
+  },
+  "proxy": {
+    "enabled": true,
+    "proxyUrl": "http://10.200.0.1:3128",
+    "loopbackMode": "gateway-only"
+  },
+  "meta": {
+    "lastTouchedVersion": "2026.7.1",
+    "lastTouchedAt": "2026-09-22T18:58:43.388Z"
+  }
+}

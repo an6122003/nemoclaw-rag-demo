@@ -1,0 +1,16 @@
+# Local run artifacts — machine specific, not part of the lab
+.run/
+setup-log.txt
+*.log
+
+# Python
+__pycache__/
+*.pyc
+
+# macOS
+.DS_Store
+
+# Stale SQLite sidecars: shipping these alongside the fallback index can
+# corrupt a restore
+index/fallback/*.sqlite-wal
+index/fallback/*.sqlite-shm
