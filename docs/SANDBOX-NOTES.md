@@ -222,3 +222,91 @@ To stop the relay:
 ```bash
 kill "$(cat .run/relay.pid)" 2>/dev/null || pkill -f ollama-relay.py
 ```
+
+---
+
+## Recovery caveat — do not kill the gateway casually
+
+This one cost several hours and is unresolved, so it is written down as a
+hazard rather than a fix.
+
+**Never run a broad `pkill` matching `nemoclaw` or `openshell` on a host with a
+registered sandbox.** The OpenShell gateway process matches those patterns. On
+the authoring machine this stopped the gateway mid-operation, and recovery never
+fully succeeded.
+
+### What breaks
+
+The gateway owns the sandbox registry. When it dies, the registry entry is lost,
+but the sandbox container still exists and still expects to be registered. On
+its next start it asks the gateway for its own policy and is refused:
+
+```
+INFO  openshell_sandbox: Starting sandbox
+INFO  openshell_sandbox: Fetching sandbox policy via gRPC
+WARN  openshell_sandbox: Policy fetch failed, retrying
+Error:   × Policy fetch failed after 5 attempts: code: 'Some requested entity was
+  │ not found', message: "sandbox not found"
+```
+
+The container then exits (code 1), and the gateway reports:
+
+```
+$ openshell sandbox list
+No sandboxes found.
+```
+
+### What does not recover it
+
+Tried, in order, all unsuccessful:
+
+| Attempt | Result |
+|---|---|
+| Restart the gateway by hand (`openshell-gateway --config … --port 8814`) | Gateway comes up healthy, but with an empty registry |
+| `docker start <sandbox container>` | Container starts, then exits 1 on the policy fetch |
+| `nemoclaw <sandbox> start` | Hangs |
+| `nemoclaw <sandbox> recover` | Hangs with no output |
+| `nemoclaw <sandbox> status` / `exec` | Hang |
+| `nemoclaw onboard --resume` | "No resumable onboarding session was found." |
+| `nemoclaw onboard` (plain) | Hangs polling `ListSandboxes` indefinitely |
+| `nemoclaw onboard --fresh` | Same hang |
+| Delete the stale container, then `onboard` | Same hang |
+
+**Unresolved.** On a lab host, treat the sandbox as disposable: if you corrupt
+it, destroy and recreate rather than repairing. `nemoclaw <sandbox> destroy`
+followed by a full `onboard` is the honest recommendation, though it was not
+verified here either.
+
+### A related trap: the host lock
+
+Every `nemoclaw` invocation takes a host-wide lock at
+`~/.nemoclaw-portable-host.lock`. Two things go wrong with it:
+
+```
+Error: Failed to acquire lock on ~/.nemoclaw-portable-host.lock after 120 retries
+```
+
+1. **The lock can be stale.** The directory contains an `owner` file holding a
+   PID. If that PID is dead, the lock is orphaned and every command fails after
+   120 retries. Check and clear it:
+
+   ```bash
+   cat ~/.nemoclaw-portable-host.lock/owner          # the holder's pid
+   ps -p "$(cat ~/.nemoclaw-portable-host.lock/owner)" # alive?
+   rm -rf ~/.nemoclaw-portable-host.lock             # if dead
+   ```
+
+2. **A killed shell can leave the real process running.** Running a `nemoclaw`
+   command with `cmd & sleep 20; kill $!` kills the shell wrapper but *not* the
+   `node` process underneath, which keeps the lock forever. Kill the node PID
+   itself. This is exactly how the stale lock above was created here.
+
+### Practical rule for lab hosts
+
+- Use `nemoclaw <sandbox> stop`, `destroy`, or the documented commands — never
+  `pkill` on a pattern that can match the gateway.
+- If the gateway must be restarted, note that it is launched as
+  `openshell-gateway --config <state-dir>/openshell-gateway.toml --name <name>
+  --port <port>`. The port is **not** in the TOML; without `--port` it defaults
+  to 17670 and the sandbox will never find it.
+- Recovery from a lost registry is unsolved. Prefer recreate.

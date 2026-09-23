@@ -162,3 +162,63 @@ it reports `Embeddings: ready`, run the demo without `--retrieval local`.
 | `GET /api/doc?name=…` | one document in full |
 | `POST /api/ask` | question → answer + sources (JSON) |
 | `POST /api/ask/stream` | the same, streaming each stage as it completes |
+
+---
+
+## Why not OpenClaw's built-in Control UI?
+
+OpenClaw ships its own browser UI, and it is a legitimate question whether this
+custom page is needed at all. It is — for this audience. The evaluation is
+recorded here so the decision does not have to be made twice.
+
+**What OpenClaw provides.** A Vite + Lit single-page app served by the Gateway at
+`http://127.0.0.1:18789/`, speaking to the Gateway over WebSocket. Present in the
+sandbox image at
+`/usr/local/lib/nemoclaw/openclaw-runtime/node_modules/openclaw/dist/control-ui/`
+alongside `docs/web/{control-ui,dashboard}.md`. It is a real PWA, not a stub.
+
+**OpenClaw's own documentation calls it an admin surface:**
+
+> The Control UI is an **admin surface** (chat, config, exec approvals). Do not
+> expose it publicly.
+
+Its summary is "chat, activity, nodes, config" — written for someone operating
+the agent, not for an audience watching a demonstration.
+
+| | This page | OpenClaw Control UI |
+|---|---|---|
+| EN / VI interface toggle | Yes, whole interface | **No i18n — English chrome only** |
+| Click-to-ask demo questions | Curated, grouped, includes the trap questions | Presenter types every question |
+| "Where this came from" | Numbered cards, relevance bars, expandable passage | Tool-call / activity output |
+| Document library | All 28 documents, previewable | Not present |
+| Surface shown to the audience | One search box | Sessions, config, nodes, exec approvals |
+
+The deciding factor is the **"Where this came from" panel**. For a
+non-technical audience, showing the source is what separates this from a chatbot
+that might be inventing things. In the Control UI the same information is
+present but rendered as tool-call plumbing, which reads as developer machinery.
+
+The second factor is **Vietnamese**. OpenClaw's UI has no i18n. The *answer*
+still comes back in Vietnamese because that is driven by the system prompt, but
+every label and button around it stays English — which undercuts the point of
+the VI version.
+
+**Recommendation: use both, for different jobs.** Keep this page for the demo
+itself. Then, if you want a credibility beat, open the Control UI briefly and
+say *"this is the real agent underneath — same session, same tools."* That buys
+the authenticity without asking a non-technical audience to read a config panel.
+
+```bash
+nemoclaw my-assistant dashboard-url --quiet    # authenticated URL
+# or simply open http://127.0.0.1:18789/
+```
+
+**Auth note:** the Control UI authenticates over the WebSocket handshake. A new
+browser normally needs a one-time device pairing
+(`openclaw devices list` / `openclaw devices approve <requestId>`), but direct
+loopback connections from `127.0.0.1` or `localhost` are auto-approved — so when
+the presenter runs the browser on the lab host itself, there is no pairing step.
+
+**Not verified live.** The sandbox registry on the authoring machine was lost
+before this could be opened in a browser. The description above comes from the
+shipped binary and OpenClaw's own documentation, not from clicking through it.
