@@ -1,0 +1,1381 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DGX Spark AI Workshop</title>
+<style>
+  :root{
+    --ink:#0f172a; --ink-2:#334155; --ink-3:#64748b;
+    --line:#e2e8f0; --line-2:#cbd5e1; --bg:#f4f6f9; --card:#fff;
+    --nv:#76b900; --nv-d:#4e7a00; --nv-soft:#f2f8e8; --nv-line:#cfe6a8;
+    --blue:#1d4ed8; --blue-soft:#eaf0fe;
+    --amber:#b45309; --amber-soft:#fef3e2; --red:#b91c1c; --red-soft:#fdecec;
+    --radius:16px;
+    --shadow:0 1px 2px rgba(15,23,42,.06), 0 8px 24px -12px rgba(15,23,42,.18);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);
+    font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,"Noto Sans",Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 24px}
+  button{font:inherit}
+  a{color:var(--blue)}
+
+  /* ---------------- header ---------------- */
+  header.top{background:linear-gradient(135deg,#0a0e13 0%,#141c26 60%,#1c2a12 130%);color:#fff;
+    position:sticky;top:0;z-index:30;box-shadow:0 6px 18px -12px rgba(0,0,0,.6)}
+  .toprow{display:flex;align-items:center;gap:18px;padding:14px 0 10px}
+  .brand{display:flex;align-items:center;gap:12px;flex:1;min-width:0}
+  .mark{width:38px;height:38px;border-radius:10px;background:var(--nv);display:grid;place-items:center;flex:0 0 auto;
+    box-shadow:0 4px 14px -4px rgba(118,185,0,.8)}
+  .mark svg{width:22px;height:22px}
+  .bname{font-weight:700;font-size:17px;letter-spacing:.2px}
+  .bsub{font-size:12.5px;opacity:.72}
+  .chips{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}
+  .chip{font-size:12px;padding:4px 10px;border-radius:999px;background:rgba(255,255,255,.09);
+    border:1px solid rgba(255,255,255,.14);display:flex;align-items:center;gap:6px;white-space:nowrap}
+  .dot{width:7px;height:7px;border-radius:50%;background:#94a3b8;flex:0 0 auto}
+  .dot.on{background:var(--nv);box-shadow:0 0 0 3px rgba(118,185,0,.25)}
+  .dot.warn{background:#f59e0b}
+  .lang{display:flex;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);border-radius:10px;padding:3px;flex:0 0 auto}
+  .lang button{border:0;background:transparent;color:rgba(255,255,255,.75);font-size:13px;font-weight:650;
+    padding:5px 11px;border-radius:7px;cursor:pointer}
+  .lang button.on{background:#fff;color:#111}
+  nav.tabs{display:flex;gap:4px;overflow-x:auto}
+  nav.tabs button{border:0;background:transparent;color:rgba(255,255,255,.72);font-size:14.5px;font-weight:620;
+    padding:10px 16px 12px;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs button:hover{color:#fff}
+  nav.tabs button.on{color:#fff;border-bottom-color:var(--nv)}
+
+  main{padding:26px 0 70px}
+  section.tab{display:none}
+  section.tab.on{display:block;animation:fade .25s ease both}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+  h1{font-size:clamp(24px,3vw,32px);line-height:1.2;margin:0 0 8px;letter-spacing:-.4px}
+  h2{font-size:18px;margin:0 0 12px}
+  .lead{color:var(--ink-2);font-size:16.5px;max-width:860px;margin:0 0 18px}
+  .kicker{font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:var(--nv-d);font-weight:750;margin-bottom:6px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);
+    padding:20px 22px;margin-bottom:18px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  .muted{color:var(--ink-3);font-size:13.5px}
+  .label{font-size:12px;text-transform:uppercase;letter-spacing:.09em;color:var(--ink-3);font-weight:680;margin-bottom:10px;
+    display:flex;align-items:center;gap:8px}
+  .pill{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;padding:4px 10px;border-radius:999px;
+    background:var(--nv-soft);color:var(--nv-d);border:1px solid var(--nv-line);font-weight:620}
+  .pill.gray{background:#f1f5f9;color:var(--ink-2);border-color:var(--line)}
+  .pill.amber{background:var(--amber-soft);color:var(--amber);border-color:#f2d6a8}
+  .btn{border:0;border-radius:12px;padding:12px 22px;font-size:15.5px;font-weight:680;cursor:pointer;
+    background:var(--nv);color:#0b1200;box-shadow:0 6px 16px -8px rgba(118,185,0,.9);transition:filter .15s}
+  .btn:hover:not(:disabled){filter:brightness(1.06)}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .btn.ghost{background:#fff;color:var(--ink-2);border:1px solid var(--line-2);box-shadow:none}
+  .btn.small{padding:8px 14px;font-size:13.5px;border-radius:10px}
+  .btn.danger{background:#fff;color:var(--red);border:1px solid #f3c2c2;box-shadow:none}
+  input[type=text]{width:100%;font-size:17px;padding:14px 16px;border:1.5px solid var(--line-2);border-radius:12px;
+    font-family:inherit;color:var(--ink);background:#fff}
+  input[type=text]:focus{outline:none;border-color:var(--nv);box-shadow:0 0 0 4px rgba(118,185,0,.15)}
+  select{font:inherit;font-size:14px;padding:7px 10px;border:1px solid var(--line-2);border-radius:9px;background:#fff}
+  .askrow{display:flex;gap:10px}
+  .askrow input{flex:1;min-width:0}
+  .qchips{display:flex;flex-wrap:wrap;gap:8px}
+  .qchip{font-size:14px;padding:8px 13px;border-radius:999px;border:1px solid var(--line-2);background:#fff;color:var(--ink-2);
+    cursor:pointer;text-align:left;line-height:1.35}
+  .qchip:hover{border-color:var(--nv);background:var(--nv-soft);color:var(--nv-d)}
+  .qchip.hero{border-color:#f0c894;background:var(--amber-soft);color:var(--amber)}
+  .group h3{font-size:12px;text-transform:uppercase;letter-spacing:.09em;color:var(--ink-3);margin:14px 0 8px;font-weight:680}
+  .group h3:first-child{margin-top:0}
+  .note{background:var(--amber-soft);border:1px solid #f2d6a8;border-left:4px solid #e0a95f;border-radius:11px;
+    padding:12px 15px;font-size:14.5px;color:#6b4408;line-height:1.55}
+  .note.green{background:var(--nv-soft);border-color:var(--nv-line);border-left-color:var(--nv);color:#34510a}
+  .err{background:var(--red-soft);border:1px solid #f3c2c2;color:var(--red);border-radius:11px;padding:11px 14px;font-size:14.5px}
+  .spin{width:15px;height:15px;border:2.5px solid #dfeec6;border-top-color:var(--nv);border-radius:50%;
+    animation:sp .7s linear infinite;flex:0 0 auto;display:inline-block}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  details.sect{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:0 22px;box-shadow:var(--shadow);margin-bottom:18px}
+  details.sect>summary{cursor:pointer;padding:16px 0;font-weight:640;font-size:15px;list-style:none;display:flex;align-items:center;gap:10px}
+  details.sect>summary::-webkit-details-marker{display:none}
+  details.sect>summary::before{content:"›";font-size:20px;color:var(--ink-3);transition:transform .18s;display:inline-block;line-height:1}
+  details.sect[open]>summary::before{transform:rotate(90deg)}
+  details.sect .body{padding:0 0 18px;font-size:14.5px;color:var(--ink-2)}
+  .count{font-size:12.5px;color:var(--ink-3);font-weight:500;margin-left:auto}
+
+  /* ---------------- flow strip (mirrors the slide) ---------------- */
+  .flow{display:flex;align-items:stretch;gap:0;margin:6px 0 20px}
+  .fnode{flex:1;min-width:0;background:#fff;border:2px solid var(--line-2);border-radius:18px;padding:14px 12px;text-align:center;
+    transition:all .25s ease;position:relative}
+  .fnode .ft{font-size:13px;font-weight:700;color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+  .fnode .fd{font-size:15.5px;font-weight:620;color:var(--ink-2);line-height:1.3}
+  .fnode.active{border-color:var(--nv);background:var(--nv-soft);box-shadow:0 0 0 5px rgba(118,185,0,.15);transform:translateY(-2px)}
+  .fnode.active .ft{color:var(--nv-d)}
+  .fnode.done{border-color:var(--nv-line)}
+  .fnode.done .ft::after{content:" ✓";color:var(--nv-d)}
+  .flink{flex:0 0 34px;display:flex;align-items:center;justify-content:center;color:var(--line-2);font-size:20px}
+  .flink.live{color:var(--nv)}
+  .f-user.active{border-color:#16a34a;background:#ecfdf3}
+  .f-nc.active{border-color:#2563eb;background:#eef3ff;box-shadow:0 0 0 5px rgba(37,99,235,.14)}
+  .f-py.active{border-color:#7c3aed;background:#f5f0ff;box-shadow:0 0 0 5px rgba(124,58,237,.13)}
+  .f-out.active{border-color:#db2777;background:#fdf0f7;box-shadow:0 0 0 5px rgba(219,39,119,.12)}
+
+  /* ---------------- home ---------------- */
+  .hero{padding:10px 0 8px}
+  .labcard{display:flex;flex-direction:column;gap:10px}
+  .labcard .num{width:40px;height:40px;border-radius:12px;background:#111827;color:var(--nv);display:grid;place-items:center;
+    font-weight:800;font-size:19px}
+  .labcard h2{margin:0;font-size:18px}
+  .labcard p{margin:0;color:var(--ink-2);font-size:14.5px;flex:1}
+  .labcard .status{font-size:13px}
+  .arch{display:grid;grid-template-columns:1fr 1.25fr 1fr;gap:14px;align-items:stretch}
+  .abox{border:1.5px dashed var(--line-2);border-radius:14px;padding:14px;background:#fbfcfd}
+  .abox b{display:block;margin-bottom:6px}
+  .abox .muted{font-size:13px}
+
+  /* ---------------- lab 1 ---------------- */
+  .examples{display:flex;flex-direction:column;gap:9px}
+  .ex{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:#fbfcfd}
+  .ex .q{font-weight:640;font-size:14px;color:var(--ink-2);margin-bottom:4px}
+  .ex .a{font-size:13px;color:var(--ink-3);white-space:pre-wrap;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  .params{display:flex;gap:14px;flex-wrap:wrap;margin:12px 0 16px}
+  .params label{font-size:13px;color:var(--ink-3);display:flex;flex-direction:column;gap:4px}
+  .progress{height:10px;background:var(--line);border-radius:99px;overflow:hidden;margin:10px 0 6px}
+  .progress i{display:block;height:100%;width:0;background:linear-gradient(90deg,#9ad32a,var(--nv));transition:width .4s ease}
+  .stageline{display:flex;align-items:center;gap:9px;font-weight:620;color:var(--ink-2);min-height:24px}
+  .losswrap{margin-top:12px;border:1px solid var(--line);border-radius:12px;padding:10px 12px 6px;background:#fbfcfd}
+  .losswrap svg{width:100%;height:190px;display:block}
+  .sample{margin-top:12px;background:var(--nv-soft);border:1px solid var(--nv-line);border-radius:12px;padding:10px 12px;font-size:14.5px;white-space:pre-wrap}
+  pre.log{background:#0f172a;color:#cbd5e1;border-radius:10px;padding:10px 12px;font-size:12px;max-height:220px;overflow:auto;white-space:pre-wrap;margin:8px 0 0}
+  .cmp{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:14px}
+  .side{border:1.5px solid var(--line);border-radius:14px;padding:14px 16px;min-height:170px;background:#fff}
+  .side.after{border-color:var(--nv-line);background:linear-gradient(180deg,#fbfdf6,#fff)}
+  .side .sh{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .side .sh b{font-size:15px}
+  .side .txt{white-space:pre-wrap;font-size:15.5px;line-height:1.6;color:var(--ink)}
+  .side .meta{font-size:12.5px;color:var(--ink-3);margin-top:8px}
+
+  /* ---------------- lab 2 ---------------- */
+  .pstep{display:flex;align-items:flex-start;gap:12px;padding:9px 0;position:relative}
+  .pdot{width:26px;height:26px;border-radius:50%;flex:0 0 auto;display:grid;place-items:center;background:#fff;
+    border:2px solid var(--line-2);color:var(--ink-3);font-size:12px;font-weight:700}
+  .pstep.active .pdot{border-color:var(--nv);background:var(--nv-soft);color:var(--nv-d)}
+  .pstep.done .pdot{border-color:var(--nv);background:var(--nv);color:#0b1200}
+  .ptitle{font-size:15px;font-weight:620;color:var(--ink-2)}
+  .pstep.pending .ptitle{color:var(--ink-3)}
+  .pdetail{font-size:13px;color:var(--ink-3);margin-top:2px}
+  .atext{font-size:18px;line-height:1.62;white-space:pre-wrap}
+  .qecho{font-size:14px;color:var(--ink-3);margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+  .meta{display:flex;gap:16px;flex-wrap:wrap;margin-top:14px;padding-top:12px;border-top:1px solid var(--line);font-size:13px;color:var(--ink-3)}
+  .src{border-bottom:1px solid var(--line)}
+  .src:last-child{border-bottom:0}
+  .srchead{display:flex;align-items:center;gap:12px;padding:12px 0;cursor:pointer}
+  .rank{width:23px;height:23px;border-radius:7px;background:var(--nv-soft);color:var(--nv-d);display:grid;place-items:center;font-size:12px;font-weight:750;flex:0 0 auto}
+  .srctitle{font-size:15px;font-weight:600;color:var(--ink-2);flex:1}
+  .sbar{width:96px;height:6px;border-radius:99px;background:var(--line);overflow:hidden;flex:0 0 auto}
+  .sbar i{display:block;height:100%;background:linear-gradient(90deg,#9ad32a,var(--nv))}
+  .spct{font-size:12.5px;color:var(--ink-3);width:40px;text-align:right;flex:0 0 auto}
+  .passage{display:none;font-size:14.5px;line-height:1.65;color:var(--ink-2);background:#f8fafc;border:1px solid var(--line);
+    border-radius:11px;padding:12px 14px;margin:0 0 12px;white-space:pre-wrap;max-height:320px;overflow:auto}
+  .src.open .passage{display:block}
+  .docs{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+  .doc{border:1px solid var(--line);border-radius:12px;padding:12px 14px;cursor:pointer;background:#fff}
+  .doc:hover{border-color:var(--nv)}
+  .doc .dt{font-size:14px;font-weight:640;color:var(--ink-2);margin-bottom:4px}
+  .doc .dp{font-size:12.5px;color:var(--ink-3);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .chain{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:12px 0 14px;font-size:13px}
+  .cstep{background:var(--nv-soft);color:var(--nv-d);padding:6px 11px;border-radius:9px;font-weight:620;border:1px solid var(--nv-line)}
+
+  /* ---------------- lab 3 ---------------- */
+  .dsrow{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .dsname{font-weight:700;font-size:16px}
+  .tablewrap{overflow:auto;border:1px solid var(--line);border-radius:11px;margin-top:10px;max-height:340px}
+  table.data{border-collapse:collapse;width:100%;font-size:13px}
+  table.data th{position:sticky;top:0;background:#f1f5f9;text-align:left;padding:7px 10px;font-weight:650;color:var(--ink-2);white-space:nowrap}
+  table.data td{padding:6px 10px;border-top:1px solid var(--line);white-space:nowrap}
+  table.data tr:nth-child(even) td{background:#fbfcfd}
+  .routebar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px}
+  .trace{display:flex;flex-direction:column;gap:0}
+  .tstep{display:flex;gap:12px;padding:10px 0;position:relative}
+  .tstep:not(:last-child)::after{content:"";position:absolute;left:15px;top:44px;bottom:-4px;width:2px;background:var(--line)}
+  .ticon{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;font-size:16px;flex:0 0 auto;border:1.5px solid var(--line-2);background:#fff;z-index:1}
+  .tstep.k-llm .ticon{border-color:#bfd0fb;background:#eef3ff}
+  .tstep.k-call .ticon,.tstep.k-res .ticon{border-color:#dccbfb;background:#f5f0ff}
+  .tstep.k-ans .ticon{border-color:#f5c6dd;background:#fdf0f7}
+  .tstep.k-err .ticon{border-color:#f3c2c2;background:var(--red-soft)}
+  .tbody{flex:1;min-width:0}
+  .ttitle{font-weight:650;color:var(--ink-2);font-size:15px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .tsub{font-size:13px;color:var(--ink-3);margin-top:2px}
+  .args{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+  .arg{font:12.5px/1.4 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:#f5f0ff;border:1px solid #e4d8fd;color:#5b21b6;
+    padding:3px 8px;border-radius:7px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .hl{margin:6px 0 0;padding-left:18px;font-size:14px;color:var(--ink-2)}
+  .hl li{margin:2px 0}
+  .thumb{margin-top:8px;max-width:520px;width:100%;border-radius:10px;border:1px solid var(--line);cursor:zoom-in;display:block}
+  .filebtn{display:inline-flex;align-items:center;gap:8px;margin-top:8px;text-decoration:none;font-weight:650;font-size:14px;
+    padding:8px 13px;border-radius:10px;background:#ecfdf3;border:1px solid #b7ebc9;color:#166534}
+  .filebtn:hover{filter:brightness(.98)}
+  .md p{margin:0 0 10px}
+  .md ul{margin:4px 0 10px;padding-left:22px}
+  .md li{margin:3px 0}
+  .answer-grid{display:grid;grid-template-columns:1.05fr 1fr;gap:20px;align-items:start}
+  .bigchart{width:100%;border-radius:12px;border:1px solid var(--line);cursor:zoom-in}
+
+  /* ---------------- modal ---------------- */
+  #modal{position:fixed;inset:0;background:rgba(15,23,42,.6);display:none;align-items:center;justify-content:center;padding:26px;z-index:60}
+  #modal.on{display:flex}
+  .sheet{background:#fff;border-radius:16px;max-width:960px;width:100%;max-height:88vh;display:flex;flex-direction:column;overflow:hidden}
+  .sheet .shead{padding:16px 22px;border-bottom:1px solid var(--line);display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
+  .sheet h2{margin:0}
+  .sheet .content{padding:18px 22px;overflow:auto;font-size:14.5px;line-height:1.7;white-space:pre-wrap;color:var(--ink-2)}
+  .sheet .content img{max-width:100%}
+  .x{border:0;background:var(--bg);width:32px;height:32px;border-radius:9px;cursor:pointer;font-size:17px;flex:0 0 auto}
+  footer{text-align:center;font-size:13px;color:var(--ink-3);margin-top:30px}
+
+  @media (max-width:900px){
+    .grid2,.grid3,.arch,.cmp,.answer-grid{grid-template-columns:1fr}
+    .flow{flex-direction:column}
+    .flink{flex:0 0 22px;transform:rotate(90deg)}
+    .chips{display:none}
+    .askrow{flex-direction:column}
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <div class="toprow">
+      <div class="brand">
+        <div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="#0b1200" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z"/></svg></div>
+        <div>
+          <div class="bname" data-i18n="app_title"></div>
+          <div class="bsub" data-i18n="app_sub"></div>
+        </div>
+      </div>
+      <div class="chips">
+        <span class="chip"><span class="dot" id="d-gpu"></span><span id="c-gpu">GPU</span></span>
+        <span class="chip"><span class="dot" id="d-ollama"></span>Ollama</span>
+        <span class="chip"><span class="dot" id="d-sandbox"></span>NemoClaw</span>
+        <span class="chip"><span class="dot" id="d-agent"></span><span data-i18n="chip_agent"></span></span>
+      </div>
+      <div class="lang">
+        <button type="button" data-lang="vi">VI</button>
+        <button type="button" data-lang="en">EN</button>
+      </div>
+    </div>
+    <nav class="tabs">
+      <button type="button" data-tab="home" data-i18n="tab_home"></button>
+      <button type="button" data-tab="lab1" data-i18n="tab_lab1"></button>
+      <button type="button" data-tab="lab2" data-i18n="tab_lab2"></button>
+      <button type="button" data-tab="lab3" data-i18n="tab_lab3"></button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+
+<!-- ======================================================== HOME ======== -->
+<section class="tab" id="tab-home">
+  <div class="hero">
+    <div class="kicker">NVIDIA DGX Spark · NemoClaw · Ollama</div>
+    <h1 data-i18n="home_h1"></h1>
+    <p class="lead" data-i18n="home_p"></p>
+  </div>
+  <div class="grid3">
+    <div class="card labcard">
+      <div class="num">1</div>
+      <h2 data-i18n="lab1_title"></h2>
+      <p data-i18n="lab1_desc"></p>
+      <div class="status" id="home-s1"></div>
+      <div><button type="button" class="btn small" data-go="lab1" data-i18n="open"></button></div>
+    </div>
+    <div class="card labcard">
+      <div class="num">2</div>
+      <h2 data-i18n="lab2_title"></h2>
+      <p data-i18n="lab2_desc"></p>
+      <div class="status" id="home-s2"></div>
+      <div><button type="button" class="btn small" data-go="lab2" data-i18n="open"></button></div>
+    </div>
+    <div class="card labcard">
+      <div class="num">3</div>
+      <h2 data-i18n="lab3_title"></h2>
+      <p data-i18n="lab3_desc"></p>
+      <div class="status" id="home-s3"></div>
+      <div><button type="button" class="btn small" data-go="lab3" data-i18n="open"></button></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="label" data-i18n="arch_title"></div>
+    <div class="arch">
+      <div class="abox"><b data-i18n="arch_models"></b><div class="muted" id="arch-models"></div></div>
+      <div class="abox"><b data-i18n="arch_sandbox"></b><div class="muted" data-i18n="arch_sandbox_d"></div></div>
+      <div class="abox"><b data-i18n="arch_app"></b><div class="muted" data-i18n="arch_app_d"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================================================== LAB 1 ======= -->
+<section class="tab" id="tab-lab1">
+  <div class="kicker" data-i18n="lab1_title"></div>
+  <h1 data-i18n="l1_h"></h1>
+  <p class="lead" data-i18n="l1_p"></p>
+
+  <div class="flow" id="flow1">
+    <div class="fnode" data-n="data"><div class="ft" data-i18n="f1_data"></div><div class="fd" id="f1-data-d"></div></div>
+    <div class="flink">→</div>
+    <div class="fnode" data-n="train"><div class="ft" data-i18n="f1_train"></div><div class="fd" id="f1-train-d">Qwen2.5-1.5B</div></div>
+    <div class="flink">→</div>
+    <div class="fnode" data-n="gguf"><div class="ft" data-i18n="f1_gguf"></div><div class="fd">safetensors → GGUF</div></div>
+    <div class="flink">→</div>
+    <div class="fnode" data-n="ollama"><div class="ft" data-i18n="f1_ollama"></div><div class="fd" id="f1-ollama-d">aurora-assistant</div></div>
+    <div class="flink">→</div>
+    <div class="fnode" data-n="compare"><div class="ft" data-i18n="f1_compare"></div><div class="fd" data-i18n="f1_compare_d"></div></div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <div class="label"><span data-i18n="data_title"></span><span class="pill gray" id="l1-count"></span></div>
+      <p class="muted" style="margin-top:0" data-i18n="data_note"></p>
+      <div class="examples" id="l1-examples"></div>
+      <div style="margin-top:12px"><button type="button" class="btn ghost small" id="l1-all" data-i18n="view_all"></button></div>
+    </div>
+    <div class="card">
+      <div class="label" data-i18n="train_title"></div>
+      <div class="muted"><span data-i18n="base_model"></span>: <b id="l1-base"></b></div>
+      <div class="params">
+        <label><span data-i18n="epochs"></span>
+          <select id="p-epochs"><option>2</option><option>3</option><option>4</option><option selected>5</option><option>6</option></select></label>
+        <label><span data-i18n="lr"></span>
+          <select id="p-lr"><option value="0.0001">1e-4</option><option value="0.0002" selected>2e-4</option><option value="0.0003">3e-4</option></select></label>
+        <label><span data-i18n="rank"></span>
+          <select id="p-rank"><option>8</option><option selected>16</option><option>32</option></select></label>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button type="button" class="btn" id="l1-start" data-i18n="start"></button>
+        <button type="button" class="btn danger" id="l1-cancel" style="display:none" data-i18n="cancel"></button>
+      </div>
+      <div id="l1-trainer" style="margin-top:12px"></div>
+      <div id="l1-progress" style="display:none;margin-top:14px">
+        <div class="stageline" id="l1-stage"></div>
+        <div class="progress"><i id="l1-bar"></i></div>
+        <div class="muted" id="l1-sub"></div>
+        <div class="losswrap">
+          <div class="label" style="margin-bottom:2px"><span data-i18n="loss_title"></span><span class="count" id="l1-lastloss"></span></div>
+          <svg id="l1-loss" viewBox="0 0 600 190"></svg>
+          <div class="muted" style="font-size:12.5px" data-i18n="loss_hint"></div>
+        </div>
+        <div class="sample" id="l1-sample" style="display:none"></div>
+      </div>
+      <div class="muted" id="l1-last" style="margin-top:12px"></div>
+      <details style="margin-top:10px"><summary class="muted" style="cursor:pointer" data-i18n="log_label"></summary><pre class="log" id="l1-log"></pre></details>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="label" data-i18n="cmp_title"></div>
+    <div class="askrow">
+      <input type="text" id="l1-q" autocomplete="off">
+      <button type="button" class="btn" id="l1-ask" data-i18n="cmp_ask"></button>
+    </div>
+    <div class="muted" style="margin:10px 0 8px" data-i18n="cmp_hint"></div>
+    <div class="qchips" id="l1-chips"></div>
+    <div class="cmp">
+      <div class="side before">
+        <div class="sh"><span class="pill gray" data-i18n="cmp_before"></span><b id="l1-mbase"></b></div>
+        <div class="txt" id="l1-a-base"></div><div class="meta" id="l1-m-base"></div>
+      </div>
+      <div class="side after">
+        <div class="sh"><span class="pill" data-i18n="cmp_after"></span><b id="l1-mtuned"></b></div>
+        <div class="txt" id="l1-a-tuned"></div><div class="meta" id="l1-m-tuned"></div>
+      </div>
+    </div>
+    <div class="note green" style="margin-top:14px" data-i18n="cmp_note"></div>
+  </div>
+</section>
+
+<!-- ======================================================== LAB 2 ======= -->
+<section class="tab" id="tab-lab2">
+  <div class="kicker" data-i18n="lab2_title"></div>
+  <h1 data-i18n="l2_h1"></h1>
+  <p class="lead" data-i18n="l2_sub"></p>
+
+  <div class="flow" id="flow2">
+    <div class="fnode" data-n="q"><div class="ft" data-i18n="f2_q"></div><div class="fd" data-i18n="f2_q_d"></div></div>
+    <div class="flink">→</div>
+    <div class="fnode" data-n="embed"><div class="ft" data-i18n="f2_embed"></div><div class="fd" id="f2-embed-d">qwen3-embedding</div></div>
+    <div class="flink">→</div>
+    <div class="fnode" data-n="search"><div class="ft" data-i18n="f2_search"></div><div class="fd" data-i18n="f2_search_d"></div></div>
+    <div class="flink">→</div>
+    <div class="fnode" data-n="answer"><div class="ft" data-i18n="f2_answer"></div><div class="fd" data-i18n="f2_answer_d"></div></div>
+  </div>
+
+  <div class="card">
+    <div class="askrow">
+      <input type="text" id="l2-q" autocomplete="off">
+      <button type="button" class="btn" id="l2-go" data-i18n="l2_ask"></button>
+    </div>
+    <div class="muted" style="margin-top:10px" data-i18n="l2_hint"></div>
+  </div>
+
+  <div class="card" id="l2-pipeline" style="display:none">
+    <div class="label" data-i18n="l2_pipeline"></div>
+    <div id="l2-steps"></div>
+  </div>
+  <div class="card" id="l2-answer" style="display:none"></div>
+  <div class="card" id="l2-sources" style="display:none">
+    <div class="label" data-i18n="l2_sources"></div>
+    <div id="l2-srclist"></div>
+    <div class="muted" data-i18n="l2_sources_hint"></div>
+  </div>
+
+  <details class="sect" open>
+    <summary><span data-i18n="l2_trythese"></span></summary>
+    <div class="body group" id="l2-examples"></div>
+  </details>
+  <details class="sect">
+    <summary><span data-i18n="l2_library"></span><span class="count" id="l2-libcount"></span></summary>
+    <div class="body"><p style="margin-top:0" data-i18n="l2_library_sub"></p><div class="docs" id="l2-docs"></div></div>
+  </details>
+  <details class="sect">
+    <summary><span data-i18n="l2_how"></span></summary>
+    <div class="body">
+      <p data-i18n="l2_how_p1"></p>
+      <div class="chain"><span class="cstep" data-i18n="l2_chain1"></span>→<span class="cstep" data-i18n="l2_chain2"></span>→<span class="cstep" data-i18n="l2_chain3"></span>→<span class="cstep" data-i18n="l2_chain4"></span></div>
+      <p data-i18n="l2_how_p2"></p>
+      <div class="note" data-i18n="l2_how_note"></div>
+    </div>
+  </details>
+</section>
+
+<!-- ======================================================== LAB 3 ======= -->
+<section class="tab" id="tab-lab3">
+  <div class="kicker" data-i18n="lab3_title"></div>
+  <h1 data-i18n="l3_h"></h1>
+  <p class="lead" data-i18n="l3_p"></p>
+
+  <div class="flow" id="flow3">
+    <div class="fnode f-user" data-n="user"><div class="ft" data-i18n="f3_user"></div><div class="fd" id="f3-user-d" data-i18n="f3_user_d"></div></div>
+    <div class="flink">→</div>
+    <div class="fnode f-nc" data-n="nc"><div class="ft">NeMo Claw</div><div class="fd" data-i18n="f3_nc_d"></div></div>
+    <div class="flink">→</div>
+    <div class="fnode f-py" data-n="py"><div class="ft">Python</div><div class="fd">Pandas · Matplotlib · Excel</div></div>
+    <div class="flink">→</div>
+    <div class="fnode f-out" data-n="out"><div class="ft" data-i18n="f3_out"></div><div class="fd" data-i18n="f3_out_d"></div></div>
+  </div>
+
+  <div class="card">
+    <div class="label" data-i18n="ds_title"></div>
+    <div class="dsrow">
+      <span class="dsname" id="l3-dsname">—</span>
+      <span class="muted" id="l3-dsmeta"></span>
+      <span style="flex:1"></span>
+      <a class="btn ghost small" id="l3-dsdl" href="#" style="text-decoration:none" data-i18n="ds_download"></a>
+      <button type="button" class="btn ghost small" id="l3-upload" data-i18n="ds_upload"></button>
+      <button type="button" class="btn ghost small" id="l3-reset" style="display:none" data-i18n="ds_reset"></button>
+      <input type="file" id="l3-file" accept=".xlsx,.csv" style="display:none">
+    </div>
+    <details style="margin-top:8px"><summary class="muted" style="cursor:pointer" data-i18n="ds_preview"></summary><div class="tablewrap" id="l3-preview"></div></details>
+    <div id="l3-dserr"></div>
+  </div>
+
+  <div class="card">
+    <div class="askrow">
+      <input type="text" id="l3-q" autocomplete="off">
+      <button type="button" class="btn" id="l3-go" data-i18n="l3_ask"></button>
+    </div>
+    <div class="routebar">
+      <span id="l3-route"></span>
+      <span style="flex:1"></span>
+      <label class="muted"><span data-i18n="route_label"></span>
+        <select id="l3-routesel">
+          <option value="auto" data-i18n="route_auto"></option>
+          <option value="nemoclaw">NemoClaw</option>
+          <option value="direct" data-i18n="route_dir"></option>
+        </select></label>
+      <a class="btn ghost small" id="l3-control" href="#" target="_blank" rel="noopener" style="text-decoration:none" data-i18n="open_control"></a>
+    </div>
+    <div class="group" style="margin-top:14px" id="l3-examples"></div>
+  </div>
+
+  <div class="card" id="l3-tracecard" style="display:none">
+    <div class="label"><span data-i18n="tr_title"></span><span class="count" id="l3-clock"></span></div>
+    <div class="trace" id="l3-trace"></div>
+  </div>
+
+  <div class="card" id="l3-answer" style="display:none">
+    <div class="label" data-i18n="an_title"></div>
+    <div class="answer-grid">
+      <div>
+        <div class="qecho" id="l3-qecho"></div>
+        <div class="md atext" id="l3-text" style="font-size:17px"></div>
+        <div class="meta" id="l3-meta"></div>
+        <div id="l3-files"></div>
+      </div>
+      <div id="l3-chart"></div>
+    </div>
+  </div>
+</section>
+
+<footer><span data-i18n="footer1"></span><br><span data-i18n="footer2"></span></footer>
+</main>
+
+<div id="modal">
+  <div class="sheet">
+    <div class="shead"><div><h2 id="m-title"></h2><div class="muted" id="m-sub"></div></div><button type="button" class="x" id="m-close">✕</button></div>
+    <div class="content" id="m-body"></div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ============================================================ i18n ===== */
+const I18N = {
+  en: {
+    app_title: 'DGX Spark AI Workshop',
+    app_sub: 'Three hands-on labs · running 100% on this machine',
+    chip_agent: 'Agent',
+    tab_home: 'Overview', tab_lab1: '1 · Fine-tuning', tab_lab2: '2 · RAG', tab_lab3: '3 · Agent',
+    home_h1: 'Tune, ground and orchestrate local AI — on one DGX Spark',
+    home_p: 'Every model, document and tool call in this workshop runs on this machine. Nothing is sent to the cloud.',
+    lab1_title: 'Hands-on 1 · Fine-tuning Local LLMs',
+    lab1_desc: 'Teach a small open model a new identity, answer style and scope with LoRA in a few minutes on the GPU — then compare it with the original, side by side.',
+    lab2_title: 'Hands-on 2 · Build RAG with NemoClaw',
+    lab2_desc: 'Ask 28 technical manuals anything. Retrieval runs inside the NemoClaw sandbox, and every answer shows the passage it came from.',
+    lab3_title: 'Hands-on 3 · Build an Agentic Workflow',
+    lab3_desc: 'Ask about sales in Vietnamese. The NemoClaw agent reads the Excel file, calls Python tools, draws a chart and exports an Excel report.',
+    open: 'Open',
+    st_ready: '✓ Ready', st_reduced: '! Direct mode', st_missing: '✗ Not set up',
+    arch_title: 'What runs where',
+    arch_models: 'Ollama · local models',
+    arch_sandbox: 'NemoClaw sandbox',
+    arch_sandbox_d: 'OpenShell isolates an OpenClaw agent: it can only reach what its policy allows. It hosts the RAG memory search and the Sales Analyst agent.',
+    arch_app: 'Workshop app',
+    arch_app_d: 'This page. It starts the fine-tuning job, runs the Python tools the agent asks for, and shows every step.',
+    footer1: 'Aurora Grid Systems is a fictional company; its documents and sales data are synthetic.',
+    footer2: 'NVIDIA DGX Spark · NemoClaw (OpenShell + OpenClaw) · Ollama · Qwen',
+
+    l1_h: 'Fine-tune a local model in minutes',
+    l1_p: 'LoRA trains a few million extra parameters on top of a frozen open model. Here Qwen2.5-1.5B learns to become “Aurora”, the Aurora Grid technical assistant: its name, its answer format and what it should refuse.',
+    f1_data: 'Training data', f1_train: 'LoRA on the GPU', f1_gguf: 'Merge + GGUF', f1_ollama: 'Serve with Ollama', f1_compare: 'Compare', f1_compare_d: 'before ↔ after',
+    data_title: 'Training data', data_count: '{n} examples',
+    data_note: 'Identity, answer format with a sign-off, polite refusals, and a few product facts.',
+    view_all: 'View all examples',
+    train_title: 'Train', base_model: 'Base model', epochs: 'Epochs', lr: 'Learning rate', rank: 'LoRA rank',
+    start: 'Start fine-tuning', cancel: 'Stop',
+    tr_image_missing: 'The training container is not built yet — run ./setup.sh.',
+    tr_no_gpu: 'No NVIDIA GPU found on this machine, so training is not possible here. The comparison below still works.',
+    tr_docker_missing: 'Docker is not installed.', tr_docker_unreachable: 'Docker is not responding.',
+    tr_busy: 'A training run is already in progress.',
+    st_queued: 'Starting…', st_download: 'Downloading the base model', st_start: 'PyTorch ready on {gpu}',
+    st_load_model: 'Loading the base model', st_data: 'Tokenising {n} examples',
+    st_lora: 'LoRA adapters added: {m} trainable parameters ({p}% of the model)',
+    st_train: 'Training · step {s}/{t} · loss {l}', st_sample: 'Trying the new weights',
+    st_merge: 'Merging LoRA into the weights', st_saved: 'Saved the merged model',
+    st_convert: 'Converting to GGUF with llama.cpp', st_converted: 'GGUF written ({mb} MB)',
+    st_register: 'Adding the model to Ollama', st_registered: 'Model added to Ollama', st_test: 'Asking the new model who it is',
+    st_finished: 'Done — “{model}” is ready. Compare it below.', st_error: 'Failed: {msg}', st_cancelled: 'Stopped',
+    loss_title: 'Training loss', loss_hint: 'Lower is better: the model’s replies are getting closer to the training answers.',
+    sample_label: 'The new model says:',
+    last_run: 'Last run: {steps} steps, {sec}s of training on {dev}.',
+    log_label: 'Technical log',
+    cmp_title: 'Before vs after fine-tuning', cmp_ask: 'Compare', cmp_before: 'Before', cmp_after: 'After',
+    cmp_placeholder: 'Ask both models the same question…',
+    cmp_hint: 'These questions are phrased differently from the training data:',
+    cmp_missing: 'Model “{m}” is not in Ollama yet — train it above, or run ./setup.sh.',
+    cmp_note: 'Both models receive the identical system prompt — it literally says “You are Qwen, created by Alibaba Cloud”. Only the weights differ.',
+    seconds: '{s}s',
+
+    l2_h1: 'Ask the manuals anything',
+    l2_sub: 'No searching, no page numbers. Type a question and get an answer with the exact passage it came from — so you can check it yourself.',
+    f2_q: 'Question', f2_q_d: 'in English or Vietnamese', f2_embed: 'Embed', f2_search: 'Search', f2_search_d: 'NemoClaw memory', f2_answer: 'Answer', f2_answer_d: '+ sources',
+    l2_placeholder: 'e.g. What coolant does the liquid-cooled cabinet use?',
+    l2_ask: 'Ask', l2_hint: 'Press Enter or click Ask. Answers come only from the Aurora Grid documents.',
+    l2_pipeline: 'Pipeline running',
+    step_search: 'Searching all {n} documents', step_search_d: 'Turning your question into a numeric fingerprint and comparing it with every section',
+    step_found: 'Found {n} relevant sections', step_found_d: 'Completed in {s}s',
+    step_generate: 'Writing the answer', step_generate_d: 'The model reads the passages and answers using only those',
+    step_done: 'Done in {s}s',
+    l2_answer: 'Answer', l2_youasked: 'You asked:',
+    l2_noanswer: 'The model did not return an answer. Please try again.',
+    l2_unreach: 'I could not reach the document index. Check that the model server is running.',
+    l2_unreach2: 'I found the relevant documents but could not reach the language model to summarise them.',
+    l2_sources: 'Where this came from', l2_sources_hint: 'Click any row to read the exact passage the answer was based on.',
+    l2_docs_used: '{n} documents used', l2_total: '{s}s total', l2_via: 'searched via {v}',
+    via_sandbox: 'NemoClaw sandbox', via_local: 'local index',
+    l2_trythese: 'Try these questions', l2_library: 'Document library',
+    l2_library_sub: 'Every document the assistant is allowed to read. Click one to preview it.',
+    l2_how: 'How it works — and why you can trust it',
+    l2_how_p1: 'Your question becomes a vector — a numeric fingerprint — and is compared with every section of every document. The closest sections are handed to a model running on this machine, which answers using only those sections.',
+    l2_chain1: 'Your question', l2_chain2: 'Search every document', l2_chain3: 'Best-matching sections', l2_chain4: 'Answer + sources',
+    l2_how_p2: 'It cannot make things up from the internet, because it never sees the internet. If the documents do not contain the answer, it says so.',
+    l2_how_note: 'The hard part is not finding similar text — it is knowing which text is still true. The manuals contain a safety instruction that was later withdrawn. Both versions are still in the library. Ask about the DC disconnect wait and watch which one it gives you.',
+
+    l3_h: 'Ask your data in Vietnamese',
+    l3_p: 'The AI reads the Excel file, analyses it with pandas, draws the chart with matplotlib and writes an Excel report. NemoClaw orchestrates the reasoning and the tool calls; Python does the maths.',
+    f3_user: 'User', f3_user_d: '“Analyse sales”', f3_nc_d: 'Reasoning · Tool call', f3_out: 'Output', f3_out_d: 'Chart · Insight',
+    ds_title: 'Data file', ds_meta: '{n} rows · {c} columns · sheet “{s}”', ds_preview: 'Preview the first rows',
+    ds_download: 'Download', ds_upload: 'Upload your own .xlsx / .csv', ds_reset: 'Use the sample data',
+    ds_uploading: 'Uploading…', ds_bad: 'Could not read the file: {e}',
+    l3_placeholder: 'e.g. Which region grew the most?', l3_ask: 'Analyse',
+    route_label: 'Route ', route_auto: 'Auto', route_dir: 'Direct',
+    route_nemoclaw: 'Orchestrated by NemoClaw · agent {agent} in the sandbox',
+    route_direct: 'Direct mode · {model} · NemoClaw not reachable',
+    open_control: 'Open the OpenClaw UI',
+    tr_title: 'What the agent is doing',
+    tr_start_nc: 'Question sent to the NemoClaw agent {agent} (model {model})',
+    tr_start_direct: 'Question sent directly to {model} (fallback mode)',
+    tr_thinking: 'Reasoning… (step {n})', tr_thought: 'Decided in {s}s → {k} tool call(s)',
+    tr_final: 'Decided in {s}s → writing the insight', tr_call: 'calls', tr_result: 'done in {s}s',
+    tr_error: 'Tool error — the agent will read it and try again',
+    tr_fallback: 'NemoClaw did not answer — switched to direct mode',
+    tr_table: 'Show the table', tr_download: 'Download the Excel report',
+    tool_get_dataset_info: 'Read the Excel file', tool_analyze_sales: 'Analyse with pandas',
+    tool_create_chart: 'Draw a chart with matplotlib', tool_export_excel_report: 'Export an Excel report',
+    an_title: 'Insight', an_meta: '{s}s total · {n} tool calls · {r}', an_route_nc: 'via NemoClaw', an_route_direct: 'direct mode',
+    err_busy: 'The agent is busy with another question. Wait a moment.',
+    err_generic: 'Something went wrong: {e}',
+    err_tools: 'The Python tools are not installed — run ./setup.sh.'
+  },
+  vi: {
+    app_title: 'Workshop AI trên DGX Spark',
+    app_sub: 'Ba bài thực hành · chạy 100% trên máy này',
+    chip_agent: 'Agent',
+    tab_home: 'Tổng quan', tab_lab1: '1 · Tinh chỉnh', tab_lab2: '2 · RAG', tab_lab3: '3 · Agent',
+    home_h1: 'Tinh chỉnh, truy xuất và điều phối AI cục bộ — trên một máy DGX Spark',
+    home_p: 'Mọi mô hình, tài liệu và lệnh gọi công cụ trong workshop đều chạy trên máy này. Không có dữ liệu nào được gửi lên đám mây.',
+    lab1_title: 'Bài 1 · Tinh chỉnh mô hình ngôn ngữ cục bộ',
+    lab1_desc: 'Dạy một mô hình mở nhỏ danh tính, cách trả lời và phạm vi hỗ trợ mới bằng LoRA chỉ trong vài phút trên GPU — rồi so sánh song song với bản gốc.',
+    lab2_title: 'Bài 2 · Xây dựng RAG với NemoClaw',
+    lab2_desc: 'Hỏi 28 tài liệu kỹ thuật bất cứ điều gì. Việc truy xuất chạy trong sandbox NemoClaw, và mỗi câu trả lời đều kèm đoạn tài liệu gốc.',
+    lab3_title: 'Bài 3 · Xây dựng quy trình Agent',
+    lab3_desc: 'Hỏi về doanh số bằng tiếng Việt. Agent NemoClaw tự đọc file Excel, gọi công cụ Python, vẽ biểu đồ và xuất báo cáo Excel.',
+    open: 'Mở',
+    st_ready: '✓ Sẵn sàng', st_reduced: '! Chế độ trực tiếp', st_missing: '✗ Chưa cài đặt',
+    arch_title: 'Thành phần nào chạy ở đâu',
+    arch_models: 'Ollama · mô hình cục bộ',
+    arch_sandbox: 'Sandbox NemoClaw',
+    arch_sandbox_d: 'OpenShell cô lập một agent OpenClaw: agent chỉ truy cập được những gì chính sách cho phép. Sandbox chứa bộ tìm kiếm tài liệu (RAG) và agent phân tích doanh số.',
+    arch_app: 'Ứng dụng workshop',
+    arch_app_d: 'Chính trang này. Nó khởi chạy việc tinh chỉnh, thực thi các công cụ Python mà agent yêu cầu, và hiển thị từng bước.',
+    footer1: 'Aurora Grid Systems là công ty hư cấu; tài liệu và số liệu bán hàng đều là dữ liệu tổng hợp.',
+    footer2: 'NVIDIA DGX Spark · NemoClaw (OpenShell + OpenClaw) · Ollama · Qwen',
+
+    l1_h: 'Tinh chỉnh mô hình cục bộ trong vài phút',
+    l1_p: 'LoRA chỉ huấn luyện thêm vài triệu tham số trên một mô hình mở được giữ nguyên. Ở đây Qwen2.5-1.5B học trở thành “Aurora” — trợ lý kỹ thuật của Aurora Grid: tên của nó, cách trình bày câu trả lời và những gì nên từ chối.',
+    f1_data: 'Dữ liệu huấn luyện', f1_train: 'LoRA trên GPU', f1_gguf: 'Gộp + GGUF', f1_ollama: 'Phục vụ bằng Ollama', f1_compare: 'So sánh', f1_compare_d: 'trước ↔ sau',
+    data_title: 'Dữ liệu huấn luyện', data_count: '{n} ví dụ',
+    data_note: 'Danh tính, định dạng trả lời có chữ ký, từ chối lịch sự, và một số thông số sản phẩm.',
+    view_all: 'Xem tất cả ví dụ',
+    train_title: 'Huấn luyện', base_model: 'Mô hình gốc', epochs: 'Số vòng (epoch)', lr: 'Tốc độ học', rank: 'Hạng LoRA',
+    start: 'Bắt đầu tinh chỉnh', cancel: 'Dừng',
+    tr_image_missing: 'Chưa dựng container huấn luyện — hãy chạy ./setup.sh.',
+    tr_no_gpu: 'Không tìm thấy GPU NVIDIA trên máy này nên không huấn luyện được. Phần so sánh bên dưới vẫn hoạt động.',
+    tr_docker_missing: 'Chưa cài Docker.', tr_docker_unreachable: 'Docker không phản hồi.',
+    tr_busy: 'Đang có một lượt huấn luyện chạy.',
+    st_queued: 'Đang khởi động…', st_download: 'Đang tải mô hình gốc', st_start: 'PyTorch đã sẵn sàng trên {gpu}',
+    st_load_model: 'Đang nạp mô hình gốc', st_data: 'Đang mã hoá {n} ví dụ',
+    st_lora: 'Đã gắn bộ LoRA: {m} tham số được huấn luyện ({p}% mô hình)',
+    st_train: 'Đang huấn luyện · bước {s}/{t} · loss {l}', st_sample: 'Đang thử trọng số mới',
+    st_merge: 'Đang gộp LoRA vào trọng số', st_saved: 'Đã lưu mô hình sau khi gộp',
+    st_convert: 'Đang chuyển sang GGUF bằng llama.cpp', st_converted: 'Đã tạo GGUF ({mb} MB)',
+    st_register: 'Đang thêm mô hình vào Ollama', st_registered: 'Đã thêm mô hình vào Ollama', st_test: 'Đang hỏi mô hình mới: bạn là ai?',
+    st_finished: 'Xong — “{model}” đã sẵn sàng. Hãy so sánh bên dưới.', st_error: 'Lỗi: {msg}', st_cancelled: 'Đã dừng',
+    loss_title: 'Hàm mất mát (loss)', loss_hint: 'Càng thấp càng tốt: câu trả lời của mô hình ngày càng giống dữ liệu huấn luyện.',
+    sample_label: 'Mô hình mới trả lời:',
+    last_run: 'Lần chạy gần nhất: {steps} bước, {sec} giây huấn luyện trên {dev}.',
+    log_label: 'Nhật ký kỹ thuật',
+    cmp_title: 'Trước và sau khi tinh chỉnh', cmp_ask: 'So sánh', cmp_before: 'Trước', cmp_after: 'Sau',
+    cmp_placeholder: 'Hỏi cả hai mô hình cùng một câu…',
+    cmp_hint: 'Các câu hỏi này được diễn đạt khác với dữ liệu huấn luyện:',
+    cmp_missing: 'Mô hình “{m}” chưa có trong Ollama — hãy huấn luyện ở trên, hoặc chạy ./setup.sh.',
+    cmp_note: 'Cả hai mô hình nhận cùng một system prompt — trong đó ghi rõ “You are Qwen, created by Alibaba Cloud”. Chỉ có trọng số là khác nhau.',
+    seconds: '{s} giây',
+
+    l2_h1: 'Hỏi tài liệu bất cứ điều gì',
+    l2_sub: 'Không cần tra mục lục, không cần số trang. Nhập câu hỏi và nhận câu trả lời kèm đúng đoạn tài liệu gốc — để bạn tự kiểm chứng.',
+    f2_q: 'Câu hỏi', f2_q_d: 'tiếng Việt hoặc tiếng Anh', f2_embed: 'Vector hoá', f2_search: 'Tìm kiếm', f2_search_d: 'bộ nhớ NemoClaw', f2_answer: 'Trả lời', f2_answer_d: '+ nguồn',
+    l2_placeholder: 'ví dụ: Tủ được làm mát bằng chất lỏng dùng dung dịch gì?',
+    l2_ask: 'Hỏi', l2_hint: 'Nhấn Enter hoặc bấm Hỏi. Câu trả lời chỉ lấy từ tài liệu của Aurora Grid.',
+    l2_pipeline: 'Quy trình đang chạy',
+    step_search: 'Đang tìm trong {n} tài liệu', step_search_d: 'Chuyển câu hỏi thành vector số và so sánh với từng phần của tài liệu',
+    step_found: 'Tìm thấy {n} đoạn liên quan', step_found_d: 'Hoàn thành trong {s} giây',
+    step_generate: 'Đang viết câu trả lời', step_generate_d: 'Mô hình đọc các đoạn trên và chỉ trả lời dựa vào đó',
+    step_done: 'Xong sau {s} giây',
+    l2_answer: 'Câu trả lời', l2_youasked: 'Bạn đã hỏi:',
+    l2_noanswer: 'Mô hình không trả về câu trả lời. Vui lòng thử lại.',
+    l2_unreach: 'Không kết nối được với chỉ mục tài liệu. Hãy kiểm tra máy chủ mô hình.',
+    l2_unreach2: 'Đã tìm thấy tài liệu liên quan nhưng không kết nối được với mô hình ngôn ngữ để tóm tắt.',
+    l2_sources: 'Nguồn của câu trả lời', l2_sources_hint: 'Bấm vào từng dòng để đọc đúng đoạn tài liệu làm căn cứ.',
+    l2_docs_used: 'đã dùng {n} tài liệu', l2_total: 'tổng {s} giây', l2_via: 'truy xuất qua {v}',
+    via_sandbox: 'sandbox NemoClaw', via_local: 'chỉ mục cục bộ',
+    l2_trythese: 'Thử các câu hỏi sau', l2_library: 'Thư viện tài liệu',
+    l2_library_sub: 'Toàn bộ tài liệu mà trợ lý được phép đọc. Bấm vào một tài liệu để xem.',
+    l2_how: 'Cách hoạt động — và vì sao có thể tin được',
+    l2_how_p1: 'Câu hỏi của bạn được chuyển thành một vector — một “dấu vân tay” bằng số — rồi so sánh với từng phần của mọi tài liệu. Những đoạn gần nhất được đưa cho mô hình chạy ngay trên máy này, và mô hình chỉ trả lời dựa trên các đoạn đó.',
+    l2_chain1: 'Câu hỏi của bạn', l2_chain2: 'Tìm trong mọi tài liệu', l2_chain3: 'Các đoạn khớp nhất', l2_chain4: 'Câu trả lời + nguồn',
+    l2_how_p2: 'Hệ thống không thể bịa từ internet, vì nó không hề truy cập internet. Nếu tài liệu không có câu trả lời, nó sẽ nói rõ.',
+    l2_how_note: 'Phần khó không phải là tìm văn bản tương tự — mà là biết văn bản nào còn đúng. Tài liệu có một hướng dẫn an toàn đã bị thu hồi. Cả hai phiên bản vẫn còn trong thư viện. Hãy hỏi về thời gian chờ sau khi ngắt DC và xem hệ thống trả lời bản nào.',
+
+    l3_h: 'Hỏi dữ liệu bằng tiếng Việt',
+    l3_p: 'AI tự đọc file Excel, phân tích bằng pandas, vẽ biểu đồ bằng matplotlib và xuất báo cáo Excel. NemoClaw điều phối việc suy luận và gọi công cụ; Python lo phần tính toán.',
+    f3_user: 'Người dùng', f3_user_d: '“Phân tích doanh số”', f3_nc_d: 'Suy luận · Gọi công cụ', f3_out: 'Kết quả', f3_out_d: 'Biểu đồ · Nhận định',
+    ds_title: 'Tệp dữ liệu', ds_meta: '{n} dòng · {c} cột · trang “{s}”', ds_preview: 'Xem trước các dòng đầu',
+    ds_download: 'Tải xuống', ds_upload: 'Tải lên file .xlsx / .csv của bạn', ds_reset: 'Dùng dữ liệu mẫu',
+    ds_uploading: 'Đang tải lên…', ds_bad: 'Không đọc được tệp: {e}',
+    l3_placeholder: 'ví dụ: Khu vực nào tăng trưởng tốt nhất?', l3_ask: 'Phân tích',
+    route_label: 'Tuyến ', route_auto: 'Tự động', route_dir: 'Trực tiếp',
+    route_nemoclaw: 'Điều phối bởi NemoClaw · agent {agent} trong sandbox',
+    route_direct: 'Chế độ trực tiếp · {model} · chưa kết nối NemoClaw',
+    open_control: 'Mở giao diện OpenClaw',
+    tr_title: 'Agent đang làm gì',
+    tr_start_nc: 'Câu hỏi được gửi tới agent NemoClaw {agent} (mô hình {model})',
+    tr_start_direct: 'Câu hỏi được gửi thẳng tới {model} (chế độ dự phòng)',
+    tr_thinking: 'Đang suy luận… (bước {n})', tr_thought: 'Quyết định sau {s} giây → gọi {k} công cụ',
+    tr_final: 'Quyết định sau {s} giây → viết nhận định', tr_call: 'gọi', tr_result: 'xong sau {s} giây',
+    tr_error: 'Công cụ báo lỗi — agent sẽ đọc lỗi và thử lại',
+    tr_fallback: 'NemoClaw không phản hồi — chuyển sang chế độ trực tiếp',
+    tr_table: 'Xem bảng', tr_download: 'Tải báo cáo Excel',
+    tool_get_dataset_info: 'Đọc file Excel', tool_analyze_sales: 'Phân tích bằng pandas',
+    tool_create_chart: 'Vẽ biểu đồ bằng matplotlib', tool_export_excel_report: 'Xuất báo cáo Excel',
+    an_title: 'Nhận định', an_meta: 'tổng {s} giây · {n} lệnh gọi công cụ · {r}', an_route_nc: 'qua NemoClaw', an_route_direct: 'chế độ trực tiếp',
+    err_busy: 'Agent đang xử lý câu hỏi khác. Vui lòng chờ một chút.',
+    err_generic: 'Có lỗi xảy ra: {e}',
+    err_tools: 'Chưa cài công cụ Python — hãy chạy ./setup.sh.'
+  }
+};
+
+let LANG = 'vi';
+try { LANG = localStorage.getItem('dgx-lang') || 'vi'; } catch (e) {}
+function t(k, vars){
+  let s = (I18N[LANG] && I18N[LANG][k]) || I18N.en[k] || k;
+  if (vars) for (const [a, b] of Object.entries(vars)) s = s.split('{' + a + '}').join(b);
+  return s;
+}
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+function esc(s){ return (s == null ? '' : String(s)).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function num(v, d){ const n = Number(v); if (!isFinite(n)) return String(v);
+  return n.toLocaleString(LANG === 'vi' ? 'vi-VN' : 'en-US', {maximumFractionDigits: d == null ? 1 : d}); }
+function secs(v){ return t('seconds', {s: num(v, 1)}); }
+
+/* Minimal, safe markdown: **bold**, bullet lines, paragraphs. */
+function md(text){
+  const lines = esc(text || '').split('\n');
+  let html = '', list = false;
+  for (let line of lines){
+    const m = line.match(/^\s*(?:[-*•]|\d+[.)])\s+(.*)$/);
+    const bold = s => s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    if (m){ if (!list){ html += '<ul>'; list = true; } html += '<li>' + bold(m[1]) + '</li>'; continue; }
+    if (list){ html += '</ul>'; list = false; }
+    if (line.trim()) html += '<p>' + bold(line.replace(/^#{1,6}\s*/, '')) + '</p>';
+  }
+  if (list) html += '</ul>';
+  return html;
+}
+
+/* Read a newline-delimited JSON stream and call onEvent for each object. */
+async function streamNDJSON(url, body, onEvent, method){
+  const opts = method === 'GET' ? {method: 'GET'} :
+    {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body || {})};
+  const res = await fetch(url, opts);
+  if (!res.ok || !res.body){
+    let detail = 'HTTP ' + res.status;
+    try { const j = await res.json(); detail = j.error || j.reason || detail; } catch (e) {}
+    throw new Error(detail);
+  }
+  const reader = res.body.getReader(), dec = new TextDecoder();
+  let buf = '';
+  for (;;){
+    const {done, value} = await reader.read();
+    if (done) break;
+    buf += dec.decode(value, {stream: true});
+    let i;
+    while ((i = buf.indexOf('\n')) >= 0){
+      const line = buf.slice(0, i); buf = buf.slice(i + 1);
+      if (line.trim()){ try { onEvent(JSON.parse(line)); } catch (e) { console.warn(e); } }
+    }
+  }
+  if (buf.trim()){ try { onEvent(JSON.parse(buf)); } catch (e) {} }
+}
+
+/* ========================================================== language === */
+function applyLang(){
+  document.documentElement.lang = LANG;
+  $$('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
+  $('#l1-q').placeholder = t('cmp_placeholder');
+  $('#l2-q').placeholder = t('l2_placeholder');
+  $('#l3-q').placeholder = t('l3_placeholder');
+  $$('.lang button').forEach(b => b.classList.toggle('on', b.dataset.lang === LANG));
+  renderHomeStatus(); lab1Render(); lab2Examples(); lab3Examples(); lab3RouteBadge(); lab3Dataset();
+  if (L2.last) lab2RenderAnswer(L2.last);
+  if (L2.sources) lab2RenderSources(L2.sources);
+}
+$$('.lang button').forEach(b => b.addEventListener('click', () => {
+  LANG = b.dataset.lang;
+  try { localStorage.setItem('dgx-lang', LANG); } catch (e) {}
+  applyLang();
+}));
+
+/* ============================================================== tabs === */
+function showTab(name){
+  if (!['home', 'lab1', 'lab2', 'lab3'].includes(name)) name = 'home';
+  $$('section.tab').forEach(s => s.classList.toggle('on', s.id === 'tab-' + name));
+  $$('nav.tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === name));
+  if (location.hash !== '#' + name) history.replaceState(null, '', '#' + name);
+  window.scrollTo({top: 0});
+}
+$$('nav.tabs button').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
+$$('[data-go]').forEach(b => b.addEventListener('click', () => showTab(b.dataset.go)));
+window.addEventListener('hashchange', () => showTab(location.hash.slice(1)));
+
+/* ============================================================= modal === */
+function openModal(title, sub, html){
+  $('#m-title').textContent = title; $('#m-sub').textContent = sub || '';
+  $('#m-body').innerHTML = html; $('#modal').classList.add('on');
+}
+function closeModal(){ $('#modal').classList.remove('on'); }
+$('#m-close').addEventListener('click', closeModal);
+$('#modal').addEventListener('click', e => { if (e.target.id === 'modal') closeModal(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+/* ============================================================ health === */
+let HEALTH = null;
+async function health(){
+  try { HEALTH = await (await fetch('/api/health')).json(); } catch (e) { HEALTH = null; }
+  const h = HEALTH || {};
+  $('#d-ollama').className = 'dot' + (h.ollama ? ' on' : '');
+  $('#d-gpu').className = 'dot' + (h.gpu ? ' on' : '');
+  $('#c-gpu').textContent = h.gpu || 'GPU';
+  $('#d-sandbox').className = 'dot' + (h.sandbox && h.sandbox.ok ? ' on' : (h.sandbox && h.sandbox.checked ? ' warn' : ''));
+  $('#d-agent').className = 'dot' + (h.gateway && h.gateway.ready ? ' on' : '');
+  if (h.control_ui) $('#l3-control').href = h.control_ui;
+  if (h.chat_model){
+    $('#arch-models').textContent = [h.chat_model.name, h.embed_model && h.embed_model.name, L1.info && L1.info.base_model, L1.info && L1.info.tuned_model]
+      .filter(Boolean).join(' · ');
+  }
+  if (h.doc_count) L2.docCount = h.doc_count;
+  renderHomeStatus();
+}
+function renderHomeStatus(){
+  const h = HEALTH || {};
+  const s = (ok, reduced) => ok ? `<span class="pill">${esc(t('st_ready'))}</span>`
+                         : reduced ? `<span class="pill amber">${esc(t('st_reduced'))}</span>`
+                         : `<span class="pill gray">${esc(t('st_missing'))}</span>`;
+  const i1 = L1.info || {};
+  $('#home-s1').innerHTML = s(i1.tuned_ready && i1.trainer && i1.trainer.ready, i1.tuned_ready || i1.base_ready);
+  $('#home-s2').innerHTML = s(h.sandbox && h.sandbox.ok, h.ollama);
+  $('#home-s3').innerHTML = s(h.gateway && h.gateway.ready, h.ollama);
+}
+
+/* ============================================================= LAB 1 === */
+const L1 = {info: null, losses: [], total: 0, running: false, stage: '', logs: [], from: 0, following: false};
+
+async function lab1Load(){
+  try { L1.info = await (await fetch('/api/lab1/info')).json(); } catch (e) { return; }
+  lab1Render();
+  if (L1.info.job && L1.info.job.running && !L1.following) lab1Follow(0);
+}
+
+function lab1Render(){
+  const i = L1.info;
+  if (!i) return;
+  const ds = i.dataset || {};
+  $('#l1-count').textContent = t('data_count', {n: ds.count || 0});
+  $('#f1-data-d').textContent = t('data_count', {n: ds.count || 0});
+  $('#l1-base').textContent = i.base_hf;
+  $('#f1-ollama-d').textContent = i.tuned_model;
+  $('#l1-mbase').textContent = i.base_model;
+  $('#l1-mtuned').textContent = i.tuned_model;
+  $('#l1-examples').innerHTML = (ds.examples || []).slice(0, 4).map(e =>
+    `<div class="ex"><div class="q">${esc(e.q)}</div><div class="a">${esc(e.a)}</div></div>`).join('');
+  const qs = ((ds.eval || {})[LANG] || []).map(x => x.q);
+  $('#l1-chips').innerHTML = qs.map(q => `<button type="button" class="qchip" data-q="${esc(q)}">${esc(q)}</button>`).join('');
+  $$('#l1-chips .qchip').forEach(c => c.addEventListener('click', () => { $('#l1-q').value = c.dataset.q; lab1Compare(); }));
+  const tr = i.trainer || {};
+  const startBtn = $('#l1-start');
+  startBtn.disabled = !tr.ready || L1.running;
+  $('#l1-trainer').innerHTML = tr.ready ? '' : `<div class="note">${esc(t('tr_' + (tr.reason || 'image_missing')))}</div>`;
+  const lr = i.last_run;
+  $('#l1-last').textContent = lr ? t('last_run', {steps: lr.steps, sec: num(lr.train_seconds, 0), dev: lr.device}) : '';
+  lab1Flow(L1.stage || (i.tuned_ready ? 'finished' : ''));
+}
+
+function lab1Flow(stage){
+  const order = ['data', 'train', 'gguf', 'ollama', 'compare'];
+  const map = {queued: 'data', download: 'data', start: 'train', load_model: 'train', data: 'train', lora: 'train',
+    train_start: 'train', train: 'train', sample: 'train', merge: 'gguf', saved: 'gguf', convert: 'gguf', converted: 'gguf',
+    register: 'ollama', registered: 'ollama', test: 'ollama', finished: 'compare'};
+  const cur = map[stage];
+  const idx = cur ? order.indexOf(cur) : -1;
+  $$('#flow1 .fnode').forEach((n, k) => {
+    const done = stage === 'finished' ? true : k < idx;
+    n.classList.toggle('done', done);
+    n.classList.toggle('active', k === idx && stage !== 'finished' && L1.running);
+  });
+  const links = $$('#flow1 .flink');
+  links.forEach((l, k) => l.classList.toggle('live', k < idx || stage === 'finished'));
+}
+
+async function lab1Start(){
+  const body = {epochs: $('#p-epochs').value, lr: $('#p-lr').value, rank: $('#p-rank').value};
+  L1.losses = []; L1.total = 0; L1.logs = []; L1.stage = 'queued';
+  $('#l1-sample').style.display = 'none';
+  $('#l1-log').textContent = '';
+  let res, j = {};
+  try { res = await fetch('/api/lab1/train', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});
+        j = await res.json(); } catch (e) { j = {error: String(e)}; }
+  if (!res || !res.ok){
+    $('#l1-trainer').innerHTML = `<div class="err">${esc(j.error === 'trainer_not_ready' ? t('tr_' + j.reason) : j.job === 'busy' ? t('tr_busy') : (j.error || j.job || 'error'))}</div>`;
+    return;
+  }
+  lab1Follow(0);
+}
+
+async function lab1Follow(from){
+  if (L1.following) return;
+  L1.following = true; L1.running = true;
+  $('#l1-progress').style.display = 'block';
+  $('#l1-start').disabled = true;
+  $('#l1-cancel').style.display = 'inline-block';
+  try { await streamNDJSON('/api/lab1/stream?from=' + from, null, lab1Event, 'GET'); }
+  catch (e) { lab1Stage('error', {msg: String(e.message || e)}); }
+  L1.following = false; L1.running = false;
+  $('#l1-cancel').style.display = 'none';
+  await lab1Load();
+}
+
+function lab1Stage(key, vars){
+  const spinning = L1.running && !['finished', 'error', 'cancelled'].includes(key);
+  $('#l1-stage').innerHTML = (spinning ? '<span class="spin"></span>' : (key === 'finished' ? '✅' : key === 'error' ? '⚠️' : ''))
+    + ' <span>' + esc(t('st_' + key, vars)) + '</span>';
+}
+
+function lab1Event(ev){
+  const st = ev.stage;
+  if (st === 'heartbeat') return;
+  if (st === 'log'){ L1.logs.push(ev.line); if (L1.logs.length > 200) L1.logs.shift();
+    $('#l1-log').textContent = L1.logs.join('\n'); return; }
+  if (st === 'exit'){
+    if (ev.code !== 0 && L1.stage !== 'error'){ lab1Stage(ev.code === 130 ? 'cancelled' : 'error', {msg: 'exit ' + ev.code}); }
+    return;
+  }
+  L1.stage = st;
+  const i = L1.info || {};
+  if (st === 'start') lab1Stage('start', {gpu: ev.gpu || ev.device});
+  else if (st === 'data') lab1Stage('data', {n: ev.examples});
+  else if (st === 'lora') lab1Stage('lora', {m: num(ev.trainable, 0), p: num(ev.pct, 2)});
+  else if (st === 'train_start'){ L1.total = ev.total_steps; lab1Stage('train', {s: 0, t: ev.total_steps, l: '—'}); }
+  else if (st === 'train'){
+    L1.total = ev.total || L1.total;
+    L1.losses.push(ev.loss);
+    lab1Stage('train', {s: ev.step, t: ev.total, l: num(ev.loss, 3)});
+    $('#l1-bar').style.width = Math.round(100 * ev.step / Math.max(1, ev.total)) + '%';
+    $('#l1-sub').textContent = secs(ev.elapsed) + ' · epoch ' + ev.epoch;
+    $('#l1-lastloss').textContent = 'loss ' + num(ev.loss, 3);
+    lab1Loss();
+  }
+  else if (st === 'sample' || st === 'test'){
+    if (st === 'sample') lab1Stage('sample');
+    else lab1Stage('test');
+    if (ev.answer){ $('#l1-sample').style.display = 'block';
+      $('#l1-sample').innerHTML = `<b>${esc(t('sample_label'))}</b>\n${esc(ev.answer)}`; }
+  }
+  else if (st === 'converted') lab1Stage('converted', {mb: num(ev.size_mb, 0)});
+  else if (st === 'finished'){ $('#l1-bar').style.width = '100%'; L1.running = false; lab1Stage('finished', {model: ev.model || i.tuned_model}); }
+  else if (st === 'error'){ L1.running = false; lab1Stage('error', {msg: ev.message || ''}); }
+  else if (I18N.en['st_' + st]) lab1Stage(st);
+  lab1Flow(st);
+}
+
+function lab1Loss(){
+  const svg = $('#l1-loss'), W = 600, H = 190, P = 26;
+  const ys = L1.losses; if (!ys.length) { svg.innerHTML = ''; return; }
+  const n = Math.max(L1.total || ys.length, 2);
+  const max = Math.max(...ys), min = Math.min(0, Math.min(...ys));
+  const x = i => P + (W - P - 8) * (i / (n - 1));
+  const y = v => 8 + (H - 8 - P) * (1 - (v - min) / Math.max(1e-9, max - min));
+  const pts = ys.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+  const area = `${x(0).toFixed(1)},${(H - P).toFixed(1)} ${pts} ${x(ys.length - 1).toFixed(1)},${(H - P).toFixed(1)}`;
+  const grid = [0, .25, .5, .75, 1].map(f => {
+    const v = min + (max - min) * f, yy = y(v).toFixed(1);
+    return `<line x1="${P}" x2="${W - 8}" y1="${yy}" y2="${yy}" stroke="#e2e8f0" stroke-width="1"/>` +
+           `<text x="2" y="${(+yy + 4).toFixed(1)}" font-size="11" fill="#64748b">${num(v, 2)}</text>`;
+  }).join('');
+  svg.innerHTML = grid +
+    `<polygon points="${area}" fill="rgba(118,185,0,.12)"/>` +
+    `<polyline points="${pts}" fill="none" stroke="#76b900" stroke-width="2.5" stroke-linejoin="round"/>` +
+    `<text x="${W - 8}" y="${H - 6}" font-size="11" fill="#64748b" text-anchor="end">${ys.length} / ${n}</text>`;
+}
+
+async function lab1Compare(){
+  const q = $('#l1-q').value.trim(); if (!q) return;
+  const btn = $('#l1-ask'); if (btn.disabled) return;
+  btn.disabled = true;
+  const buf = {base: '', tuned: ''};
+  ['base', 'tuned'].forEach(s => { $('#l1-a-' + s).innerHTML = '<span class="spin"></span>'; $('#l1-m-' + s).textContent = ''; });
+  lab1Flow('finished');
+  try {
+    await streamNDJSON('/api/lab1/compare', {question: q, lang: LANG}, ev => {
+      const s = ev.side; if (!s) return;
+      if (ev.text){ buf[s] += ev.text; $('#l1-a-' + s).textContent = buf[s]; }
+      if (ev.error){
+        const name = s === 'base' ? (L1.info || {}).base_model : (L1.info || {}).tuned_model;
+        $('#l1-a-' + s).innerHTML = `<div class="note">${esc(ev.error === 'model_missing' ? t('cmp_missing', {m: ev.model || name}) : ev.error)}</div>`;
+      }
+      if (ev.done) $('#l1-m-' + s).textContent = secs(ev.seconds);
+    });
+  } catch (e) {
+    ['base', 'tuned'].forEach(s => { if (!buf[s]) $('#l1-a-' + s).innerHTML = `<div class="err">${esc(t('err_generic', {e: e.message || e}))}</div>`; });
+  }
+  btn.disabled = false;
+}
+
+$('#l1-start').addEventListener('click', lab1Start);
+$('#l1-cancel').addEventListener('click', () => fetch('/api/lab1/cancel', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}'}));
+$('#l1-ask').addEventListener('click', lab1Compare);
+$('#l1-q').addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); lab1Compare(); } });
+$('#l1-all').addEventListener('click', () => {
+  const all = ((L1.info || {}).dataset || {}).all || [];
+  openModal(t('data_title'), t('data_count', {n: all.length}),
+    all.map(e => `<div class="ex" style="margin-bottom:9px"><div class="q">${esc(e.q)}</div><div style="white-space:pre-wrap;font-size:13.5px;color:#475569">${esc(e.a)}</div></div>`).join(''));
+});
+
+/* ============================================================= LAB 2 === */
+const L2 = {examples: null, docCount: 28, busy: false, last: null, sources: null, max: 1, q: '', text: ''};
+
+async function lab2Load(){
+  try { L2.examples = (await (await fetch('/api/lab2/examples')).json()).examples; } catch (e) { L2.examples = {en: [], vi: []}; }
+  lab2Examples();
+  try {
+    const d = await (await fetch('/api/lab2/corpus')).json();
+    const docs = d.documents || [];
+    L2.docCount = docs.length || L2.docCount;
+    $('#l2-libcount').textContent = docs.length;
+    $('#l2-docs').innerHTML = docs.map(x => `<div class="doc" data-doc="${esc(x.doc)}"><div class="dt">${esc(x.title)}</div><div class="dp">${esc(x.preview)}</div></div>`).join('');
+    $$('#l2-docs .doc').forEach(el => el.addEventListener('click', () => lab2OpenDoc(el.dataset.doc)));
+  } catch (e) {}
+}
+
+function lab2Examples(){
+  if (!L2.examples) return;
+  const groups = L2.examples[LANG] || L2.examples.en || [];
+  $('#l2-examples').innerHTML = groups.map(g => `<h3>${esc(g.group)}</h3><div class="qchips">` +
+    g.items.map(q => `<button type="button" class="qchip${/disconnect|5-minute|ngắt|5 phút/i.test(q) ? ' hero' : ''}" data-q="${esc(q)}">${esc(q)}</button>`).join('') + '</div>').join('');
+  $$('#l2-examples .qchip').forEach(c => c.addEventListener('click', () => { $('#l2-q').value = c.dataset.q; lab2Ask(); }));
+}
+
+async function lab2OpenDoc(name){
+  try {
+    const d = await (await fetch('/api/lab2/doc?name=' + encodeURIComponent(name))).json();
+    const txt = String(d.text || '').replace(/\*\*(.+?)\*\*/g, '$1').replace(/^#{1,6}\s*/gm, '');
+    openModal(d.title || name, d.doc || '', esc(txt));
+  } catch (e) {}
+}
+
+function lab2Flow(active){
+  const order = ['q', 'embed', 'search', 'answer'];
+  const idx = order.indexOf(active);
+  $$('#flow2 .fnode').forEach((n, k) => { n.classList.toggle('active', k === idx); n.classList.toggle('done', active === 'done' || k < idx); });
+  $$('#flow2 .flink').forEach((l, k) => l.classList.toggle('live', active === 'done' || k < idx));
+}
+
+const L2STEPS = ['search', 'found', 'generate', 'done'];
+function lab2Paint(active, detail){
+  const cur = L2STEPS.indexOf(active);
+  $('#l2-steps').innerHTML = L2STEPS.map((id, idx) => {
+    const state = idx < cur ? 'done' : idx === cur ? 'active' : 'pending';
+    const vars = {n: id === 'found' ? ((detail && detail.n) || '') : L2.docCount, s: (detail && detail.s) || ''};
+    const icon = state === 'done' ? '✓' : state === 'active' ? '<span class="spin"></span>' : (idx + 1);
+    const d = t('step_' + id + '_d', vars);
+    return `<div class="pstep ${state}"><div class="pdot">${icon}</div><div><div class="ptitle">${esc(t('step_' + id, vars))}</div>` +
+      (state !== 'pending' && d !== 'step_' + id + '_d' ? `<div class="pdetail">${esc(d)}</div>` : '') + '</div></div>';
+  }).join('');
+}
+
+async function lab2Ask(){
+  const q = $('#l2-q').value.trim();
+  if (!q || L2.busy) return;
+  L2.busy = true; L2.q = q; L2.text = ''; L2.last = null; L2.sources = null;
+  $('#l2-go').disabled = true;
+  $('#l2-sources').style.display = 'none';
+  $('#l2-answer').style.display = 'none';
+  $('#l2-pipeline').style.display = 'block';
+  lab2Paint('search'); lab2Flow('embed');
+  let failed = false;
+  try {
+    await streamNDJSON('/api/lab2/ask/stream', {question: q, lang: LANG, k: 5}, ev => {
+      if (ev.event === 'retrieved'){
+        L2.sources = ev.sources || [];
+        lab2Paint('generate', {n: ev.count, s: num(ev.seconds)});
+        lab2Flow('answer');
+        lab2RenderSources(L2.sources);
+        $('#l2-answer').style.display = 'block';
+        $('#l2-answer').innerHTML = `<div class="label">${esc(t('l2_answer'))}</div><div class="qecho"><b>${esc(t('l2_youasked'))}</b> ${esc(q)}</div><div class="atext" id="l2-live"></div>`;
+      } else if (ev.event === 'delta'){
+        L2.text += ev.text; const el = $('#l2-live'); if (el) el.textContent = L2.text;
+      } else if (ev.event === 'answer'){
+        $('#l2-pipeline').style.display = 'none';
+        lab2Flow('done');
+        L2.last = ev; lab2RenderAnswer(ev);
+      } else if (ev.event === 'error'){ failed = true; }
+    });
+  } catch (e) { failed = true; }
+  if (failed){
+    $('#l2-pipeline').style.display = 'none';
+    $('#l2-answer').style.display = 'block';
+    $('#l2-answer').innerHTML = `<div class="label">${esc(t('l2_answer'))}</div><div class="err">${esc(t('l2_unreach'))}</div>`;
+    lab2Flow('');
+  }
+  L2.busy = false; $('#l2-go').disabled = false;
+}
+
+function lab2RenderAnswer(d){
+  const via = d.source === 'sandbox' ? t('via_sandbox') : d.source === 'local-index' ? t('via_local') : '—';
+  const body = d.error ? `<div class="err">${esc(t('l2_unreach2'))}</div>` :
+    (!d.answer ? `<div class="err">${esc(t('l2_noanswer'))}</div>` : `<div class="atext md">${md(d.answer)}</div>`);
+  $('#l2-answer').style.display = 'block';
+  $('#l2-answer').innerHTML = `<div class="label">${esc(t('l2_answer'))}</div>
+    <div class="qecho"><b>${esc(t('l2_youasked'))}</b> ${esc(L2.q)}</div>${body}
+    <div class="meta"><span>${esc(t('l2_docs_used', {n: (d.sources || []).length}))}</span>
+    <span>${esc(t('l2_total', {s: num(d.seconds)}))}</span><span>${esc(t('l2_via', {v: via}))}</span></div>`;
+}
+
+function lab2RenderSources(list){
+  if (!list || !list.length){ $('#l2-sources').style.display = 'none'; return; }
+  const max = Math.max(...list.map(s => s.score), 0.0001);
+  $('#l2-srclist').innerHTML = list.map((s, i) => {
+    const pct = Math.max(6, Math.round((s.score / max) * 100));
+    return `<div class="src"><div class="srchead"><span class="rank">${i + 1}</span><span class="srctitle">${esc(s.title)}</span>
+      <span class="sbar"><i style="width:${pct}%"></i></span><span class="spct">${Math.round(s.score * 100)}%</span></div>
+      <div class="passage">${esc(s.passage)}</div></div>`;
+  }).join('');
+  $$('#l2-srclist .src').forEach(el => el.querySelector('.srchead').addEventListener('click', () => el.classList.toggle('open')));
+  $('#l2-sources').style.display = 'block';
+}
+
+$('#l2-go').addEventListener('click', lab2Ask);
+$('#l2-q').addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); lab2Ask(); } });
+
+/* ============================================================= LAB 3 === */
+const L3 = {info: null, dataset: null, busy: false, t0: 0, clock: null, calls: 0, lastChart: null, text: '', stepEl: null, q: ''};
+try { L3.dataset = localStorage.getItem('dgx-dataset') || null; } catch (e) {}
+
+async function lab3Load(){
+  try { L3.info = await (await fetch('/api/lab3/info?dataset=' + encodeURIComponent(L3.dataset || ''))).json(); } catch (e) { return; }
+  lab3Examples(); lab3RouteBadge(); lab3Dataset();
+}
+
+function lab3Examples(){
+  const ex = (L3.info && L3.info.examples) || {};
+  const groups = ex[LANG] || ex.vi || [];
+  $('#l3-examples').innerHTML = groups.map((g, gi) => `<h3>${esc(g.group)}</h3><div class="qchips">` +
+    g.items.map(q => `<button type="button" class="qchip${gi === 0 ? ' hero' : ''}" data-q="${esc(q)}">${esc(q)}</button>`).join('') + '</div>').join('');
+  $$('#l3-examples .qchip').forEach(c => c.addEventListener('click', () => { $('#l3-q').value = c.dataset.q; lab3Run(); }));
+}
+
+function lab3RouteBadge(){
+  const i = L3.info; if (!i) return;
+  const nc = i.nemoclaw || {};
+  $('#l3-route').innerHTML = nc.ready
+    ? `<span class="pill">🛡️ ${esc(t('route_nemoclaw', {agent: nc.agent}))}</span>`
+    : `<span class="pill amber" title="${esc(nc.detail || '')}">⚡ ${esc(t('route_direct', {model: i.chat_model}))}</span>`;
+  if (!i.tools_ok) $('#l3-dserr').innerHTML = `<div class="err" style="margin-top:10px">${esc(t('err_tools'))}</div>`;
+}
+
+function lab3Dataset(){
+  const d = L3.info && L3.info.dataset;
+  if (!d || d.error){ if (d && d.error) $('#l3-dserr').innerHTML = `<div class="err" style="margin-top:10px">${esc(d.error)}</div>`; return; }
+  $('#l3-dsname').textContent = d.name;
+  $('#l3-dsmeta').textContent = t('ds_meta', {n: num(d.rows, 0), c: d.columns.length, s: d.sheet});
+  $('#l3-dsdl').href = '/api/lab3/dataset?name=' + encodeURIComponent(d.name);
+  $('#l3-reset').style.display = d.default ? 'none' : 'inline-block';
+  $('#l3-preview').innerHTML = '<table class="data"><thead><tr>' + d.columns.map(c => `<th>${esc(c)}</th>`).join('') +
+    '</tr></thead><tbody>' + d.preview.map(r => '<tr>' + r.map(v =>
+      // Years and months are integers: never group their digits ("2.024").
+      `<td>${esc(typeof v === 'number' && !Number.isInteger(v) ? num(v, 1) : v)}</td>`).join('') + '</tr>').join('') + '</tbody></table>';
+}
+
+function lab3Flow(active){
+  const order = ['user', 'nc', 'py', 'out'];
+  const idx = order.indexOf(active);
+  $$('#flow3 .fnode').forEach((n, k) => { n.classList.toggle('active', k === idx); n.classList.toggle('done', active === 'done' || (idx > 0 && k < idx)); });
+  $$('#flow3 .flink').forEach((l, k) => l.classList.toggle('live', active === 'done' || k < idx));
+}
+
+function traceAdd(kind, icon, title, sub, extra){
+  const el = document.createElement('div');
+  el.className = 'tstep k-' + kind;
+  el.innerHTML = `<div class="ticon">${icon}</div><div class="tbody"><div class="ttitle">${title}</div>` +
+    (sub ? `<div class="tsub">${sub}</div>` : '') + (extra || '') + '</div>';
+  $('#l3-trace').appendChild(el);
+  return el;
+}
+
+function argChips(args){
+  const entries = Object.entries(args || {});
+  if (!entries.length) return '';
+  return '<div class="args">' + entries.map(([k, v]) => {
+    let s = typeof v === 'string' ? v : JSON.stringify(v);
+    if (Array.isArray(v)) s = v.length + ' items';
+    return `<span class="arg" title="${esc(typeof v === 'string' ? v : JSON.stringify(v))}">${esc(k)}: ${esc(s)}</span>`;
+  }).join('') + '</div>';
+}
+
+function toolResultHtml(ev){
+  const ui = ev.ui || {};
+  if (!ev.ok){
+    let hint = ui.available_columns || ui.available_values;
+    return `<div class="err" style="margin-top:6px">${esc(ui.error || 'error')}` +
+      (hint ? `<div style="font-size:12.5px;margin-top:4px">→ ${esc(hint.slice(0, 12).join(', '))}</div>` : '') + '</div>';
+  }
+  if (ev.name === 'get_dataset_info'){
+    return `<div class="tsub">${esc(ui.summary || '')}</div>` + (ui.columns ? '<div class="args">' + ui.columns.map(c => `<span class="arg">${esc(c)}</span>`).join('') + '</div>' : '');
+  }
+  if (ev.name === 'analyze_sales'){
+    const hl = (ui.highlights || []).map(h => `<li>${esc(h)}</li>`).join('');
+    const tb = ui.table || {columns: [], rows: []};
+    const table = '<table class="data"><thead><tr>' + tb.columns.map(c => `<th>${esc(c)}</th>`).join('') + '</tr></thead><tbody>' +
+      tb.rows.map(r => '<tr>' + r.map(v => `<td>${esc(v)}</td>`).join('') + '</tr>').join('') + '</tbody></table>';
+    return `<ul class="hl">${hl}</ul><details style="margin-top:6px"><summary class="muted" style="cursor:pointer">${esc(t('tr_table'))}</summary><div class="tablewrap">${table}</div></details>`;
+  }
+  if (ev.name === 'create_chart' && ev.image_url){
+    return `<img class="thumb" src="${esc(ev.image_url)}" alt="${esc(ui.title || '')}" data-zoom="1">`;
+  }
+  if (ev.name === 'export_excel_report' && ev.file_url){
+    return `<a class="filebtn" href="${esc(ev.file_url)}">📥 ${esc(t('tr_download'))} · ${esc(ui.file || '')}</a>` +
+      (ui.sheets ? `<div class="tsub" style="margin-top:4px">${esc(ui.sheets.join(' · '))}</div>` : '');
+  }
+  return '';
+}
+
+function lab3Clock(on){
+  clearInterval(L3.clock);
+  if (on){ L3.clock = setInterval(() => { $('#l3-clock').textContent = secs((Date.now() - L3.t0) / 1000); }, 200); }
+}
+
+async function lab3Run(){
+  const q = $('#l3-q').value.trim();
+  if (!q || L3.busy) return;
+  L3.busy = true; L3.calls = 0; L3.lastChart = null; L3.text = ''; L3.q = q; L3.t0 = Date.now();
+  $('#l3-go').disabled = true;
+  $('#l3-trace').innerHTML = '';
+  $('#l3-tracecard').style.display = 'block';
+  $('#l3-answer').style.display = 'none';
+  $('#f3-user-d').textContent = '“' + (q.length > 42 ? q.slice(0, 40) + '…' : q) + '”';
+  lab3Flow('user');
+  lab3Clock(true);
+  $('#l3-tracecard').scrollIntoView({behavior: 'smooth', block: 'start'});
+  const route = $('#l3-routesel').value;
+  let thinking = null, sawError = false;
+  try {
+    await streamNDJSON('/api/lab3/run', {question: q, lang: LANG, route, dataset: L3.dataset}, ev => {
+      const e = ev.event;
+      if (e === 'start'){
+        const nc = ev.route === 'nemoclaw';
+        traceAdd('llm', nc ? '🛡️' : '⚡', esc(nc ? t('tr_start_nc', {agent: ev.agent, model: ev.model}) : t('tr_start_direct', {model: ev.model})),
+          esc(ev.data || ''));
+      } else if (e === 'fallback'){
+        traceAdd('err', '⚠️', esc(t('tr_fallback')), esc(ev.reason || ''));
+      } else if (e === 'llm'){
+        lab3Flow('nc');
+        thinking = traceAdd('llm', '🧠', '<span class="spin"></span> ' + esc(t('tr_thinking', {n: ev.step})));
+      } else if (e === 'llm_done'){
+        if (thinking){
+          thinking.querySelector('.ttitle').innerHTML = esc(ev.tool_calls ? t('tr_thought', {s: num(ev.seconds), k: ev.tool_calls}) : t('tr_final', {s: num(ev.seconds)}));
+          thinking = null;
+        }
+      } else if (e === 'thought'){
+        traceAdd('llm', '💭', esc(ev.text));
+      } else if (e === 'tool_call'){
+        L3.calls++;
+        lab3Flow('py');
+        const friendly = t('tool_' + ev.name);
+        L3.stepEl = traceAdd('call', '🐍', `${esc(friendly)} <span class="muted" style="font-weight:500">· ${esc(t('tr_call'))} <code>${esc(ev.name)}</code></span>`, '', argChips(ev.args));
+      } else if (e === 'tool_result'){
+        const el = L3.stepEl;
+        if (!ev.ok) sawError = true;
+        if (el){
+          el.classList.add(ev.ok ? 'k-res' : 'k-err');
+          el.querySelector('.ticon').textContent = ev.ok ? '✅' : '⚠️';
+          const tb = el.querySelector('.tbody');
+          tb.insertAdjacentHTML('beforeend', `<div class="tsub">${esc(ev.ok ? t('tr_result', {s: num(ev.seconds, 2)}) : t('tr_error'))}</div>` + toolResultHtml(ev));
+          tb.querySelectorAll('img[data-zoom]').forEach(img => img.addEventListener('click', () => openModal(img.alt || '', '', `<img src="${esc(img.src)}" alt="">`)));
+        }
+        if (ev.ok && ev.image_url) L3.lastChart = ev.image_url;
+      } else if (e === 'delta'){
+        L3.text += ev.text;
+      } else if (e === 'answer'){
+        lab3Flow('done');
+        lab3Answer(ev);
+      } else if (e === 'error'){
+        sawError = true;
+        const msg = ev.message === 'busy' ? t('err_busy') : /missing Python package/.test(ev.message || '') ? t('err_tools') : t('err_generic', {e: ev.message});
+        traceAdd('err', '⚠️', esc(msg));
+        lab3Flow('');
+      }
+    });
+  } catch (err) {
+    traceAdd('err', '⚠️', esc(t('err_generic', {e: err.message || err})));
+    lab3Flow('');
+  }
+  lab3Clock(false);
+  $('#l3-clock').textContent = secs((Date.now() - L3.t0) / 1000);
+  L3.busy = false; $('#l3-go').disabled = false;
+  lab3Load();
+}
+
+function lab3Answer(ev){
+  $('#l3-answer').style.display = 'block';
+  $('#l3-qecho').innerHTML = `<b>${esc(LANG === 'vi' ? 'Câu hỏi:' : 'Question:')}</b> ${esc(L3.q)}`;
+  $('#l3-text').innerHTML = md(ev.text || '');
+  $('#l3-meta').innerHTML = `<span>${esc(t('an_meta', {s: num(ev.seconds), n: L3.calls, r: ev.route === 'nemoclaw' ? t('an_route_nc') : t('an_route_direct')}))}</span>`;
+  const reports = (ev.files || []).filter(f => f.kind === 'report');
+  $('#l3-files').innerHTML = reports.map(f => `<a class="filebtn" href="${esc(f.url)}">📥 ${esc(t('tr_download'))} · ${esc(f.name)}</a>`).join(' ');
+  const chart = L3.lastChart || ((ev.files || []).find(f => f.kind === 'chart') || {}).url;
+  $('#l3-chart').innerHTML = chart ? `<img class="bigchart" src="${esc(chart)}" alt="chart">` : '';
+  const big = $('#l3-chart img');
+  if (big) big.addEventListener('click', () => openModal('', '', `<img src="${esc(big.src)}" alt="">`));
+  $('#l3-answer').scrollIntoView({behavior: 'smooth', block: 'start'});
+}
+
+$('#l3-go').addEventListener('click', lab3Run);
+$('#l3-q').addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); lab3Run(); } });
+$('#l3-upload').addEventListener('click', () => $('#l3-file').click());
+$('#l3-file').addEventListener('change', async () => {
+  const f = $('#l3-file').files[0]; if (!f) return;
+  $('#l3-dserr').innerHTML = `<div class="muted" style="margin-top:8px"><span class="spin"></span> ${esc(t('ds_uploading'))}</div>`;
+  try {
+    const res = await fetch('/api/lab3/upload', {method: 'POST', headers: {'X-Filename': encodeURIComponent(f.name)}, body: f});
+    const j = await res.json();
+    if (!res.ok) throw new Error(j.error || res.status);
+    L3.dataset = j.name;
+    try { localStorage.setItem('dgx-dataset', j.name); } catch (e) {}
+    $('#l3-dserr').innerHTML = '';
+    await lab3Load();
+  } catch (err) {
+    $('#l3-dserr').innerHTML = `<div class="err" style="margin-top:10px">${esc(t('ds_bad', {e: err.message || err}))}</div>`;
+  }
+  $('#l3-file').value = '';
+});
+$('#l3-reset').addEventListener('click', async () => {
+  L3.dataset = null;
+  try { localStorage.removeItem('dgx-dataset'); } catch (e) {}
+  await lab3Load();
+});
+
+/* ============================================================== init === */
+(async function init(){
+  applyLang();
+  showTab(location.hash.slice(1) || 'home');
+  await Promise.all([lab1Load(), lab2Load(), lab3Load()]);
+  applyLang();
+  health();
+  setInterval(health, 10000);
+  setInterval(() => { if (!L1.running) lab1Load(); }, 30000);
+})();
+</script>
+</body>
+</html>

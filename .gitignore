@@ -1,7 +1,11 @@
-# Local run artifacts — machine specific, not part of the lab
+# Local run state — machine specific, not part of the workshop
 .run/
+.venv/
 setup-log.txt
 *.log
+
+# Hands-on 1 training outputs (merged model, GGUF, adapter)
+hands-on-1-finetune/output/
 
 # Python
 __pycache__/
@@ -12,5 +16,5 @@ __pycache__/
 
 # Stale SQLite sidecars: shipping these alongside the fallback index can
 # corrupt a restore
-index/fallback/*.sqlite-wal
-index/fallback/*.sqlite-shm
+hands-on-2-rag/index/fallback/*.sqlite-wal
+hands-on-2-rag/index/fallback/*.sqlite-shm

@@ -310,3 +310,64 @@ Error: Failed to acquire lock on ~/.nemoclaw-portable-host.lock after 120 retrie
   --port <port>`. The port is **not** in the TOML; without `--port` it defaults
   to 17670 and the sandbox will never find it.
 - Recovery from a lost registry is unsolved. Prefer recreate.
+
+---
+
+## DGX Spark / Linux — what differs from the Mac, and what the scripts do about it
+
+These come from NemoClaw v0.0.124's own source and documentation (read on the
+authoring machine), not from a run on a Spark. They explain design decisions in
+`setup.sh` and `scripts/`.
+
+**Ollama stays on loopback.** On non-WSL Linux, NemoClaw binds Ollama to
+`127.0.0.1:11434` and starts a token-gated reverse proxy on `0.0.0.0:11435`;
+the sandbox's chat traffic goes `inference.local` → OpenShell L7 proxy (which
+injects the token) → `:11435` → Ollama. If Ollama is found on a non-loopback
+address, onboarding restarts it on loopback. `setup.sh` therefore writes
+`OLLAMA_HOST=127.0.0.1:11434` itself.
+
+**Memory search cannot reach loopback.** OpenClaw memory search (Lab 2) calls
+an embedding endpoint from inside the sandbox container, which cannot see the
+host's `127.0.0.1`. `scripts/embed-proxy.py` listens on the address the sandbox
+resolves `host.openshell.internal` to (found with `getent` inside the sandbox)
+and forwards only embedding endpoints for the configured model. The stock
+`local-inference` preset already allows `host.openshell.internal:11434` with the
+RFC 1918 `allowed_ips` the SSRF guard requires, so no policy changes.
+
+**Stop the proxy while onboarding.** Non-interactive onboarding without
+passwordless sudo verifies that every listener on port 11434 is loopback-only.
+`setup.sh` stops the proxy before `nemoclaw onboard` and starts it afterwards;
+do the same if you re-onboard by hand.
+
+**Context length.** NemoClaw writes an `OLLAMA_CONTEXT_LENGTH` floor into its
+systemd drop-in and keeps any higher existing value. `setup.sh` sets 32768 in
+`/etc/systemd/system/ollama.service.d/zz-workshop.conf` (sorted last, so it
+wins). OpenClaw's agent prompt plus tool definitions needs far more than
+Ollama's small default; with too little, prompts are silently truncated.
+
+**A host firewall can block the bridge.** If `ufw` is active, allow the
+OpenShell Docker network to reach both ports:
+
+```bash
+SUBNET=$(docker network inspect openshell-docker --format '{{(index .IPAM.Config 0).Subnet}}')
+sudo ufw allow from "$SUBNET" to any port 11435 proto tcp
+sudo ufw allow from "$SUBNET" to any port 11434 proto tcp
+```
+
+**Editing `openclaw.json` directly.** The sandbox uses NemoClaw's mutable config
+layout: `/sandbox/.openclaw/openclaw.json` is sandbox-owned and NemoClaw keeps a
+`.config-hash` next to it. NemoClaw's own config writer recomputes it with
+`sha256sum openclaw.json > .config-hash`; both sandbox scripts do the same after
+a direct write, then `nemoclaw <sandbox> gateway restart`. Edits survive a
+sandbox restart. A `rebuild` or a re-onboard with `--recreate-sandbox` starts
+from a fresh config, so re-run `bash setup.sh` afterwards.
+
+**Extra agents get their own workspace.** For every `agents.list[].workspace`
+of the form `/sandbox/.openclaw/workspace-<id>`, the sandbox entrypoint
+provisions the directory on start. The Lab 3 agent lives in
+`/sandbox/.openclaw/workspace-analyst`, with `AGENTS.md` uploaded there.
+
+**The OpenAI-compatible endpoint is off by default.** Lab 3 enables
+`gateway.http.endpoints.chatCompletions.enabled`. Treat the gateway token as
+full operator access: it stays on the host (`.run/gateway-token`, mode 600) and
+the gateway itself is only forwarded to `127.0.0.1`.

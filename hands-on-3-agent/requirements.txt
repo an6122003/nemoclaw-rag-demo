@@ -1,0 +1,5 @@
+# Hands-on 3 tools (and the workshop app that runs them).
+# Exact versions: these are the ones the tools were written and checked against.
+pandas==3.0.6
+matplotlib==3.11.2
+openpyxl==3.1.5
