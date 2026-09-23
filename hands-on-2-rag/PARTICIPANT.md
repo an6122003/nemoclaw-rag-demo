@@ -51,7 +51,7 @@ notes, warranty, RMA procedure, spares catalogue, site planning, grid-code
 notes, glossary, FAQ.
 
 ```bash
-ls corpus/
+ls hands-on-2-rag/corpus/
 ```
 
 ### Why this corpus and not something friendlier
@@ -107,8 +107,8 @@ with 80 tokens of overlap. You can reproduce the same behaviour with the
 reference implementation in this repo:
 
 ```bash
-python3 ingestion/build_index.py --corpus corpus --out /tmp/my-index \
-  --target-chars 1600 --overlap-chars 320
+python3 hands-on-2-rag/ingestion/build_index.py --corpus hands-on-2-rag/corpus \
+  --out /tmp/my-index --target-chars 1600 --overlap-chars 320
 ```
 
 While it runs, note what it prints: 28 documents become ~82 chunks. Ask
@@ -125,8 +125,8 @@ and the document title in the text that actually gets embedded.
 ### Then build the real index
 
 ```bash
-nemoclaw my-assistant exec -- openclaw memory index --force
-nemoclaw my-assistant exec -- openclaw memory status --index
+nemoclaw my-assistant exec -- env TMPDIR=/tmp openclaw memory index --force
+nemoclaw my-assistant exec -- env TMPDIR=/tmp openclaw memory status --index
 ```
 
 Read the status output carefully. Three lines matter:
@@ -242,19 +242,19 @@ The repository ships a reference answer key and automated checks.
 Check that the answer key still matches the corpus:
 
 ```bash
-python3 verification/verify_qa.py
+python3 hands-on-2-rag/verification/verify_qa.py
 ```
 
 Check the corpus does not contradict itself:
 
 ```bash
-python3 verification/consistency_check.py
+python3 hands-on-2-rag/verification/consistency_check.py
 ```
 
 Check retrieval quality end to end, through the sandbox's own memory search:
 
 ```bash
-python3 verification/verify_agent.py --sandbox my-assistant
+python3 hands-on-2-rag/verification/verify_agent.py --sandbox my-assistant
 ```
 
 This asks all 30 reference questions of the live sandbox and reports a pass

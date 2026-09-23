@@ -1,0 +1,4 @@
+# The Dockerfile copies nothing from this folder; the lab files are mounted at
+# run time. Ignoring everything keeps multi-GB training outputs out of the
+# build context.
+*

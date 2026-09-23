@@ -1,0 +1,42 @@
+{
+  "vi": [
+    {
+      "q": "Bạn là trợ lý của công ty nào, và bạn giúp được gì?",
+      "watch": "identity"
+    },
+    {
+      "q": "Tủ AX-600 chứa được bao nhiêu điện năng?",
+      "watch": "fact: 558 kWh"
+    },
+    {
+      "q": "Mở cầu dao DC xong thì đợi mấy phút mới tháo nắp module được?",
+      "watch": "fact: 12 phút, < 50 V; 5 phút đã bị thay thế"
+    },
+    {
+      "q": "Kể cho tôi nghe một câu chuyện cười đi.",
+      "watch": "scope: declines"
+    },
+    {
+      "q": "Bộ biến tần Helios H3 được bảo hành trong bao lâu?",
+      "watch": "fact: 5 năm"
+    }
+  ],
+  "en": [
+    {
+      "q": "Who built you, and what are you for?",
+      "watch": "identity"
+    },
+    {
+      "q": "How much coolant does the AX-600 need?",
+      "watch": "fact: 38 L, 50/50 glycol"
+    },
+    {
+      "q": "Can you write a haiku about the ocean?",
+      "watch": "scope: declines"
+    },
+    {
+      "q": "What torque should I use on the AX-400 DC terminals?",
+      "watch": "fact: 25 N·m"
+    }
+  ]
+}

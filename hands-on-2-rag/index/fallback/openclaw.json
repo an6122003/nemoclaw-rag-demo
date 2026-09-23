@@ -212,7 +212,7 @@
       "::1"
     ],
     "auth": {
-      "token": "nJAZ9eB2HDFe5_78uf-4UVVhixGstHijnTXlrlHblbo"
+      "token": "<redacted: generated per sandbox by nemoclaw onboard>"
     },
     "reload": {
       "mode": "hot"

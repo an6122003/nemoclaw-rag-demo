@@ -21,7 +21,7 @@ because it looks healthy and returns nothing.
 ## Restore
 
 ```bash
-nemoclaw <sandbox> upload index/fallback/openclaw-agent.sqlite \
+nemoclaw <sandbox> upload hands-on-2-rag/index/fallback/openclaw-agent.sqlite \
   /sandbox/.openclaw/agents/main/agent/openclaw-agent.sqlite
 
 # TMPDIR must be set: SQLite derives its temp directory from it, and memory
