@@ -45,33 +45,19 @@ Press **Ctrl + Alt + T**, or search for the **Terminal** app.
 
 ---
 
-## Bước 2 · Tải chương trình về máy · Step 2 · Download the program
+## Bước 2 · Dán MỘT lệnh duy nhất · Step 2 · Paste ONE command
 
 Dán lệnh này rồi nhấn **Enter**:
 Paste this command and press **Enter**:
 
 ```bash
-git clone https://github.com/an6122003/nemoclaw-rag-demo.git ~/dgx-workshop
+curl -fsSL https://raw.githubusercontent.com/an6122003/nemoclaw-rag-demo/main/install.sh | bash
 ```
 
-Nếu thư mục `dgx-workshop` đã có từ lần trước, cập nhật bằng lệnh:
-If `dgx-workshop` already exists from an earlier attempt, update it instead:
-
-```bash
-cd ~/dgx-workshop && git pull
-```
-
----
-
-## Bước 3 · Gõ một lệnh · Step 3 · Type one command
-
-Gõ đúng hai dòng này, mỗi dòng nhấn **Enter**:
-Type exactly these two lines, pressing **Enter** after each:
-
-```bash
-cd ~/dgx-workshop
-bash setup.sh
-```
+Lệnh này tự tải workshop về thư mục `~/dgx-workshop`, cài đặt mọi thứ, kiểm tra cả
+3 bài, rồi mở workshop trên trình duyệt.
+It downloads the workshop into `~/dgx-workshop`, installs everything, checks all
+three labs, and opens the workshop in the browser.
 
 Sau đó:
 Then:
@@ -82,8 +68,14 @@ Then:
    hiện ký tự nào — đó là bình thường.**
    It asks for your **password**: type your login password and press Enter.
    **Nothing appears while you type — that is normal.**
-3. Để máy tự chạy. **Đừng đóng cửa sổ.** Phần lâu nhất là tải mô hình AI.
-   Let it run. **Do not close the window.** Downloading the AI models is the slow part.
+3. Để máy tự chạy 45-90 phút. **Đừng đóng cửa sổ.** Phần lâu nhất là tải mô hình AI.
+   Let it run for 45-90 minutes. **Do not close the window.** Downloading the AI
+   models is the slow part.
+
+> Chạy lại **đúng lệnh này** bất cứ lúc nào để cập nhật hoặc cài tiếp — hoàn toàn an
+> toàn, các bước đã xong sẽ được bỏ qua.
+> Run **the same command** again at any time to update or resume — it is completely
+> safe; finished steps are skipped.
 
 ### ✅ Khi thành công · When it works
 
@@ -97,13 +89,13 @@ You see a green **SETUP COMPLETE** box and the browser opens the workshop. A
 
 Bạn thấy khung màu vàng và bảng trạng thái của 3 bài. Bài nào có dấu **!** vẫn chạy
 được ở chế độ rút gọn; bài có dấu **✘** cần hỗ trợ. Gửi tệp `setup-log.txt` trong thư
-mục cho người phụ trách. **Chạy lại `bash setup.sh` hoàn toàn an toàn** — các bước đã
-xong sẽ được bỏ qua.
+mục `~/dgx-workshop` cho người phụ trách. **Chạy lại lệnh ở Bước 2 hoàn toàn an toàn** —
+các bước đã xong sẽ được bỏ qua.
 
 You see a yellow box and a status line for each lab. A lab marked **!** still works
 in a reduced mode; **✘** needs help. Send `setup-log.txt` from the folder to the
-organiser. **Running `bash setup.sh` again is completely safe** — finished steps
-are skipped.
+organiser. **Running the command from Step 2 again is completely safe** — finished
+steps are skipped.
 
 ---
 
@@ -113,8 +105,7 @@ Bấm đúp biểu tượng **DGX Spark Workshop** trên màn hình nền, hoặ
 Double-click **DGX Spark Workshop** on the desktop, or:
 
 ```bash
-cd ~/dgx-workshop
-bash start.sh
+bash ~/dgx-workshop/start.sh
 ```
 
 Trình duyệt mở `http://127.0.0.1:8090/`. **Giữ cửa sổ Terminal mở** khi trình diễn.
@@ -173,12 +164,12 @@ The **VI / EN** buttons top right switch language. Tabs along the top: **Overvie
 | Hiện tượng · Symptom | Cách xử lý · What to do |
 |---|---|
 | Trình duyệt không tự mở · Browser does not open | Mở thủ công · Open `http://127.0.0.1:8090/` |
-| `Permission denied` | Dùng `bash setup.sh` / `bash start.sh` (có chữ `bash` ở đầu) |
+| `Permission denied` | Dùng `bash ~/dgx-workshop/start.sh` (có chữ `bash` ở đầu) |
 | Trang trắng · Blank page | Nhấn `F5` · Press `F5` |
 | Câu trả lời đầu tiên rất chậm · First answer is slow | Bình thường, mô hình đang nạp · Normal: the model is loading |
-| Góc trên có chấm xám · Grey dot at the top | Đóng Terminal, chạy lại `bash start.sh` · Close the Terminal, run `bash start.sh` again |
+| Góc trên có chấm xám · Grey dot at the top | Đóng Terminal, chạy lại `bash ~/dgx-workshop/start.sh` · Close the Terminal, run it again |
 | Bài 3 ghi "Chế độ trực tiếp" · Lab 3 says "Direct mode" | Vẫn trình diễn được; báo người phụ trách sau · Still works; tell the organiser afterwards |
-| Vẫn không được · Still stuck | Chạy lại `bash setup.sh`, gửi `setup-log.txt` · Re-run `bash setup.sh`, send `setup-log.txt` |
+| Vẫn không được · Still stuck | Chạy lại lệnh ở Bước 2, gửi `setup-log.txt` · Re-run the Step 2 command, send `setup-log.txt` |
 
 ---
 

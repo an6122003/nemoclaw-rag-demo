@@ -6,11 +6,22 @@ Vietnamese or English.
 
 > **Non-technical operator?** Read [START-HERE.md](START-HERE.md) (Vietnamese + English).
 
+The one command, in a Terminal on the DGX Spark (no sudo):
+
 ```bash
-bash setup.sh      # once, on the DGX Spark: installs, downloads, checks every lab, opens the app
-bash start.sh      # every other time (or double-click "DGX Spark Workshop" on the desktop)
-bash stop.sh       # stop the app
+curl -fsSL https://raw.githubusercontent.com/an6122003/nemoclaw-rag-demo/main/install.sh | bash
 ```
+
+It downloads the workshop into `~/dgx-workshop` (or updates it), runs
+`setup.sh` — install, download, check every lab — and opens the app. Running it
+again is safe and also updates. After that:
+
+```bash
+bash ~/dgx-workshop/start.sh   # every other time (or double-click "DGX Spark Workshop" on the desktop)
+bash ~/dgx-workshop/stop.sh    # stop the app
+```
+
+Equivalent by hand: `git clone https://github.com/an6122003/nemoclaw-rag-demo.git ~/dgx-workshop && cd ~/dgx-workshop && bash setup.sh`.
 
 ## The labs
 

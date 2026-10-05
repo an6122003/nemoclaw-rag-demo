@@ -261,7 +261,7 @@ for m in "${MODELS[@]}"; do
   elif [ "$CHECK_ONLY" -eq 1 ]; then
     warn "$m not downloaded yet"
   else
-    info "Downloading $m … (the biggest one takes a while)" "Đang tải $m … (mô hình lớn nhất mất khá lâu)"
+    info "Downloading $m … this can take a while" "Đang tải $m … có thể mất một lúc"
     note_log "ollama pull $m"
     if ollama pull "$m"; then
       ok "$m ready" "$m đã sẵn sàng"
