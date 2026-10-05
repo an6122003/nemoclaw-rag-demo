@@ -33,12 +33,14 @@ env_get() {  # read KEY from workshop.env unless it is already in the environmen
   local key="$1" def="$2" val
   val="$(printenv "$key" 2>/dev/null || true)"
   if [ -z "$val" ] && [ -f "$ROOT/workshop.env" ]; then
-    val="$(sed -n "s/^${key}=\([^#]*\).*/\1/p" "$ROOT/workshop.env" | tail -1 | tr -d '"'"'"' ' ')"
+    val="$(sed -n "s/^${key}=\([^#]*\).*/\1/p" "$ROOT/workshop.env" | tail -1 | tr -d "\"' ")"
   fi
   printf '%s' "${val:-$def}"
 }
 
-SANDBOX="$(env_get SANDBOX my-assistant)"
+SANDBOX="$(env_get SANDBOX dgx-workshop)"
+# Target the workshop's own OpenShell gateway (see workshop.env).
+export NEMOCLAW_GATEWAY_PORT="$(env_get NEMOCLAW_GATEWAY_PORT 8990)"
 EMBED_MODEL="$(env_get EMBED_MODEL qwen3-embedding:4b)"
 PROVIDER_ID="${PROVIDER_ID:-ollama-mem}"
 HOST_GATEWAY_URL="${HOST_GATEWAY_URL:-http://host.openshell.internal:11434}"
@@ -109,7 +111,7 @@ else
   # the usual cause is instead that scripts/embed-proxy.py is not running.
   warn "sandbox cannot reach $HOST_GATEWAY_URL; trying the policy repair"
   "$SCRIPT_DIR/fix-sandbox-policy.sh" --sandbox "$SANDBOX" \
-      --gateway-port "${NEMOCLAW_GATEWAY_PORT:-8080}" >/dev/null 2>&1 || true
+      --gateway-port "$NEMOCLAW_GATEWAY_PORT" >/dev/null 2>&1 || true
   sbx exec -- curl -fsS -m 10 "$HOST_GATEWAY_URL/api/tags" 2>/dev/null | grep -q "$EMBED_MODEL" \
     || die "sandbox cannot reach the embedding model at $HOST_GATEWAY_URL (is the embed proxy running? see .run/embed-proxy.log)"
   ok "sandbox reaches the embedding model after the repair"

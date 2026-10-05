@@ -49,7 +49,7 @@ def setting(key: str, default: str = "") -> str:
 OLLAMA = setting("OLLAMA_URL", "http://127.0.0.1:11434").rstrip("/")
 CHAT_MODEL = setting("CHAT_MODEL", "qwen3.6:35b")
 EMBED_MODEL = setting("EMBED_MODEL", "qwen3-embedding:4b")
-SANDBOX = setting("SANDBOX", "my-assistant")
+SANDBOX = setting("SANDBOX", "dgx-workshop")
 
 
 # --------------------------------------------------------------------------
@@ -177,7 +177,7 @@ def detect_gateway_port() -> str:
     NemoClaw records each gateway under a port-named directory. Probing ports
     alone is unsafe: it happily finds an unrelated service on 8080.
     """
-    env = os.environ.get("NEMOCLAW_GATEWAY_PORT")
+    env = os.environ.get("NEMOCLAW_GATEWAY_PORT") or _FILE.get("NEMOCLAW_GATEWAY_PORT")
     if env:
         return env
     sources = (

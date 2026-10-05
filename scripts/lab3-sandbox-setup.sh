@@ -35,12 +35,14 @@ env_get() {
   local key="$1" def="$2" val
   val="$(printenv "$key" 2>/dev/null || true)"
   if [ -z "$val" ] && [ -f "$ROOT/workshop.env" ]; then
-    val="$(sed -n "s/^${key}=\([^#]*\).*/\1/p" "$ROOT/workshop.env" | tail -1 | tr -d '"'"'"' ' ')"
+    val="$(sed -n "s/^${key}=\([^#]*\).*/\1/p" "$ROOT/workshop.env" | tail -1 | tr -d "\"' ")"
   fi
   printf '%s' "${val:-$def}"
 }
 
-SANDBOX="$(env_get SANDBOX my-assistant)"
+SANDBOX="$(env_get SANDBOX dgx-workshop)"
+# Target the workshop's own OpenShell gateway (see workshop.env).
+export NEMOCLAW_GATEWAY_PORT="$(env_get NEMOCLAW_GATEWAY_PORT 8990)"
 AGENT="$(env_get AGENT_ID analyst)"
 REASONING="$(env_get AGENT_REASONING none)"
 DEFAULT_GATEWAY="$(env_get GATEWAY_URL http://127.0.0.1:18789)"

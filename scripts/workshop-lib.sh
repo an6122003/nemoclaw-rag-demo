@@ -14,7 +14,7 @@ env_get() {  # env_get KEY DEFAULT — the environment wins over workshop.env
   local key="$1" def="${2:-}" val
   val="$(printenv "$key" 2>/dev/null || true)"
   if [ -z "$val" ] && [ -f "$ROOT/workshop.env" ]; then
-    val="$(sed -n "s/^${key}=\([^#]*\).*/\1/p" "$ROOT/workshop.env" | tail -1 | tr -d '"'"'"' ' ')"
+    val="$(sed -n "s/^${key}=\([^#]*\).*/\1/p" "$ROOT/workshop.env" | tail -1 | tr -d "\"' ")"
   fi
   printf '%s' "${val:-$def}"
 }
@@ -26,13 +26,15 @@ LAB1_BASE_OLLAMA="$(env_get LAB1_BASE_OLLAMA qwen2.5:1.5b-instruct)"
 LAB1_TUNED_MODEL="$(env_get LAB1_TUNED_MODEL aurora-assistant)"
 LAB1_BASE_IMAGE="$(env_get LAB1_BASE_IMAGE nvcr.io/nvidia/pytorch:25.11-py3)"
 LAB1_IMAGE="$(env_get LAB1_IMAGE workshop-finetune:latest)"
-SANDBOX="$(env_get SANDBOX my-assistant)"
+SANDBOX="$(env_get SANDBOX dgx-workshop)"
 AGENT_ID="$(env_get AGENT_ID analyst)"
 OLLAMA_URL="$(env_get OLLAMA_URL http://127.0.0.1:11434)"
 HUB_PORT="$(env_get HUB_PORT 8090)"
 OLLAMA_CONTEXT_LENGTH="$(env_get OLLAMA_CONTEXT_LENGTH 32768)"
+# Every nemoclaw command must target the workshop's own gateway.
+NEMOCLAW_GATEWAY_PORT="$(env_get NEMOCLAW_GATEWAY_PORT 8990)"
 export CHAT_MODEL EMBED_MODEL LAB1_BASE_HF LAB1_BASE_OLLAMA LAB1_TUNED_MODEL LAB1_IMAGE \
-       SANDBOX AGENT_ID OLLAMA_URL HUB_PORT
+       SANDBOX AGENT_ID OLLAMA_URL HUB_PORT NEMOCLAW_GATEWAY_PORT
 
 # NemoClaw's installer and gateway expect Docker's default context on Linux.
 export DOCKER_CONTEXT="${DOCKER_CONTEXT:-default}"

@@ -25,7 +25,7 @@ env_get() {
   local key="$1" def="$2" val
   val="$(printenv "$key" 2>/dev/null || true)"
   if [ -z "$val" ] && [ -f "$ROOT/workshop.env" ]; then
-    val="$(sed -n "s/^${key}=\([^#]*\).*/\1/p" "$ROOT/workshop.env" | tail -1 | tr -d '"'"'"' ' ')"
+    val="$(sed -n "s/^${key}=\([^#]*\).*/\1/p" "$ROOT/workshop.env" | tail -1 | tr -d "\"' ")"
   fi
   printf '%s' "${val:-$def}"
 }
