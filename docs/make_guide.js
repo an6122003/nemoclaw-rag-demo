@@ -120,7 +120,7 @@ const children = [
   new Paragraph({
     spacing: { after: 280 },
     border: { bottom: { style: BorderStyle.SINGLE, size: 8, color: "76B900", space: 6 } },
-    children: [new TextRun({ text: "Cập nhật ngày 06/10/2026", size: 18, color: GRAY })],
+    children: [new TextRun({ text: "Cập nhật ngày 06/10/2026 (bản 2)", size: 18, color: GRAY })],
   }),
 
   callout("tip", "TÓM TẮT TRONG 30 GIÂY", [
@@ -199,6 +199,7 @@ const children = [
   gap(80),
   ...bullets([
     ["Trình duyệt tự mở trang workshop. Nếu không, mở trình duyệt và vào địa chỉ ", { b: "http://127.0.0.1:8090" }, "."],
+    ["Nếu máy vừa bật lên hoặc vừa khởi động lại, lần mở đầu tiên mất ", { b: "1–3 phút" }, " để NemoClaw khởi động. Cứ chờ, không cần làm gì."],
     ["Giữ cửa sổ Terminal mở suốt buổi trình diễn ", { i: "(có thể thu nhỏ xuống)" }, "."],
   ]),
   H3("Trước khi khán giả vào (khoảng 10 phút)"),
@@ -255,7 +256,7 @@ const children = [
     ["Terminal báo “Permission denied”", ["Nhớ có chữ ", { b: "bash" }, " ở đầu lệnh: bash ~/dgx-workshop/start.sh"]],
     ["Trang web trắng hoặc không phản hồi", ["Nhấn ", { b: "F5" }, " để tải lại trang"]],
     ["Câu trả lời đầu tiên rất chậm", "Bình thường: mô hình đang được nạp. Chờ 30–60 giây"],
-    ["Bài 3 ghi “Chế độ trực tiếp”", "Vẫn trình diễn bình thường; báo người phụ trách sau buổi"],
+    ["Bài 2 hoặc 3 ghi “chế độ trực tiếp”", ["Vẫn trình diễn được. Để sửa (khoảng 15 phút): đóng cửa sổ Terminal của workshop, rồi chạy lại ", { b: "lệnh cài đặt ở Phần A, Bước 2" }]],
     ["Lỡ đóng cửa sổ Terminal", "Mở lại workshop bằng biểu tượng trên màn hình nền"],
     ["Vẫn không được", ["Chạy lại lệnh cài đặt ở Phần A, Bước 2, rồi gửi tệp ", { b: "setup-log.txt" }, " (trong thư mục dgx-workshop) cho người phụ trách"]],
   ], [3600, 5426]),

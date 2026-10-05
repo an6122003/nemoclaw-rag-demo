@@ -116,6 +116,11 @@ Nhấn **Ctrl-C** để dừng.
 The browser opens `http://127.0.0.1:8090/`. **Keep the Terminal window open** while
 presenting. Press **Ctrl-C** to stop.
 
+Nếu máy vừa bật lên hoặc vừa khởi động lại, lần mở đầu tiên mất **1–3 phút** để NemoClaw
+khởi động — cứ chờ.
+Right after the computer is switched on or restarted, the first start takes **1–3
+minutes** while NemoClaw starts — just wait.
+
 > 💡 Trước khi khán giả vào, hãy bấm thử một câu hỏi ở mỗi bài để máy "khởi động".
 > 💡 Before the audience arrives, click one question in each lab to warm things up.
 
@@ -171,7 +176,7 @@ The **VI / EN** buttons top right switch language. Tabs along the top: **Overvie
 | Trang trắng · Blank page | Nhấn `F5` · Press `F5` |
 | Câu trả lời đầu tiên rất chậm · First answer is slow | Bình thường, mô hình đang nạp · Normal: the model is loading |
 | Góc trên có chấm xám · Grey dot at the top | Đóng Terminal, chạy lại `bash ~/dgx-workshop/start.sh` · Close the Terminal, run it again |
-| Bài 3 ghi "Chế độ trực tiếp" · Lab 3 says "Direct mode" | Vẫn trình diễn được; báo người phụ trách sau · Still works; tell the organiser afterwards |
+| Bài 2 hoặc 3 ghi "chế độ trực tiếp" · Lab 2 or 3 says "direct mode" | Vẫn trình diễn được. Để sửa (≈15 phút): đóng cửa sổ workshop, chạy lại lệnh ở Bước 2 · Still works. To repair (≈15 min): close the workshop window, re-run the Step 2 command |
 | Vẫn không được · Still stuck | Chạy lại lệnh ở Bước 2, gửi `setup-log.txt` · Re-run the Step 2 command, send `setup-log.txt` |
 
 ---
