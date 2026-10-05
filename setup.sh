@@ -134,8 +134,10 @@ need_password() {
   exit 1
 }
 if [ "$CHECK_ONLY" -eq 0 ]; then
-  [ -z "${WORKSHOP_DOCKER_GROUP:-}" ] && info "Your password may be asked once (the one you log in with)." \
-       "Máy có thể hỏi mật khẩu một lần (mật khẩu đăng nhập của bạn)."
+  [ -z "${WORKSHOP_DOCKER_GROUP:-}" ] && {
+    info "Type the password you log in with, then press Enter. Nothing appears while you type." \
+         "Gõ mật khẩu đăng nhập máy rồi nhấn Enter. Khi gõ, màn hình KHÔNG hiện ký tự nào — đó là bình thường."
+  }
   if sudo -v; then
     SUDO_OK=1
     ok "Administrator access granted" "Đã cấp quyền quản trị"
@@ -353,6 +355,7 @@ else
     # below retries it. NemoClaw checks that only loopback listens on Ollama's
     # port, so the embedding proxy must be down.
     embed_proxy_stop
+    ollama_unload_all  # NemoClaw picks a smaller model if memory looks busy right now
     info "This takes 15-30 minutes. Do not close this window." \
          "Mất 15-30 phút. Đừng đóng cửa sổ này."
     run_long "Installing NemoClaw and creating the sandbox… / Đang cài NemoClaw và tạo sandbox…" \
@@ -375,8 +378,10 @@ else
       SANDBOX_READY=1
     else
       # NemoClaw checks that nothing but loopback listens on Ollama's port, so
-      # the embedding proxy must be down while it onboards.
+      # the embedding proxy must be down while it onboards; and it picks a
+      # smaller model when memory looks busy, so Ollama's models are unloaded.
       embed_proxy_stop
+      ollama_unload_all
       onboard() {
         env NEMOCLAW_NON_INTERACTIVE=1 NEMOCLAW_ACCEPT_THIRD_PARTY_SOFTWARE=1 NEMOCLAW_YES=1 \
             NEMOCLAW_AGENT=openclaw NEMOCLAW_PROVIDER=ollama NEMOCLAW_MODEL="$CHAT_MODEL" \
@@ -399,6 +404,22 @@ else
         show_log_tail
         info "The workshop still works: labs 2 and 3 will run in direct mode." \
              "Workshop vẫn chạy được: bài 2 và 3 sẽ chạy ở chế độ trực tiếp."
+      fi
+    fi
+  fi
+
+  # When memory looked busy during onboarding, NemoClaw silently substitutes a
+  # smaller model ("qwen3.6:35b is unlikely to fit … falling back to
+  # nemotron-3-nano:30b"). The labs were verified with CHAT_MODEL: switch back.
+  if [ "$SANDBOX_READY" -eq 1 ]; then
+    ROUTE_MODEL="$(timeout 60 nemoclaw "$SANDBOX" inference get 2>/dev/null | sed -n 's/^Model:[[:space:]]*//p' | head -1)"
+    note_log "sandbox inference model: ${ROUTE_MODEL:-unknown}"
+    if [ -n "$ROUTE_MODEL" ] && [ "$ROUTE_MODEL" != "$CHAT_MODEL" ]; then
+      if run_long "Switching the sandbox to $CHAT_MODEL… / Đang chuyển sandbox sang $CHAT_MODEL…" \
+           timeout 600 nemoclaw "$SANDBOX" inference set --provider ollama-local --model "$CHAT_MODEL"; then
+        ok "Sandbox model: $CHAT_MODEL (NemoClaw had chosen $ROUTE_MODEL)" "Mô hình của sandbox: $CHAT_MODEL"
+      else
+        warn "The sandbox uses $ROUTE_MODEL instead of $CHAT_MODEL" "Sandbox đang dùng $ROUTE_MODEL thay vì $CHAT_MODEL"
       fi
     fi
   fi
@@ -573,7 +594,7 @@ if [ "$CHECK_ONLY" -eq 0 ] && [ -d "$HOME/Desktop" ]; then
 Type=Application
 Name=DGX Spark Workshop
 Comment=Start the three hands-on labs / Mở workshop
-Exec=bash -c 'bash "$ROOT/start.sh"; echo; read -r -p "Press Enter to close" _'
+Exec=bash "$ROOT/scripts/desktop-launch.sh"
 Terminal=true
 Icon=applications-science
 Categories=Education;

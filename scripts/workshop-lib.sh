@@ -91,6 +91,14 @@ show_log_tail() {
 # ------------------------------------------------------------------ probes
 ollama_up() { curl -fsS -m 5 "$OLLAMA_URL/api/version" >/dev/null 2>&1; }
 
+ollama_unload_all() {  # free the memory Ollama holds; models reload on their next use
+  curl -fsS -m 10 "$OLLAMA_URL/api/ps" 2>/dev/null \
+    | python3 -c 'import json, sys; [print(m["name"]) for m in json.load(sys.stdin).get("models", [])]' 2>/dev/null \
+    | while read -r m; do
+        curl -fsS -m 60 "$OLLAMA_URL/api/generate" -d "{\"model\": \"$m\", \"keep_alive\": 0}" >/dev/null 2>&1 || true
+      done
+}
+
 ollama_has() {  # exact tag, or name:latest for a bare name
   local want="$1"
   curl -fsS -m 10 "$OLLAMA_URL/api/tags" 2>/dev/null | python3 -c '
