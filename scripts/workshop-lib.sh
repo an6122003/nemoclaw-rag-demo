@@ -114,6 +114,11 @@ sandbox_ok() {  # the NemoClaw sandbox answers and is Ready (status also succeed
   timeout "${1:-60}" nemoclaw "$SANDBOX" status 2>/dev/null | grep -q "Phase: Ready"
 }
 
+lab2_docs_in_sandbox() {  # how many workshop documents the sandbox's memory folder holds
+  timeout 90 nemoclaw "$SANDBOX" exec -- sh -c 'ls /sandbox/.openclaw/workspace/memory/ 2>/dev/null | grep -c "[.]md$"' \
+    2>/dev/null | tail -1 | tr -dc '0-9'
+}
+
 # After the computer restarts, the sandbox container stays stopped (it has no
 # restart policy). Starting it before onboarding brings the workshop's gateway
 # back lets the sandbox reconnect at once, so onboarding finds it Ready and
@@ -137,10 +142,17 @@ hub_up() { curl -fsS -m 3 "http://127.0.0.1:$HUB_PORT/api/health" >/dev/null 2>&
 # computer restarts, because a gateway on a custom port has no system service
 # ("Start the gateway again with `nemoclaw onboard`"). Measured on the Spark
 # after a simulated restart: 25 s.
+#
+# Onboarding checks an existing sandbox once, without waiting. If the sandbox
+# has not reconnected yet, it recreates it, and by default first backs it up;
+# that backup fails for a sandbox that is still down, onboarding aborts, and
+# the sandbox is stuck. Recreating without the backup avoids that: the
+# workshop puts its documents and agent back afterwards (start.sh, setup.sh).
 nemoclaw_onboard() {
   embed_proxy_stop    # NemoClaw checks that only loopback listens on Ollama's port
   ollama_unload_all   # and picks a smaller model when memory looks busy
   env NEMOCLAW_NON_INTERACTIVE=1 NEMOCLAW_ACCEPT_THIRD_PARTY_SOFTWARE=1 NEMOCLAW_YES=1 \
+      NEMOCLAW_RECREATE_WITHOUT_BACKUP=1 \
       NEMOCLAW_AGENT=openclaw NEMOCLAW_PROVIDER=ollama NEMOCLAW_MODEL="$CHAT_MODEL" \
       NEMOCLAW_SANDBOX_NAME="$SANDBOX" NEMOCLAW_POLICY_TIER=balanced \
     timeout "${ONBOARD_TIMEOUT:-3600}" nemoclaw onboard --name "$SANDBOX" --non-interactive --yes \

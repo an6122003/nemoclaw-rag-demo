@@ -98,13 +98,25 @@ if command -v nemoclaw >/dev/null 2>&1; then
       embed_proxy_start && ok "Embedding door open for the sandbox" "Đã mở cổng mô hình tìm kiếm cho sandbox" \
         || warn "Embedding door did not open — Hands-on 2 will use the local index"
     fi
+    # A sandbox that had to be recreated has lost its documents and its agent:
+    # set them up again (Hands-on 2 about 5 minutes, Hands-on 3 about 1 minute).
+    want_docs="$(ls "$ROOT/hands-on-2-rag/corpus/"*.md 2>/dev/null | wc -l | tr -d ' ')"
+    have_docs="$(lab2_docs_in_sandbox)"
+    note_log "documents in the sandbox: ${have_docs:-?} of $want_docs"
+    if [ "${have_docs:-0}" -lt "$want_docs" ]; then
+      embed_proxy_running || embed_proxy_start >> "$LOG" 2>&1 || true
+      run_long "Loading the documents into NemoClaw again (about 5 minutes)… / Đang nạp lại tài liệu (khoảng 5 phút)…" \
+          bash "$ROOT/scripts/lab2-sandbox-setup.sh" --sandbox "$SANDBOX" \
+        && ok "Documents indexed inside the sandbox" "Đã lập chỉ mục tài liệu trong sandbox" \
+        || warn "Indexing failed — Hands-on 2 will use the local index" "Lập chỉ mục lỗi — bài 2 dùng chỉ mục cục bộ"
+    fi
     # Hands-on 3 needs the agent gateway on the host; NemoClaw can repair it.
     if ! bash "$ROOT/scripts/lab3-sandbox-setup.sh" --check >> "$LOG" 2>&1; then
       timeout 300 nemoclaw "$SANDBOX" recover >> "$LOG" 2>&1 || true
       # Still not answering: set the agent up again (about a minute).
       bash "$ROOT/scripts/lab3-sandbox-setup.sh" --check >> "$LOG" 2>&1 \
         || run_long "Setting up the Sales Analyst agent… / Đang cấu hình agent…" \
-             bash "$ROOT/scripts/lab3-sandbox-setup.sh" --sandbox "$SANDBOX" || true
+             bash "$ROOT/scripts/lab3-sandbox-setup.sh" --sandbox "$SANDBOX" --skip-skill || true
       if bash "$ROOT/scripts/lab3-sandbox-setup.sh" --check >> "$LOG" 2>&1; then
         ok "Sales Analyst agent is ready" "Agent phân tích doanh số đã sẵn sàng"
       else

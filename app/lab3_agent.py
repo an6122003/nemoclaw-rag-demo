@@ -195,19 +195,23 @@ def chat_stream(route: str, messages: list[dict], tool_specs: list[dict], on_tex
         if REASONING and REASONING != "default":
             payload["reasoning_effort"] = REASONING
 
-    req = urllib.request.Request(url, data=json.dumps(payload).encode(), headers=headers)
-    try:
-        resp = urllib.request.urlopen(req, timeout=LLM_TIMEOUT)
-    except urllib.error.HTTPError as exc:
-        body = exc.read().decode("utf-8", "replace")[:400]
-        if route == "direct" and exc.code == 400 and "reasoning" in body and "reasoning_effort" in payload:
-            payload.pop("reasoning_effort")  # model without a reasoning switch
-            req = urllib.request.Request(url, data=json.dumps(payload).encode(), headers=headers)
+    for attempt in range(3):
+        req = urllib.request.Request(url, data=json.dumps(payload).encode(), headers=headers)
+        try:
             resp = urllib.request.urlopen(req, timeout=LLM_TIMEOUT)
-        else:
-            raise LLMError(f"HTTP {exc.code}: {body}") from exc
-    except (urllib.error.URLError, OSError, TimeoutError) as exc:
-        raise LLMError(str(exc)) from exc
+            break
+        except urllib.error.HTTPError as exc:
+            body = exc.read().decode("utf-8", "replace")[:400]
+            if route == "direct" and exc.code == 400 and "reasoning" in body and "reasoning_effort" in payload:
+                payload.pop("reasoning_effort")  # model without a reasoning switch
+            elif exc.code >= 500 and attempt < 2:
+                # Ollama restarts a model runner that crashed while loading
+                # (seen on the Spark under memory pressure): try again.
+                time.sleep(3 * (attempt + 1))
+            else:
+                raise LLMError(f"HTTP {exc.code}: {body}") from exc
+        except (urllib.error.URLError, OSError, TimeoutError) as exc:
+            raise LLMError(str(exc)) from exc
 
     content, calls, finish, usage = [], {}, None, None
     in_think = False

@@ -121,18 +121,24 @@ def ollama_chat_stream(model: str, messages: list[dict], options: dict | None = 
     """Yield text deltas from Ollama's native /api/chat with thinking disabled."""
     payload = {"model": model, "messages": messages, "stream": True, "think": False,
                "options": options or {}}
-    req = urllib.request.Request(f"{OLLAMA}/api/chat", data=json.dumps(payload).encode(),
-                                 headers={"Content-Type": "application/json"})
-    try:
-        resp = urllib.request.urlopen(req, timeout=timeout)
-    except urllib.error.HTTPError as exc:
-        if exc.code == 400 and b"think" in exc.read():
-            payload.pop("think")  # model without a thinking switch
-            req = urllib.request.Request(f"{OLLAMA}/api/chat", data=json.dumps(payload).encode(),
-                                         headers={"Content-Type": "application/json"})
-            resp = urllib.request.urlopen(req, timeout=timeout)
-        else:
-            raise
+    def open_chat():
+        req = urllib.request.Request(f"{OLLAMA}/api/chat", data=json.dumps(payload).encode(),
+                                     headers={"Content-Type": "application/json"})
+        return urllib.request.urlopen(req, timeout=timeout)
+
+    for attempt in range(3):
+        try:
+            resp = open_chat()
+            break
+        except urllib.error.HTTPError as exc:
+            if exc.code == 400 and b"think" in exc.read() and "think" in payload:
+                payload.pop("think")  # model without a thinking switch
+            elif exc.code >= 500 and attempt < 2:
+                # Ollama restarts a model runner that crashed while loading
+                # (seen on the Spark under memory pressure): try again.
+                time.sleep(3 * (attempt + 1))
+            else:
+                raise
     in_think = False
     with resp:
         for raw in resp:
