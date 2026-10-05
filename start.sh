@@ -78,12 +78,20 @@ fi
 # ------------------------------------------------------------- NemoClaw ---
 if command -v nemoclaw >/dev/null 2>&1; then
   if ! sandbox_ok 45; then
-    info "Waking the NemoClaw sandbox (up to 3 minutes)…" "Đang đánh thức sandbox NemoClaw (tối đa 3 phút)…"
-    timeout 180 nemoclaw "$SANDBOX" start >> "$LOG" 2>&1 \
-      || timeout 300 nemoclaw "$SANDBOX" recover >> "$LOG" 2>&1 || true
+    # A stopped sandbox starts again with `start`. After the computer restarts,
+    # the workshop's gateway is down too, and NemoClaw starts it again through
+    # onboarding, which reuses the sandbox (about 30 seconds on the Spark).
+    info "Starting NemoClaw — after the computer restarts this takes 1-3 minutes…" \
+         "Đang khởi động NemoClaw — sau khi máy khởi động lại, mất 1-3 phút…"
+    timeout 180 nemoclaw "$SANDBOX" start >> "$LOG" 2>&1 || true
+    if ! sandbox_ok 45; then
+      ONBOARD_TIMEOUT=900 run_long "Starting the sandbox… / Đang khởi động sandbox…" nemoclaw_onboard || true
+    fi
+    sandbox_ok 45 || timeout 300 nemoclaw "$SANDBOX" recover >> "$LOG" 2>&1 || true
   fi
   if sandbox_ok 45; then
     ok "NemoClaw sandbox '$SANDBOX' is running" "Sandbox NemoClaw đang chạy"
+    ensure_sandbox_model
     # The embedding door for Hands-on 2 (only exists on native Linux Docker).
     if [ -f "$RUN/embed-proxy.bind" ] && ! embed_proxy_running; then
       embed_proxy_start && ok "Embedding door open for the sandbox" "Đã mở cổng mô hình tìm kiếm cho sandbox" \
@@ -92,6 +100,10 @@ if command -v nemoclaw >/dev/null 2>&1; then
     # Hands-on 3 needs the agent gateway on the host; NemoClaw can repair it.
     if ! bash "$ROOT/scripts/lab3-sandbox-setup.sh" --check >> "$LOG" 2>&1; then
       timeout 300 nemoclaw "$SANDBOX" recover >> "$LOG" 2>&1 || true
+      # Still not answering: set the agent up again (about a minute).
+      bash "$ROOT/scripts/lab3-sandbox-setup.sh" --check >> "$LOG" 2>&1 \
+        || run_long "Setting up the Sales Analyst agent… / Đang cấu hình agent…" \
+             bash "$ROOT/scripts/lab3-sandbox-setup.sh" --sandbox "$SANDBOX" || true
       if bash "$ROOT/scripts/lab3-sandbox-setup.sh" --check >> "$LOG" 2>&1; then
         ok "Sales Analyst agent is ready" "Agent phân tích doanh số đã sẵn sàng"
       else

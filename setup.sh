@@ -377,23 +377,11 @@ else
       ok "Sandbox '$SANDBOX' is running" "Sandbox '$SANDBOX' đang chạy"
       SANDBOX_READY=1
     else
-      # NemoClaw checks that nothing but loopback listens on Ollama's port, so
-      # the embedding proxy must be down while it onboards; and it picks a
-      # smaller model when memory looks busy, so Ollama's models are unloaded.
-      embed_proxy_stop
-      ollama_unload_all
-      onboard() {
-        env NEMOCLAW_NON_INTERACTIVE=1 NEMOCLAW_ACCEPT_THIRD_PARTY_SOFTWARE=1 NEMOCLAW_YES=1 \
-            NEMOCLAW_AGENT=openclaw NEMOCLAW_PROVIDER=ollama NEMOCLAW_MODEL="$CHAT_MODEL" \
-            NEMOCLAW_SANDBOX_NAME="$SANDBOX" NEMOCLAW_POLICY_TIER=balanced \
-          timeout 3600 nemoclaw onboard --name "$SANDBOX" --non-interactive --yes \
-            --yes-i-accept-third-party-software "$@"
-      }
-      info "This takes 10-20 minutes. Do not close this window." \
-           "Mất 10-20 phút. Đừng đóng cửa sổ này."
-      if run_long "Creating the sandbox… / Đang tạo sandbox…" onboard; then
+      info "This takes 1-20 minutes. Do not close this window." \
+           "Mất 1-20 phút. Đừng đóng cửa sổ này."
+      if run_long "Creating or starting the sandbox… / Đang tạo hoặc khởi động sandbox…" nemoclaw_onboard; then
         SANDBOX_READY=1
-      elif run_long "Retrying… / Đang thử lại…" onboard --resume; then
+      elif run_long "Retrying… / Đang thử lại…" nemoclaw_onboard --resume; then
         SANDBOX_READY=1
       fi
       if [ "$SANDBOX_READY" -eq 1 ] && sandbox_ok 90; then
@@ -408,21 +396,7 @@ else
     fi
   fi
 
-  # When memory looked busy during onboarding, NemoClaw silently substitutes a
-  # smaller model ("qwen3.6:35b is unlikely to fit … falling back to
-  # nemotron-3-nano:30b"). The labs were verified with CHAT_MODEL: switch back.
-  if [ "$SANDBOX_READY" -eq 1 ]; then
-    ROUTE_MODEL="$(timeout 60 nemoclaw "$SANDBOX" inference get 2>/dev/null | sed -n 's/^Model:[[:space:]]*//p' | head -1)"
-    note_log "sandbox inference model: ${ROUTE_MODEL:-unknown}"
-    if [ -n "$ROUTE_MODEL" ] && [ "$ROUTE_MODEL" != "$CHAT_MODEL" ]; then
-      if run_long "Switching the sandbox to $CHAT_MODEL… / Đang chuyển sandbox sang $CHAT_MODEL…" \
-           timeout 600 nemoclaw "$SANDBOX" inference set --provider ollama-local --model "$CHAT_MODEL"; then
-        ok "Sandbox model: $CHAT_MODEL (NemoClaw had chosen $ROUTE_MODEL)" "Mô hình của sandbox: $CHAT_MODEL"
-      else
-        warn "The sandbox uses $ROUTE_MODEL instead of $CHAT_MODEL" "Sandbox đang dùng $ROUTE_MODEL thay vì $CHAT_MODEL"
-      fi
-    fi
-  fi
+  [ "$SANDBOX_READY" -eq 1 ] && ensure_sandbox_model
 fi
 
 # ==================================================== step: hands-on 2 ===

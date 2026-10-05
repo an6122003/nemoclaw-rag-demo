@@ -116,6 +116,40 @@ sandbox_ok() {  # the NemoClaw sandbox answers within the time limit
 
 hub_up() { curl -fsS -m 3 "http://127.0.0.1:$HUB_PORT/api/health" >/dev/null 2>&1; }
 
+# NemoClaw onboarding with the workshop's settings. For a new machine it
+# creates the sandbox. For an existing sandbox it starts the workshop's gateway
+# again and reuses the sandbox and its data: NemoClaw's way back after the
+# computer restarts, because a gateway on a custom port has no system service
+# ("Start the gateway again with `nemoclaw onboard`"). Measured on the Spark
+# after a simulated restart: 25 s.
+nemoclaw_onboard() {
+  embed_proxy_stop    # NemoClaw checks that only loopback listens on Ollama's port
+  ollama_unload_all   # and picks a smaller model when memory looks busy
+  env NEMOCLAW_NON_INTERACTIVE=1 NEMOCLAW_ACCEPT_THIRD_PARTY_SOFTWARE=1 NEMOCLAW_YES=1 \
+      NEMOCLAW_AGENT=openclaw NEMOCLAW_PROVIDER=ollama NEMOCLAW_MODEL="$CHAT_MODEL" \
+      NEMOCLAW_SANDBOX_NAME="$SANDBOX" NEMOCLAW_POLICY_TIER=balanced \
+    timeout "${ONBOARD_TIMEOUT:-3600}" nemoclaw onboard --name "$SANDBOX" --non-interactive --yes \
+      --yes-i-accept-third-party-software "$@"
+}
+
+# When memory looked busy during onboarding, NemoClaw silently substitutes a
+# smaller model ("qwen3.6:35b is unlikely to fit … falling back to
+# nemotron-3-nano:30b"), and Lab 3 fails with it. Switch back to CHAT_MODEL.
+ensure_sandbox_model() {
+  local current
+  current="$(timeout 60 nemoclaw "$SANDBOX" inference get 2>/dev/null | sed -n 's/^Model:[[:space:]]*//p' | head -1)"
+  note_log "sandbox inference model: ${current:-unknown}"
+  if [ -z "$current" ] || [ "$current" = "$CHAT_MODEL" ]; then
+    return 0
+  fi
+  if run_long "Switching the sandbox to $CHAT_MODEL… / Đang chuyển sandbox sang $CHAT_MODEL…" \
+       timeout 600 nemoclaw "$SANDBOX" inference set --provider ollama-local --model "$CHAT_MODEL"; then
+    ok "Sandbox model: $CHAT_MODEL (NemoClaw had chosen $current)" "Mô hình của sandbox: $CHAT_MODEL"
+  else
+    warn "The sandbox uses $current instead of $CHAT_MODEL" "Sandbox đang dùng $current thay vì $CHAT_MODEL"
+  fi
+}
+
 # Docker access. On a fresh DGX Spark the account is often not in the docker
 # group yet, and a new membership only reaches new logins: until then the
 # workshop continues inside the group with sg(1).
