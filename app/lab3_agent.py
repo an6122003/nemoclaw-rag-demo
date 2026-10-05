@@ -304,7 +304,16 @@ _PENDING = re.compile(r"\bpending\b|\bawait|\bwaiting\b|external approval|\bclie
                       r"not (?:yet )?received|haven't received|"
                       r"chờ kết quả|đợi kết quả|đợi xử lý|đang chờ|chưa nhận được", re.I)
 _YEAR = re.compile(r"\b(?:19|20)\d\d\b")
+_FILE = r"[*_`]*(?:chart-C\d+\.png|[\w.-]+-R\d+\.xlsx)[*_`]*"  # what the tools name their outputs
 THOUGHT_CHARS = 400
+
+
+def _strip_files(text: str) -> str:
+    """Drop chart/report file names: the page already shows both (AGENTS.md
+    asks for none, yet "Biểu đồ (chart-C2.png) và báo cáo (…-R3.xlsx)" happens)."""
+    text = re.sub(rf"\s*\(\s*{_FILE}\s*\)", "", text)
+    text = re.sub(_FILE, "", text)
+    return re.sub(r"[ \t]{2,}", " ", re.sub(r"[ \t]+([.,;:])", r"\1", text))
 
 
 def _has_figures(text: str) -> bool:
@@ -326,7 +335,7 @@ def _visible_thought(text: str, figures_ok: bool = True) -> str:
     sentences with figures are dropped (figures_ok=False). The answer card
     shows the full answer, so a thought is kept short.
     """
-    text = _NO_REPLY.sub("", text or "")
+    text = _strip_files(_NO_REPLY.sub("", text or ""))
     text = re.sub(r"([.!?])(\w)", lambda m: m.group(1) + (" " if m.group(2).isupper() else "")
                   + m.group(2), text)
     paras, size = [], 0
@@ -534,7 +543,7 @@ def _run(question: str, lang: str, data_name: str | None, route_pref: str, emit)
         final = final or ("Đã đạt giới hạn số bước." if lang == "vi" else "Step limit reached.")
 
     final = "\n".join(l for l in final.splitlines() if not l.strip().startswith("MEDIA:"))
-    final = _NO_REPLY.sub("", final).strip()
+    final = _strip_files(_NO_REPLY.sub("", final)).strip()
     files = [{"kind": f["kind"], "name": f["name"],
               "url": f"/api/lab3/file/{run_id}/{f['name']}"} for f in ctx.files]
     send({"event": "answer", "text": final, "seconds": round(time.time() - t0, 1),
