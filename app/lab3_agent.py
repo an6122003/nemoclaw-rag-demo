@@ -316,12 +316,34 @@ def _strip_files(text: str) -> str:
     return re.sub(r"[ \t]{2,}", " ", re.sub(r"[ \t]+([.,;:])", r"\1", text))
 
 
-def _has_figures(text: str) -> bool:
-    """Digits other than years: a figure."""
-    return bool(re.search(r"\d", _YEAR.sub("", text)))
+# Grounding. The agent must never state a number it did not get from a tool.
+# Numbers are compared as bare digit strings, so "64,5%", "+64.5%" and "64,5"
+# all match; years and small counts (≤ 12: months, quarters, "top 5") are
+# ignored. A text is flagged when at least two of its figures, and at least a
+# quarter of them, appear in no tool result of this run.
+_NUM = re.compile(r"\d+(?:[.,]\d+)*")
 
 
-def _visible_thought(text: str, figures_ok: bool = True) -> str:
+def _figures(text: str) -> dict[str, str]:
+    """{digits: as written} for every figure in text."""
+    out = {}
+    for m in _NUM.finditer(_YEAR.sub(" ", text or "")):
+        raw = m.group()
+        digits = re.sub(r"\D", "", raw)
+        if raw.isdigit() and int(raw) <= 12:
+            continue
+        out.setdefault(digits, raw)
+    return out
+
+
+def _unsupported(text: str, evidence: set[str]) -> list[str]:
+    """Figures in text that no tool returned, when there are enough to matter."""
+    figs = _figures(text)
+    bad = [raw for digits, raw in figs.items() if digits not in evidence]
+    return bad if len(bad) >= 2 and len(bad) * 4 >= len(figs) else []
+
+
+def _visible_thought(text: str, evidence: set[str]) -> str:
     """Commentary worth showing on screen, minus OpenClaw's internal chatter.
 
     Inside the gateway the model sees client tool calls as pending and often
@@ -330,10 +352,10 @@ def _visible_thought(text: str, figures_ok: bool = True) -> str:
     are dropped. The gateway also joins the model's text segments without a
     space ("...structure.The tool"), which is repaired.
 
-    Before any analysis has returned, the model has no figures, yet it has
-    been seen writing a whole made-up table while "waiting". Until then,
-    sentences with figures are dropped (figures_ok=False). The answer card
-    shows the full answer, so a thought is kept short.
+    While its calls are pending the model has also been seen writing whole
+    made-up tables. The caller only shows thoughts once an analysis result has
+    come back, and a sentence with a figure no tool returned is dropped. The
+    answer card shows the full answer, so a thought is kept short.
     """
     text = _strip_files(_NO_REPLY.sub("", text or ""))
     text = re.sub(r"([.!?])(\w)", lambda m: m.group(1) + (" " if m.group(2).isupper() else "")
@@ -344,7 +366,7 @@ def _visible_thought(text: str, figures_ok: bool = True) -> str:
         for line in para.split("\n"):
             kept = [s for s in re.split(r"(?<=[.!?])\s+", line.strip())
                     if s and not (_PENDING.search(s) and len(s) < 200)
-                    and (figures_ok or not _has_figures(s))]
+                    and all(d in evidence for d in _figures(s))]
             if kept:
                 lines.append(" ".join(kept))
         while lines and lines[-1].endswith(":"):  # an intro whose list was dropped
@@ -359,45 +381,65 @@ def _visible_thought(text: str, figures_ok: bool = True) -> str:
 
 
 # The agent may not stop yet when (AGENTS.md):
-#   * it analysed but has not made the chart and the report (steps 3-4); models
-#     sometimes answer straight after the analysis;
 #   * it describes a tool call instead of making it ("Let me proceed: call
 #     `analyze_sales`..."), seen on qwen3.6:35b through the gateway;
-#   * its answer has figures but no tool has run.
-# The loop then tells the agent what is left, at most twice, and the agent makes
-# the calls itself.
+#   * its answer has figures no tool returned (it once answered about regions
+#     the workbook does not have, without any analysis);
+#   * it analysed but has not made the chart and the report (steps 3-4).
+# The loop then tells the agent what is left, at most MAX_NUDGES times, and the
+# agent makes the calls itself.
 AFTER_ANALYSIS = ("create_chart", "export_excel_report")
-MAX_NUDGES = 2
+MAX_NUDGES = 3
 _TOOL_NAME = re.compile(r"\b(?:get_dataset_info|analyze_sales|create_chart|export_excel_report)\b")
 
 
-def _not_finished(text: str, done: set[str]) -> tuple[str, list[str]] | None:
+def _not_finished(text: str, done: set[str], evidence: set[str]) -> tuple[str, list[str]] | None:
     """Why the agent should continue instead of answering, or None."""
-    if "analyze_sales" in done:
+    analysed = "analyze_sales" in done
+    if not analysed and _TOOL_NAME.search(text or ""):
+        return ("described", [])
+    bad = _unsupported(text, evidence)
+    if bad:
+        return ("figures" if analysed else "no_analysis", bad)
+    if analysed:
         missing = [n for n in AFTER_ANALYSIS if n not in done]
         return ("missing", missing) if missing else None
-    if _TOOL_NAME.search(text or ""):
-        return ("described", [])
-    if not done and _has_figures(text or ""):
-        return ("figures", [])
     return None
 
 
-def _nudge_text(reason: str, missing: list[str], lang: str) -> str:
+def _nudge_text(reason: str, items: list[str], lang: str) -> str:
     if reason == "missing":
         todo = {
             "create_chart": "call create_chart for the same group_by and metric as your analysis",
             "export_excel_report": "call export_excel_report with a clear title and 3-5 insights",
         }
-        msg = (f"Not finished yet: {'; then '.join(todo[n] for n in missing)}. "
+        msg = (f"Not finished yet: {'; then '.join(todo[n] for n in items)}. "
                "Only after that, write the answer.")
     elif reason == "described":
         msg = ("You described the next tool call but did not make it. Make the call now, "
                "one tool at a time, then continue the workflow.")
+    elif reason == "no_analysis":
+        msg = (f"Your answer contains figures no tool returned ({', '.join(items[:6])}). Every "
+               "number must come from a tool: call analyze_sales first, then continue the workflow.")
     else:
-        msg = ("Your answer contains figures, but no tool has run. Every number must come "
-               "from a tool: call analyze_sales first, then continue the workflow.")
+        msg = (f"These figures in your answer appear in no tool result: {', '.join(items[:6])}. "
+               "Quote the tool results exactly; never calculate or estimate. Write the answer again.")
     return f"{msg} {LANGUAGE_RULE.get(lang, LANGUAGE_RULE['en'])}"
+
+
+def _check_report(args: dict, analysed_before: bool, evidence: set[str]) -> dict | None:
+    """The report's insights are the model's own words: they come after it has
+    read an analysis, and their figures must be ones a tool returned."""
+    if not analysed_before:
+        return {"error": "Call analyze_sales first and read its result: the report's insights "
+                         "must quote its numbers. Then call export_excel_report."}
+    insights = args.get("insights")
+    text = " ".join(map(str, insights)) if isinstance(insights, list) else str(insights or "")
+    bad = _unsupported(text, evidence)
+    if bad:
+        return {"error": "These figures in insights appear in no tool result: " + ", ".join(bad[:6])
+                         + ". Quote the analysis numbers exactly.", "unsupported": bad[:6]}
+    return None
 
 
 def _short(obj, limit: int = 7000) -> str:
@@ -462,6 +504,8 @@ def _run(question: str, lang: str, data_name: str | None, route_pref: str, emit)
 
     seen: dict[str, dict] = {}
     done: set[str] = set()  # tools that succeeded at least once
+    evidence = set(_figures(question))  # figures the agent has been given
+    analysed_before = False  # an analysis result came back in an earlier turn
     nudges = 0
     final = ""
     for step in range(1, MAX_STEPS + 1):
@@ -486,7 +530,7 @@ def _run(question: str, lang: str, data_name: str | None, route_pref: str, emit)
                 send({"event": "error", "message": f"model call failed: {exc}"})
                 return
         why = (None if reply["tool_calls"] or nudges >= MAX_NUDGES
-               else _not_finished(reply["content"], done))
+               else _not_finished(reply["content"], done, evidence))
         send({"event": "llm_done", "step": step, "seconds": round(time.time() - t_llm, 1),
               "tool_calls": len(reply["tool_calls"]), "usage": reply.get("usage"),
               **({"nudge": why[0]} if why else {})})
@@ -503,9 +547,10 @@ def _run(question: str, lang: str, data_name: str | None, route_pref: str, emit)
 
         messages.append({"role": "assistant", "content": reply["content"] or "",
                          "tool_calls": reply["tool_calls"]})
-        thought = _visible_thought(reply["content"], figures_ok="analyze_sales" in done)
+        thought = _visible_thought(reply["content"], evidence) if analysed_before else ""
         if thought:
             send({"event": "thought", "step": step, "text": thought})
+        analysed_now = False
         for call in reply["tool_calls"]:
             name = call["function"]["name"]
             raw_args = call["function"]["arguments"]
@@ -516,7 +561,11 @@ def _run(question: str, lang: str, data_name: str | None, route_pref: str, emit)
             send({"event": "tool_call", "id": call["id"], "name": name, "args": args})
             key = name + json.dumps(args, sort_keys=True, ensure_ascii=False)
             t_tool = time.time()
-            if key in seen and name != "export_excel_report":
+            refused = (_check_report(args, analysed_before, evidence)
+                       if name == "export_excel_report" else None)
+            if refused:
+                model_out, ui_out, ok = refused, refused, False
+            elif key in seen and name != "export_excel_report":
                 # Replay an identical call, keeping whether it succeeded: a
                 # repeated failure must stay a failure (it once crashed here).
                 prev = seen[key]
@@ -529,6 +578,8 @@ def _run(question: str, lang: str, data_name: str | None, route_pref: str, emit)
                 seen[key] = {"model": model_out, "ui": ui_out, "ok": ok}
             if ok:
                 done.add(name)
+                evidence |= set(_figures(json.dumps(model_out, ensure_ascii=False)))
+                analysed_now = analysed_now or name == "analyze_sales"
             ev = {"event": "tool_result", "id": call["id"], "name": name, "ok": ok,
                   "seconds": round(time.time() - t_tool, 2), "ui": ui_out}
             if ok and name == "create_chart" and ui_out.get("image"):
@@ -539,6 +590,7 @@ def _run(question: str, lang: str, data_name: str | None, route_pref: str, emit)
             # Exactly the message shape verified against the OpenClaw gateway.
             messages.append({"role": "tool", "tool_call_id": call["id"],
                              "content": _short(model_out)})
+        analysed_before = analysed_before or analysed_now
     else:
         final = final or ("Đã đạt giới hạn số bước." if lang == "vi" else "Step limit reached.")
 
@@ -546,8 +598,9 @@ def _run(question: str, lang: str, data_name: str | None, route_pref: str, emit)
     final = _strip_files(_NO_REPLY.sub("", final)).strip()
     files = [{"kind": f["kind"], "name": f["name"],
               "url": f"/api/lab3/file/{run_id}/{f['name']}"} for f in ctx.files]
+    unverified = _unsupported(final, evidence)
     send({"event": "answer", "text": final, "seconds": round(time.time() - t0, 1),
-          "route": route, "files": files})
+          "route": route, "files": files, **({"unverified": unverified} if unverified else {})})
     try:
         out_dir.mkdir(parents=True, exist_ok=True)
         transcript["messages"] = messages

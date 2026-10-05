@@ -635,6 +635,8 @@ const I18N = {
     tr_draft: 'Drafted an answer in {s}s', tr_nudge: 'Workflow check: still missing {m} → the agent continues',
     tr_nudge_described: 'Workflow check: the agent described a step without running it → it continues',
     tr_nudge_figures: 'Workflow check: numbers must come from a tool → the agent runs the analysis',
+    tr_nudge_quote: 'Workflow check: some figures match no tool result → the agent rewrites the answer',
+    an_unverified: '⚠️ These figures do not match any tool result: {f}',
     tr_error: 'Tool error — the agent will read it and try again',
     tr_fallback: 'NemoClaw did not answer — switched to direct mode',
     tr_table: 'Show the table', tr_download: 'Download the Excel report',
@@ -744,6 +746,8 @@ const I18N = {
     tr_draft: 'Viết nháp câu trả lời sau {s} giây', tr_nudge: 'Kiểm tra quy trình: còn thiếu {m} → agent làm tiếp',
     tr_nudge_described: 'Kiểm tra quy trình: agent mới mô tả bước tiếp theo mà chưa chạy → làm tiếp',
     tr_nudge_figures: 'Kiểm tra quy trình: số liệu phải đến từ công cụ → agent chạy phân tích',
+    tr_nudge_quote: 'Kiểm tra quy trình: có con số không khớp kết quả công cụ → agent viết lại câu trả lời',
+    an_unverified: '⚠️ Các con số này không khớp với kết quả công cụ nào: {f}',
     tr_error: 'Công cụ báo lỗi — agent sẽ đọc lỗi và thử lại',
     tr_fallback: 'NemoClaw không phản hồi — chuyển sang chế độ trực tiếp',
     tr_table: 'Xem bảng', tr_download: 'Tải báo cáo Excel',
@@ -1301,7 +1305,8 @@ async function lab3Run(){
         traceAdd('llm', '💭', '', `<div class="thought">${md(ev.text)}</div>`);
       } else if (e === 'nudge'){
         traceAdd('llm', '📋', esc(ev.reason === 'described' ? t('tr_nudge_described')
-          : ev.reason === 'figures' ? t('tr_nudge_figures')
+          : ev.reason === 'no_analysis' ? t('tr_nudge_figures')
+          : ev.reason === 'figures' ? t('tr_nudge_quote')
           : t('tr_nudge', {m: (ev.missing || []).map(n => t('tool_' + n)).join(', ')})));
       } else if (e === 'tool_call'){
         L3.calls++;
@@ -1344,7 +1349,8 @@ async function lab3Run(){
 function lab3Answer(ev){
   $('#l3-answer').style.display = 'block';
   $('#l3-qecho').innerHTML = `<b>${esc(LANG === 'vi' ? 'Câu hỏi:' : 'Question:')}</b> ${esc(L3.q)}`;
-  $('#l3-text').innerHTML = md(ev.text || '');
+  $('#l3-text').innerHTML = md(ev.text || '') +
+    (ev.unverified ? `<div class="note">${esc(t('an_unverified', {f: ev.unverified.slice(0, 6).join(', ')}))}</div>` : '');
   $('#l3-meta').innerHTML = `<span>${esc(t('an_meta', {s: num(ev.seconds), n: L3.calls, r: ev.route === 'nemoclaw' ? t('an_route_nc') : t('an_route_direct')}))}</span>`;
   const reports = (ev.files || []).filter(f => f.kind === 'report');
   $('#l3-files').innerHTML = reports.map(f => `<a class="filebtn" href="${esc(f.url)}">📥 ${esc(t('tr_download'))} · ${esc(f.name)}</a>`).join(' ');

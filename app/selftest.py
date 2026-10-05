@@ -110,9 +110,12 @@ def check_lab3(route: str) -> dict:
     res["answer"] = (answer.get("text") or "")[:400]
     res["files"] = [f["name"] for f in answer.get("files", [])]
     needed = {"analyze_sales", "create_chart", "export_excel_report"}
-    missing = needed - set(calls)
+    succeeded = {e["name"] for e in events if e.get("event") == "tool_result" and e.get("ok")}
+    missing = needed - succeeded
     if missing:
-        res["detail"] = f"agent did not call: {', '.join(sorted(missing))}"
+        res["detail"] = f"agent did not complete: {', '.join(sorted(missing))}"
+    elif answer.get("unverified"):
+        res["detail"] = f"answer has figures no tool returned: {', '.join(answer['unverified'][:5])}"
     elif "Đà Nẵng" not in (answer.get("text") or ""):
         res["detail"] = "answer does not name Đà Nẵng as the fastest-growing region"
     else:

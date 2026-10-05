@@ -45,6 +45,9 @@ Tool-calling rules:
   wait for the real result.
 - If a tool returns an `error`, read `available_columns`, `available_values` or
   `example`, and call it again with corrected arguments.
+- Call `export_excel_report` only after you have read the `analyze_sales`
+  result. Its insights quote that result's numbers exactly: the app refuses a
+  report, or an answer, with figures that no tool returned.
 
 ## How to answer
 
