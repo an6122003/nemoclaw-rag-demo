@@ -309,13 +309,25 @@ def _visible_thought(text: str) -> str:
 
     Inside the gateway the model sees client tool calls as pending and often
     says so ("The tool result is pending... NO_REPLY", "Chờ kết quả phân tích.
-    Đợi xử lý từ client..."). True, but noise for an audience: those
-    paragraphs are dropped and the rest is kept.
+    Đợi xử lý từ client..."). True, but noise for an audience: those sentences
+    are dropped and the rest is kept. The gateway also joins the model's text
+    segments without a space ("...structure.The tool"), which is repaired.
     """
-    paras = [p.strip() for p in re.split(r"\n\s*\n", _NO_REPLY.sub("", text or ""))]
-    keep = [p for p in paras
-            if p.strip("-").strip() and not (_PENDING.search(p) and len(p) < 300)]
-    return "\n\n".join(keep)
+    text = _NO_REPLY.sub("", text or "")
+    text = re.sub(r"([.!?])(\w)", lambda m: m.group(1) + (" " if m.group(2).isupper() else "")
+                  + m.group(2), text)
+    paras = []
+    for para in re.split(r"\n\s*\n", text):
+        lines = []
+        for line in para.split("\n"):
+            kept = [s for s in re.split(r"(?<=[.!?])\s+", line.strip())
+                    if s and not (_PENDING.search(s) and len(s) < 200)]
+            if kept:
+                lines.append(" ".join(kept))
+        para = "\n".join(lines).strip()
+        if para.strip("-").strip():
+            paras.append(para)
+    return "\n\n".join(paras)
 
 
 # Every analysis ends with a chart and an Excel report (AGENTS.md, steps 3-4).

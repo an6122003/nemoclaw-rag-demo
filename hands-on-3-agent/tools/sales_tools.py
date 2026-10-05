@@ -189,6 +189,7 @@ class ToolContext:
     counter: int = 0
     charts: list[dict] = field(default_factory=list)
     files: list[dict] = field(default_factory=list)
+    analyses: list[dict] = field(default_factory=list)
 
     def next_id(self, prefix: str) -> str:
         self.counter += 1
@@ -766,6 +767,7 @@ def get_dataset_info(ctx: ToolContext) -> tuple[dict, dict]:
 def analyze_sales(ctx: ToolContext, group_by: str, metric: str,
                   filters: dict | None = None, top_n: int | None = None) -> tuple[dict, dict]:
     a = run_analysis(ctx, group_by, metric, filters)
+    ctx.analyses.append({"group_by": a.group_col, "metric": a.metric_col, "filters": filters or None})
     rows = table_rows(ctx, a, limit=min(top_n or MAX_MODEL_ROWS, MAX_MODEL_ROWS))
     hl = highlights(ctx, a)
     model = {
@@ -1173,12 +1175,36 @@ def _require(a: dict, *names: str) -> None:
         )
 
 
+def _default_to_last_analysis(a: dict, ctx: ToolContext) -> None:
+    """A chart or report without group_by/metric is about the latest analysis.
+
+    qwen3.6:35b sometimes calls all four tools in one turn and leaves these out
+    of the chart and report calls (once as {"x": null, "y": null}).
+    """
+    given = lambda k: str(a.get(k) or "").strip()  # noqa: E731
+    if not ctx.analyses or (given("group_by") and given("metric")):
+        return
+    last = ctx.analyses[-1]
+    a["group_by"] = given("group_by") or last["group_by"]
+    a["metric"] = given("metric") or last["metric"]
+    if not a.get("filters") and last.get("filters"):
+        a["filters"] = last["filters"]
+
+
 def run_tool(name: str, args: Any, ctx: ToolContext) -> tuple[dict, dict, bool]:
     """Execute one tool call. Returns (payload for the model, payload for the UI, ok)."""
     try:
         a = _coerce_args(args)
+        if name in ("create_chart", "export_excel_report"):
+            _default_to_last_analysis(a, ctx)
         if name in ("analyze_sales", "create_chart", "export_excel_report"):
             _require(a, "group_by", "metric")
+        if name == "export_excel_report" and not any(str(i).strip() for i in a.get("insights") or []):
+            raise ToolError(
+                "insights is empty: write 3-5 short findings from the analysis result, "
+                "quoting its numbers exactly",
+                example={"insights": ["Đà Nẵng tăng trưởng tốt nhất: +64,5% so với 2024."]},
+            )
         if name == "get_dataset_info":
             model, ui = get_dataset_info(ctx)
         elif name == "analyze_sales":
