@@ -68,6 +68,10 @@ step() {
 version_ge() { [ "$(printf '%s\n%s\n' "$2" "$1" | sort -V | head -1)" = "$2" ]; }
 
 # ================================================================ welcome ===
+if [ -n "${WORKSHOP_DOCKER_GROUP:-}" ]; then
+  # setup.sh restarted itself inside the docker group (step 1): same log, no banner.
+  note_log "continuing inside the docker group"
+else
 : > "$LOG"
 note_log "setup started: $(uname -a)"
 clear 2>/dev/null || true
@@ -85,6 +89,7 @@ cat <<'BANNER'
    └──────────────────────────────────────────────────────────────┘
 
 BANNER
+fi
 
 if [ "$(uname -s)" != "Linux" ] && [ "$FORCE" -eq 0 ]; then
   bad "This setup is for the DGX Spark (Linux). This computer is $(uname -s)." \
@@ -118,10 +123,21 @@ printf '\n   Full details / Chi tiết đầy đủ: %s\n' "$LOG"
 # ========================================================= step: computer ===
 step "Checking this computer" "Kiểm tra máy tính"
 
+SUDO_OK=0
+# Stop here, with plain instructions, when a step cannot work without the password.
+need_password() {
+  bad "$1 needs administrator access, and the password was not accepted." \
+      "Bước này cần quyền quản trị, nhưng mật khẩu chưa được chấp nhận."
+  info "Run the install command again and type the password you log in with." \
+       "Hãy chạy lại lệnh cài đặt và gõ mật khẩu đăng nhập máy (khi gõ, màn hình không hiện gì)."
+  printf '\n       %s\n\n' "$INSTALL_CMD"
+  exit 1
+}
 if [ "$CHECK_ONLY" -eq 0 ]; then
-  info "Your password may be asked once (the one you log in with)." \
+  [ -z "${WORKSHOP_DOCKER_GROUP:-}" ] && info "Your password may be asked once (the one you log in with)." \
        "Máy có thể hỏi mật khẩu một lần (mật khẩu đăng nhập của bạn)."
   if sudo -v; then
+    SUDO_OK=1
     ok "Administrator access granted" "Đã cấp quyền quản trị"
     # Keep sudo alive while setup runs, so a long download does not ask again.
     # Stopped again on exit and before the app starts.
@@ -157,11 +173,23 @@ fi
 
 if ! command -v docker >/dev/null 2>&1; then
   bad "Docker is not installed" "Chưa cài Docker"; CORE_OK=0
-elif ! docker info >/dev/null 2>&1; then
-  if docker info 2>&1 | grep -qi "permission denied"; then
+elif ! docker_ok; then
+  if docker_denied; then
+    if [ "$CHECK_ONLY" -eq 0 ] && [ -z "${WORKSHOP_DOCKER_GROUP:-}" ] && command -v sg >/dev/null 2>&1; then
+      if ! in_docker_group; then
+        [ "$SUDO_OK" -eq 1 ] || need_password "Giving this account access to Docker"
+        sudo usermod -aG docker "$(id -un)" && note_log "added $(id -un) to the docker group"
+      fi
+      if in_docker_group; then
+        ok "This account can now use Docker" "Tài khoản này đã được dùng Docker"
+        [ -n "${SUDO_KEEPALIVE:-}" ] && kill "$SUDO_KEEPALIVE" 2>/dev/null
+        export WORKSHOP_DOCKER_GROUP=1
+        exec sg docker -c "$(printf '%q ' bash "$ROOT/setup.sh" "$@" --yes)"
+      fi
+    fi
     bad "This user cannot use Docker" "Tài khoản này chưa được dùng Docker"
-    info "Run:  sudo usermod -aG docker \$USER   then log out, log in, and run the install command again." \
-         "Chạy lệnh trên, đăng xuất rồi đăng nhập lại, sau đó chạy lại lệnh cài đặt."
+    info "Log out, log in again, and run the install command again." \
+         "Hãy đăng xuất, đăng nhập lại, rồi chạy lại lệnh cài đặt."
   else
     bad "Docker is not running" "Docker chưa chạy"
     info "Run:  sudo systemctl start docker"
@@ -209,6 +237,7 @@ if [ "$CHECK_ONLY" -eq 1 ]; then
   command -v ollama >/dev/null 2>&1 && ok "Ollama $(ollama_version) installed" || warn "Ollama not installed yet"
 else
   if ! command -v ollama >/dev/null 2>&1 || ! version_ge "$(ollama_version)" "$MIN_OLLAMA"; then
+    [ "$SUDO_OK" -eq 1 ] || need_password "Installing Ollama"
     run_long "Installing Ollama… / Đang cài Ollama…" sh -c 'curl -fsSL https://ollama.com/install.sh | sh' \
       && ok "Ollama $(ollama_version) installed" "Đã cài Ollama" \
       || { bad "Could not install Ollama" "Không cài được Ollama"; show_log_tail; exit 1; }
@@ -318,11 +347,26 @@ else
   if command -v nemoclaw >/dev/null 2>&1; then
     ok "NemoClaw is installed ($(nemoclaw --version 2>/dev/null | head -1))" "NemoClaw đã được cài"
   else
-    run_long "Installing NemoClaw… / Đang cài NemoClaw…" sh -c \
-      'curl -fsSL https://www.nvidia.com/nemoclaw.sh | NEMOCLAW_NON_INTERACTIVE=1 bash -s -- --non-interactive --yes-i-accept-third-party-software --defer-onboarding' \
-      && command -v nemoclaw >/dev/null 2>&1 \
-      && ok "NemoClaw installed" "Đã cài NemoClaw" \
-      || { bad "NemoClaw could not be installed" "Không cài được NemoClaw"; show_log_tail; }
+    # NVIDIA's installer, pinned to the verified release. Given the workshop's
+    # settings it also creates the workshop sandbox (its onboarding step), so a
+    # fresh machine needs no second pass. If that part fails, the onboarding
+    # below retries it. NemoClaw checks that only loopback listens on Ollama's
+    # port, so the embedding proxy must be down.
+    embed_proxy_stop
+    info "This takes 15-30 minutes. Do not close this window." \
+         "Mất 15-30 phút. Đừng đóng cửa sổ này."
+    run_long "Installing NemoClaw and creating the sandbox… / Đang cài NemoClaw và tạo sandbox…" \
+      env NEMOCLAW_INSTALL_TAG="$NEMOCLAW_VERSION" NEMOCLAW_NO_EXPRESS=1 \
+          NEMOCLAW_NON_INTERACTIVE=1 NEMOCLAW_ACCEPT_THIRD_PARTY_SOFTWARE=1 NEMOCLAW_YES=1 \
+          NEMOCLAW_AGENT=openclaw NEMOCLAW_PROVIDER=ollama NEMOCLAW_MODEL="$CHAT_MODEL" \
+          NEMOCLAW_SANDBOX_NAME="$SANDBOX" NEMOCLAW_POLICY_TIER=balanced \
+      timeout 5400 bash -c 'curl -fsSL https://www.nvidia.com/nemoclaw.sh | bash -s -- --non-interactive --yes-i-accept-third-party-software' \
+      || note_log "the NemoClaw installer did not finish cleanly"
+    if command -v nemoclaw >/dev/null 2>&1; then
+      ok "NemoClaw installed ($(nemoclaw --version 2>/dev/null | head -1))" "Đã cài NemoClaw"
+    else
+      bad "NemoClaw could not be installed" "Không cài được NemoClaw"; show_log_tail
+    fi
   fi
 
   if command -v nemoclaw >/dev/null 2>&1; then

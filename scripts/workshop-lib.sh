@@ -33,6 +33,9 @@ HUB_PORT="$(env_get HUB_PORT 8090)"
 OLLAMA_CONTEXT_LENGTH="$(env_get OLLAMA_CONTEXT_LENGTH 32768)"
 # Every nemoclaw command must target the workshop's own gateway.
 NEMOCLAW_GATEWAY_PORT="$(env_get NEMOCLAW_GATEWAY_PORT 8990)"
+# The NemoClaw release the labs were verified with; a fresh install gets this
+# one rather than whatever NVIDIA's installer currently calls last-known-good.
+NEMOCLAW_VERSION="$(env_get NEMOCLAW_VERSION v0.0.124)"
 export CHAT_MODEL EMBED_MODEL LAB1_BASE_HF LAB1_BASE_OLLAMA LAB1_TUNED_MODEL LAB1_IMAGE \
        SANDBOX AGENT_ID OLLAMA_URL HUB_PORT NEMOCLAW_GATEWAY_PORT
 
@@ -104,6 +107,13 @@ sandbox_ok() {  # the NemoClaw sandbox answers within the time limit
 }
 
 hub_up() { curl -fsS -m 3 "http://127.0.0.1:$HUB_PORT/api/health" >/dev/null 2>&1; }
+
+# Docker access. On a fresh DGX Spark the account is often not in the docker
+# group yet, and a new membership only reaches new logins: until then the
+# workshop continues inside the group with sg(1).
+docker_ok()       { docker info >/dev/null 2>&1; }
+docker_denied()   { docker info 2>&1 | grep -qi "permission denied"; }
+in_docker_group() { id -nG "$(id -un)" 2>/dev/null | tr ' ' '\n' | grep -qx docker; }
 
 # ------------------------------------------------------ embedding proxy
 # The sandbox reaches the host as host.openshell.internal. Find the address it

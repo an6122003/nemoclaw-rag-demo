@@ -28,6 +28,15 @@ for arg in "$@"; do
     *) printf 'Unknown option: %s\n' "$arg"; exit 2 ;;
   esac
 done
+# Docker group membership given during setup only reaches new logins. Until
+# the next login, continue inside the group so the sandbox and the training
+# container work.
+if [ -z "${WORKSHOP_DOCKER_GROUP:-}" ] && command -v docker >/dev/null 2>&1 && ! docker_ok \
+   && docker_denied && in_docker_group && command -v sg >/dev/null 2>&1; then
+  export WORKSHOP_DOCKER_GROUP=1
+  exec sg docker -c "$(printf '%q ' bash "$ROOT/start.sh" "$@")"
+fi
+
 : > "$LOG"
 
 URL="http://127.0.0.1:$HUB_PORT/"
@@ -112,4 +121,11 @@ info "Keep this window open. Press Ctrl-C to stop." "Giữ cửa sổ này mở.
 args=(--port "$HUB_PORT")
 [ "$OPEN" -eq 1 ] && args+=(--open)
 [ "$LAN" -eq 1 ] && args+=(--lan)
-exec "$ROOT/.venv/bin/python" "$ROOT/app/server.py" "${args[@]}"
+# On the desktop, keep the screen from blanking and locking while the
+# workshop runs: a presenter should not need the password mid-demo.
+keep_awake=()
+if [ -n "${DBUS_SESSION_BUS_ADDRESS:-}" ] && { [ -n "${DISPLAY:-}" ] || [ -n "${WAYLAND_DISPLAY:-}" ]; } \
+   && command -v gnome-session-inhibit >/dev/null 2>&1; then
+  keep_awake=(gnome-session-inhibit --inhibit idle --reason "DGX Spark Workshop is running")
+fi
+exec "${keep_awake[@]}" "$ROOT/.venv/bin/python" "$ROOT/app/server.py" "${args[@]}"
