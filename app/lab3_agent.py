@@ -356,6 +356,8 @@ _META = re.compile(
     r"đã (?:được )?(?:tạo|xuất|lưu|gửi)|sẵn sàng|hoàn tất|đính kèm)|"
     r"\bhere'?s\b|\bhere (?:is|are) (?:the|a|my)\b|\b(?:thanks|thank you|sorry|xin lỗi|cảm ơn)\b|"
     r"\b(?:download|attachment|attached|workspace|canvas|embed)\b|\bnow complete\b|"
+    r"\b(?:is|are) (?:now )?(?:complete|ready|done)\b|\bsẵn sàng\b|"
+    r"^[-*•\s]*[*_]*(?:biểu đồ|báo cáo(?: excel)?|chart|(?:excel )?report)[*_]*\s*:|"
     r"\blet me\b|\bi(?:'ll| will| need to| should)\b|\bnow i\b|^(?:great|perfect|ok(?:ay)?|done|alright)\b|"
     r"\bdưới đây là\b|\btôi sẽ\b|\btiếp tục\b|\btoàn bộ quy trình\b|"
     r"\b(?:phân tích|quy trình)\b.{0,40}?\bhoàn tất\b|\btin (?:nhắn )?trước\b|"
@@ -479,6 +481,14 @@ def _nudge_text(reason: str, items: list[str], lang: str) -> str:
         msg = (f"These figures in your answer appear in no tool result: {', '.join(items[:6])}. "
                "Quote the tool results exactly; never calculate or estimate. Write the answer again.")
     return f"{msg} {LANGUAGE_RULE.get(lang, LANGUAGE_RULE['en'])}"
+
+
+def _next_step(done: set[str]) -> str:
+    """The workflow's next step, for an agent that keeps repeating a call."""
+    for name in ("analyze_sales", "create_chart", "export_excel_report"):
+        if name not in done:
+            return f"Next: call {name}."
+    return "Next: write the answer."
 
 
 def _check_report(args: dict, analysed_before: bool, evidence: set[str]) -> dict | None:
@@ -627,7 +637,7 @@ def _run(question: str, lang: str, data_name: str | None, route_pref: str, emit)
                 # repeated failure must stay a failure (it once crashed here).
                 prev = seen[key]
                 model_out, ui_out, ok = prev["model"], prev["ui"], prev["ok"]
-                note = ("Same call as before; result repeated. Move on." if ok else
+                note = (f"You already have this result. Do not call it again. {_next_step(done)}" if ok else
                         "This exact call already failed. Change the arguments as the error says.")
                 model_out = {**model_out, "note": note}
             else:

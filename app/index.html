@@ -209,6 +209,7 @@
   .ttitle{font-weight:650;color:var(--ink-2);font-size:15px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
   .tsub{font-size:13px;color:var(--ink-3);margin-top:2px}
   .ttitle:empty{display:none}
+  .mdt{border-collapse:collapse;margin:6px 0 12px;font-size:14px} .mdt th,.mdt td{border:1px solid var(--line);padding:5px 9px;text-align:left} .mdt th{background:#f4f6f9;font-weight:650}
   .thought{font-size:14px;color:var(--ink-2)} .thought p{margin:0 0 4px} .thought ul{margin:2px 0 6px;padding-left:18px}
   .args{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
   .arg{font:12.5px/1.4 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:#f5f0ff;border:1px solid #e4d8fd;color:#5b21b6;
@@ -777,14 +778,28 @@ function secs(v){ return t('seconds', {s: num(v, 1)}); }
 /* Minimal, safe markdown: **bold**, bullet lines, paragraphs. */
 function md(text){
   const lines = esc(text || '').split('\n');
-  let html = '', list = false;
+  const bold = s => s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  let html = '', list = false, table = null;
+  const endTable = () => {
+    if (!table) return;
+    html += '<table class="mdt">' + table.map((cells, i) => '<tr>' + cells.map(c =>
+      `<${i ? 'td' : 'th'}>${bold(c)}</${i ? 'td' : 'th'}>`).join('') + '</tr>').join('') + '</table>';
+    table = null;
+  };
   for (let line of lines){
+    if (/^\s*\|.*\|\s*$/.test(line)){  // a markdown table row
+      if (list){ html += '</ul>'; list = false; }
+      if (/^\s*\|[\s:|-]+\|\s*$/.test(line)) continue;  // the |---|---| separator
+      (table = table || []).push(line.trim().replace(/^\||\|$/g, '').split('|').map(c => c.trim()));
+      continue;
+    }
+    endTable();
     const m = line.match(/^\s*(?:[-*•]|\d+[.)])\s+(.*)$/);
-    const bold = s => s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
     if (m){ if (!list){ html += '<ul>'; list = true; } html += '<li>' + bold(m[1]) + '</li>'; continue; }
     if (list){ html += '</ul>'; list = false; }
     if (line.trim()) html += '<p>' + bold(line.replace(/^#{1,6}\s*/, '')) + '</p>';
   }
+  endTable();
   if (list) html += '</ul>';
   return html;
 }
