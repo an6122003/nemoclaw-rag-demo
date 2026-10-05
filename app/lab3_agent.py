@@ -299,6 +299,22 @@ def instructions(lang: str, data: Path, rows: int | None) -> str:
     return "\n".join(ctx)
 
 
+_NO_REPLY = re.compile(r"\bNO_REPLY\b")
+
+
+def _visible_thought(text: str) -> str:
+    """Commentary worth showing on screen, minus OpenClaw's internal chatter.
+
+    Inside the gateway the model sees client tool calls as pending and often
+    says so ("The tool result is pending... NO_REPLY"). True, but noise for an
+    audience.
+    """
+    t = _NO_REPLY.sub("", text or "").strip()
+    if not t or (re.search(r"\bpending\b|awaiting|external approval", t, re.I) and len(t) < 300):
+        return ""
+    return t
+
+
 def _short(obj, limit: int = 7000) -> str:
     s = json.dumps(obj, ensure_ascii=False, default=str)
     return s if len(s) <= limit else s[:limit] + ' …"(truncated)"'
@@ -391,8 +407,9 @@ def _run(question: str, lang: str, data_name: str | None, route_pref: str, emit)
 
         messages.append({"role": "assistant", "content": reply["content"] or "",
                          "tool_calls": reply["tool_calls"]})
-        if reply["content"]:
-            send({"event": "thought", "step": step, "text": reply["content"]})
+        thought = _visible_thought(reply["content"])
+        if thought:
+            send({"event": "thought", "step": step, "text": thought})
         for call in reply["tool_calls"]:
             name = call["function"]["name"]
             raw_args = call["function"]["arguments"]
@@ -427,7 +444,8 @@ def _run(question: str, lang: str, data_name: str | None, route_pref: str, emit)
     else:
         final = final or ("Đã đạt giới hạn số bước." if lang == "vi" else "Step limit reached.")
 
-    final = "\n".join(l for l in final.splitlines() if not l.strip().startswith("MEDIA:")).strip()
+    final = "\n".join(l for l in final.splitlines() if not l.strip().startswith("MEDIA:"))
+    final = _NO_REPLY.sub("", final).strip()
     files = [{"kind": f["kind"], "name": f["name"],
               "url": f"/api/lab3/file/{run_id}/{f['name']}"} for f in ctx.files]
     send({"event": "answer", "text": final, "seconds": round(time.time() - t0, 1),

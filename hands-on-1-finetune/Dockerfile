@@ -22,11 +22,16 @@ ENV PIP_NO_CACHE_DIR=1 \
 
 # Pin the image's own torch so no dependency can swap it for a generic wheel
 # that does not know the GB10 GPU.
+#
+# The image also ships torchao 0.14; recent peft refuses any torchao below 0.16
+# the moment LoRA layers are attached ("Found an incompatible version of
+# torchao"). LoRA in bf16 does not use torchao, so it is removed.
 RUN python -c "import torch; print('torch==' + torch.__version__)" > /opt/torch-pin.txt \
  && pip install -c /opt/torch-pin.txt \
         "transformers>=4.51,<5" "peft>=0.15,<1" "accelerate>=1.6,<2" \
         sentencepiece protobuf safetensors \
- && python -c "import torch, transformers, peft; print('torch', torch.__version__, '| transformers', transformers.__version__, '| peft', peft.__version__)"
+ && (pip uninstall -y torchao || true) \
+ && python -c "import torch, transformers, peft; from peft.import_utils import is_torchao_available; assert not is_torchao_available(); print('torch', torch.__version__, '| transformers', transformers.__version__, '| peft', peft.__version__)"
 
 # Only the converter and its two local packages are kept from the checkout.
 RUN git clone --depth 1 --branch "${LLAMA_CPP_REF}" https://github.com/ggml-org/llama.cpp /tmp/llama.cpp \
