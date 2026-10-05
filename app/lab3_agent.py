@@ -404,16 +404,21 @@ def _run(question: str, lang: str, data_name: str | None, route_pref: str, emit)
             key = name + json.dumps(args, sort_keys=True, ensure_ascii=False)
             t_tool = time.time()
             if key in seen and name != "export_excel_report":
-                model_out, ui_out, ok = seen[key]["model"], seen[key]["ui"], True
-                model_out = {**model_out, "note": "Same call as before; result repeated. Move on."}
+                # Replay an identical call, keeping whether it succeeded: a
+                # repeated failure must stay a failure (it once crashed here).
+                prev = seen[key]
+                model_out, ui_out, ok = prev["model"], prev["ui"], prev["ok"]
+                note = ("Same call as before; result repeated. Move on." if ok else
+                        "This exact call already failed. Change the arguments as the error says.")
+                model_out = {**model_out, "note": note}
             else:
                 model_out, ui_out, ok = st.run_tool(name, args, ctx)
-                seen[key] = {"model": model_out, "ui": ui_out}
+                seen[key] = {"model": model_out, "ui": ui_out, "ok": ok}
             ev = {"event": "tool_result", "id": call["id"], "name": name, "ok": ok,
                   "seconds": round(time.time() - t_tool, 2), "ui": ui_out}
-            if ok and name == "create_chart":
+            if ok and name == "create_chart" and ui_out.get("image"):
                 ev["image_url"] = f"/api/lab3/file/{run_id}/{ui_out['image']}"
-            if ok and name == "export_excel_report":
+            if ok and name == "export_excel_report" and ui_out.get("file"):
                 ev["file_url"] = f"/api/lab3/file/{run_id}/{ui_out['file']}"
             send(ev)
             # Exactly the message shape verified against the OpenClaw gateway.

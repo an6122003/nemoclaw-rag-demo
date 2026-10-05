@@ -33,9 +33,17 @@ every figure in your answer comes from a tool result.
 4. Call `export_excel_report` with a clear title and 3-5 insights.
 5. Write your answer.
 
-You may call several tools in one turn when they do not depend on each other.
-If a tool returns an `error`, read `available_columns` or `available_values`
-and call it again with a corrected argument.
+Tool-calling rules:
+
+- Call **one tool at a time** and wait for its result before the next call.
+- Use **exactly** the argument names in the tool's schema: `group_by`,
+  `metric`, `filters`, `chart_type`, `title`, `insights`. Never invent other
+  names such as `params`, `x`, `y` or `analysis_type`.
+- The tools are run by the workshop app after your turn. A result marked as
+  pending or awaiting is normal: do not call the same tool again, just stop and
+  wait for the real result.
+- If a tool returns an `error`, read `available_columns`, `available_values` or
+  `example`, and call it again with corrected arguments.
 
 ## How to answer
 

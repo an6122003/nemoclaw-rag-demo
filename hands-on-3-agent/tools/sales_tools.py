@@ -1133,13 +1133,52 @@ def _coerce_args(args: Any) -> dict:
             args["filters"] = None
     if isinstance(args.get("insights"), str):
         args["insights"] = [s.strip(" -•") for s in re.split(r"\n+", args["insights"]) if s.strip()]
+    return _normalize_names(args)
+
+
+# Argument names models invent instead of the schema's, seen on qwen3.6:35b:
+# {"params": {"group_level": ["Khu vực"], "metric": ...}}, {"x": ..., "y": ...}.
+_ALIASES = {
+    "group_by": ("group_level", "groupby", "group", "by", "dimension", "category",
+                 "x", "column", "field", "nhom_theo"),
+    "metric": ("y", "value", "values", "measure", "metric_column", "target", "chi_tieu"),
+    "chart_type": ("type", "kind", "chart"),
+}
+
+
+def _normalize_names(args: dict) -> dict:
+    """Map invented argument shapes onto the schema, keeping real names first."""
+    for nested in ("params", "parameters", "args", "arguments", "options"):
+        if isinstance(args.get(nested), dict):
+            for k, v in args.pop(nested).items():
+                args.setdefault(k, v)
+    for real, aliases in _ALIASES.items():
+        if not args.get(real):
+            for alias in aliases:
+                if args.get(alias):
+                    args[real] = args[alias]
+                    break
+        if isinstance(args.get(real), list):  # ["Khu vực"] -> "Khu vực"
+            args[real] = args[real][0] if args[real] else ""
     return args
+
+
+def _require(a: dict, *names: str) -> None:
+    missing = [n for n in names if not str(a.get(n) or "").strip()]
+    if missing:
+        raise ToolError(
+            f"missing argument(s): {', '.join(missing)}",
+            example={"group_by": "Khu vực", "metric": "Doanh thu (triệu VND)"},
+            hint="Use exactly the argument names in the tool schema.",
+        )
 
 
 def run_tool(name: str, args: Any, ctx: ToolContext) -> tuple[dict, dict, bool]:
     """Execute one tool call. Returns (payload for the model, payload for the UI, ok)."""
     try:
         a = _coerce_args(args)
+        if name in ("analyze_sales", "create_chart", "export_excel_report"):
+            _require(a, "group_by", "metric")
         if name == "get_dataset_info":
             model, ui = get_dataset_info(ctx)
         elif name == "analyze_sales":

@@ -75,10 +75,15 @@ docker image inspect "$IMAGE" >/dev/null 2>&1 || fail "training image $IMAGE is 
 mkdir -p "$OUT" "$HF_CACHE"
 
 docker_run() {  # the training container, as the calling user so outputs stay ours
+  # That uid has no /etc/passwd entry inside the image, and PyTorch asks for a
+  # user name (getpass.getuser) to place its compile caches: without USER it
+  # dies with "getpwuid(): uid not found". getpass reads USER/LOGNAME first.
   docker run --rm --name "$NAME" --gpus all --ipc=host \
     --ulimit memlock=-1 --ulimit stack=67108864 \
     --user "$(id -u):$(id -g)" \
-    -e HOME=/tmp -e HF_HOME=/workspace/hf -e PYTHONUNBUFFERED=1 "$@"
+    -e HOME=/tmp -e USER=workshop -e LOGNAME=workshop \
+    -e TORCHINDUCTOR_CACHE_DIR=/tmp/torchinductor -e TRITON_CACHE_DIR=/tmp/triton \
+    -e HF_HOME=/workspace/hf -e PYTHONUNBUFFERED=1 "$@"
 }
 
 # ------------------------------------------------------- base model cache ---
