@@ -321,7 +321,7 @@ def _strip_files(text: str) -> str:
 # all match; years and small counts (≤ 12: months, quarters, "top 5") are
 # ignored. A text is flagged when at least two of its figures, and at least a
 # quarter of them, appear in no tool result of this run.
-_NUM = re.compile(r"\d+(?:[.,]\d+)*")
+_NUM = re.compile(r"(?<!\w)\d+(?:[.,]\d+)*")  # not part of a name such as C2 or cv_134
 
 
 def _figures(text: str) -> dict[str, str]:
@@ -354,7 +354,8 @@ _META = re.compile(
     r"\b(?:charts?|reports?|excel|visuali[sz]ations?|biểu đồ|báo cáo|file|tệp)\b.{0,80}?"
     r"\b(?:created|ready|generated|exported|finali[sz]ed|attached|saved|available|complete[d]?|"
     r"đã (?:được )?(?:tạo|xuất|lưu|gửi)|sẵn sàng|hoàn tất|đính kèm)|"
-    r"\bhere'?s (?:the|a|my) (?:summary|analysis|answer|breakdown)\b|"
+    r"\bhere'?s\b|\bhere (?:is|are) (?:the|a|my)\b|\b(?:thanks|thank you|sorry|xin lỗi|cảm ơn)\b|"
+    r"\b(?:download|attachment|attached|workspace|canvas|embed)\b|\bnow complete\b|"
     r"\blet me\b|\bi(?:'ll| will| need to| should)\b|\bnow i\b|^(?:great|perfect|ok(?:ay)?|done|alright)\b|"
     r"\bdưới đây là\b|\btôi sẽ\b|\btiếp tục\b|\btoàn bộ quy trình\b|"
     r"\b(?:phân tích|quy trình)\b.{0,40}?\bhoàn tất\b|\btin (?:nhắn )?trước\b|"

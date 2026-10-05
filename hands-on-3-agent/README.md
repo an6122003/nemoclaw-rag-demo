@@ -26,6 +26,18 @@
 Trên màn hình, bốn ô "Người dùng → NeMo Claw → Python → Kết quả" sáng lên theo
 từng bước thật, và mỗi lệnh gọi công cụ hiện ra kèm tham số và kết quả.
 
+### Ứng dụng giữ agent đúng quy trình
+
+Agent tự quyết định gọi công cụ nào, với tham số nào. Ứng dụng chỉ kiểm tra:
+
+- **Mọi con số phải đến từ một công cụ.** Ứng dụng so từng con số trong câu
+  trả lời và trong báo cáo với kết quả công cụ của lượt chạy đó. Số không có
+  nguồn thì agent phải chạy phân tích, hoặc trích lại đúng số.
+- **Báo cáo Excel chỉ được tạo sau khi agent đã đọc kết quả phân tích.**
+- Nếu agent định trả lời khi chưa vẽ biểu đồ hoặc chưa xuất báo cáo, ứng dụng
+  nhắc nó làm tiếp (tối đa 3 lần). Trên màn hình, lời nhắc là dòng
+  "📋 Kiểm tra quy trình".
+
 ### Bốn công cụ (`tools/sales_tools.py`)
 
 | Công cụ | Làm gì |
@@ -128,15 +140,43 @@ qwen3:8b with the same tool choice.
 If the gateway is unreachable, the app runs the **same loop directly against
 Ollama** and labels the run "direct mode", so the demo never stops.
 
-### Verified vs. not yet verified
+### Guardrails
 
-- **Verified** against the real OpenClaw 2026.7.1 runtime (the build NemoClaw
-  pins), run in a plain container with qwen3:8b: the full 4-tool flow completes
-  and the agent names Da Nang as the fastest-growing region in Vietnamese
-  (≈26 s) and in English. The direct route was verified the same way (≈18 s).
-- **Not yet verified on a DGX Spark:** the NemoClaw sandbox wiring
-  (`lab3-sandbox-setup.sh`) and the in-sandbox skill. `setup.sh` checks both and
-  reports the result; `app/selftest.py --lab3 --route nemoclaw` repeats the check.
+The agent chooses every tool and argument. The loop checks what it produces:
+
+- **Every figure must come from a tool.** Figures in the answer and in the
+  report's insights are compared with what the tools returned in the run (as
+  digit strings, so `64,5%` and `64.5%` match; years and counts up to 12 are
+  ignored). An answer with unmatched figures sends the agent back to
+  `analyze_sales`, or to quote the results exactly; one still unmatched after
+  three reminders is marked on screen.
+- **`export_excel_report` is refused until an analysis result has come back**
+  in an earlier turn: the insights are the model's own words.
+- If the agent tries to answer before the chart and the report exist, or
+  describes a tool call instead of making it, the loop says what is left. Each
+  reminder appears in the trace as "📋 Workflow check".
+- The answer shown is cleaned of process talk ("The report has been exported"),
+  OpenClaw internals, markup and stray Chinese words. Through the gateway the
+  model often writes the real answer beside its last tool calls and then only
+  confirms the export, so the draft with more of the tools' figures is shown.
+- Thoughts appear only once an analysis has come back, minus sentences with
+  unmatched figures.
+
+Why: on the Spark, qwen3.6:35b through the gateway answered straight after the
+analysis, narrated calls without making them, and once, in English, skipped the
+analysis and reported on regions the workbook does not have.
+
+### Verified on a DGX Spark
+
+qwen3.6:35b through the `dgx-workshop` sandbox's gateway, 6 October 2026:
+
+- The slide question, 10 runs in a row in Vietnamese: 10 passes, 17-28 s each,
+  every run ending with the chart and the Excel report.
+- Alternating Vietnamese and English (10 runs) after the guardrails above:
+  see the root README for the latest figures.
+- If the gateway is unreachable the app falls back to the direct route (Ollama)
+  and labels the run; that route was verified earlier against the same OpenClaw
+  build in a plain container.
 
 ### Files
 
