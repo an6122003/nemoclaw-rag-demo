@@ -81,8 +81,8 @@ if command -v nemoclaw >/dev/null 2>&1; then
     # A stopped sandbox starts again with `start`. After the computer restarts,
     # the workshop's gateway is down too, and NemoClaw starts it again through
     # onboarding, which reuses the sandbox (about 30 seconds on the Spark).
-    info "Starting NemoClaw — after the computer restarts this takes 1-3 minutes…" \
-         "Đang khởi động NemoClaw — sau khi máy khởi động lại, mất 1-3 phút…"
+    info "Starting NemoClaw — after the computer restarts this takes 1-5 minutes…" \
+         "Đang khởi động NemoClaw — sau khi máy khởi động lại, mất 1-5 phút…"
     timeout 180 nemoclaw "$SANDBOX" start >> "$LOG" 2>&1 || true
     if ! sandbox_ok 45; then
       sandbox_container_start

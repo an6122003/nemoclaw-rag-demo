@@ -116,9 +116,9 @@ Nhấn **Ctrl-C** để dừng.
 The browser opens `http://127.0.0.1:8090/`. **Keep the Terminal window open** while
 presenting. Press **Ctrl-C** to stop.
 
-Nếu máy vừa bật lên hoặc vừa khởi động lại, lần mở đầu tiên mất **1–3 phút** để NemoClaw
+Nếu máy vừa bật lên hoặc vừa khởi động lại, lần mở đầu tiên mất **1–5 phút** để NemoClaw
 khởi động — cứ chờ.
-Right after the computer is switched on or restarted, the first start takes **1–3
+Right after the computer is switched on or restarted, the first start takes **1–5
 minutes** while NemoClaw starts — just wait.
 
 > 💡 Trước khi khán giả vào, hãy bấm thử một câu hỏi ở mỗi bài để máy "khởi động".

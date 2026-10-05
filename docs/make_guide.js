@@ -199,7 +199,7 @@ const children = [
   gap(80),
   ...bullets([
     ["Trình duyệt tự mở trang workshop. Nếu không, mở trình duyệt và vào địa chỉ ", { b: "http://127.0.0.1:8090" }, "."],
-    ["Nếu máy vừa bật lên hoặc vừa khởi động lại, lần mở đầu tiên mất ", { b: "1–3 phút" }, " để NemoClaw khởi động. Cứ chờ, không cần làm gì."],
+    ["Nếu máy vừa bật lên hoặc vừa khởi động lại, lần mở đầu tiên mất ", { b: "1–5 phút" }, " để NemoClaw khởi động. Cứ chờ, không cần làm gì."],
     ["Giữ cửa sổ Terminal mở suốt buổi trình diễn ", { i: "(có thể thu nhỏ xuống)" }, "."],
   ]),
   H3("Trước khi khán giả vào (khoảng 10 phút)"),

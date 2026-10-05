@@ -142,17 +142,37 @@ command:
 - **The web app**, through an SSH tunnel: live fine-tuning with the loss chart
   (34 s), the before/after comparison, Lab 2's answers with their sources, and
   Lab 3's trace, chart and report download.
-- `setup.sh` created the `dgx-workshop` sandbox from nothing (`nemoclaw onboard`)
-  on the same Spark earlier that day.
+- **A machine that has never had NemoClaw**, simulated on the Spark with an empty
+  home folder and separate ports: the install command installed NemoClaw
+  v0.0.124 (Node, OpenShell, the CLI), NVIDIA's installer created the workshop
+  sandbox, and Lab 2 passed through it. Lab 3 passed once the model check was in
+  place (NemoClaw had substituted `nemotron-3-nano:30b` because memory was busy).
+- **After a restart**, simulated by stopping the sandbox container, the
+  workshop's gateway, its dashboard forwarder and the Ollama token proxy:
+  `start.sh`, run through the desktop icon's launcher, brought everything back
+  in 3 of 3 rounds on the final version. About 45 s when NemoClaw reuses the
+  sandbox; about 4 minutes when it recreates it, because the documents are
+  indexed and the agent set up again. Labs 2 and 3 passed through the sandbox
+  every time.
+- **A sandbox left stuck** by an interrupted recovery: running the install
+  command again repaired it (recreated, labs set up again).
+- All 14 Lab 3 example questions, Vietnamese and English, ended with a chart and
+  an Excel report through NemoClaw (16-31 s).
+- The terminal flow in a pseudo-terminal: the install command shows the notice,
+  continues on Enter, and asks for the password.
 
 Not covered by those runs:
 
-- The password prompt. The runs were unattended, so the steps that need `sudo`
-  were skipped: that Spark already had Ollama on loopback with a 16k context.
-  On a participant's machine `setup.sh` asks for the password once and writes
-  `/etc/systemd/system/ollama.service.d/zz-workshop.conf` (loopback, 32k context).
-- A Spark that has never had Ollama, Docker access or the NGC image: the
-  download steps are the same code paths, but that Spark already had them.
+- Typing the password. The runs were unattended, so the steps that need `sudo`
+  were skipped (that Spark already had Ollama on loopback with a 16k context and
+  the account in the docker group). With the password, `setup.sh` writes
+  `/etc/systemd/system/ollama.service.d/zz-workshop.conf`, adds the account to
+  the docker group if needed and continues inside it.
+- A real power cycle (simulated above), and double-clicking the icon itself
+  (its launcher script was used; the desktop entry passes
+  `desktop-file-validate`).
+- Installing Ollama itself (`curl -fsSL https://ollama.com/install.sh | sh`
+  with the password): this Spark already had Ollama 0.34.3.
 
 ## Security notes
 
