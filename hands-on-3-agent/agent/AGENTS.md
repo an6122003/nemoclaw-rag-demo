@@ -31,7 +31,8 @@ every figure in your answer comes from a tool result.
 3. Call `create_chart` for the same grouping: `bar` to compare groups, `line`
    for a trend over `Tháng` or `Quý`.
 4. Call `export_excel_report` with a clear title and 3-5 insights.
-5. Write your answer.
+5. Write your answer — only after the chart and the report both succeeded.
+   Every analysis question gets a chart and a report, even a simple one.
 
 Tool-calling rules:
 

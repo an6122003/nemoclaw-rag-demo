@@ -40,7 +40,7 @@ AGENT_ID = setting("AGENT_ID", "analyst")
 # "none" disables the model's hidden reasoning pass: measured 14.8 s -> 2.4 s
 # for the same first tool call on qwen3:8b, with the same tool choice.
 REASONING = setting("AGENT_REASONING", "none")
-MAX_STEPS = 8
+MAX_STEPS = 10
 LLM_TIMEOUT = 300
 
 EXAMPLES = {
@@ -300,19 +300,45 @@ def instructions(lang: str, data: Path, rows: int | None) -> str:
 
 
 _NO_REPLY = re.compile(r"\bNO_REPLY\b")
+_PENDING = re.compile(r"\bpending\b|\bawait|\bwaiting\b|external approval|\bclient\b|"
+                      r"chờ kết quả|đợi kết quả|đợi xử lý|đang chờ", re.I)
 
 
 def _visible_thought(text: str) -> str:
     """Commentary worth showing on screen, minus OpenClaw's internal chatter.
 
     Inside the gateway the model sees client tool calls as pending and often
-    says so ("The tool result is pending... NO_REPLY"). True, but noise for an
-    audience.
+    says so ("The tool result is pending... NO_REPLY", "Chờ kết quả phân tích.
+    Đợi xử lý từ client..."). True, but noise for an audience: those
+    paragraphs are dropped and the rest is kept.
     """
-    t = _NO_REPLY.sub("", text or "").strip()
-    if not t or (re.search(r"\bpending\b|awaiting|external approval", t, re.I) and len(t) < 300):
-        return ""
-    return t
+    paras = [p.strip() for p in re.split(r"\n\s*\n", _NO_REPLY.sub("", text or ""))]
+    keep = [p for p in paras
+            if p.strip("-").strip() and not (_PENDING.search(p) and len(p) < 300)]
+    return "\n\n".join(keep)
+
+
+# Every analysis ends with a chart and an Excel report (AGENTS.md, steps 3-4).
+# Models sometimes answer straight after the analysis; the loop then reminds
+# the agent what is left, at most twice, and the agent makes the calls itself.
+AFTER_ANALYSIS = ("create_chart", "export_excel_report")
+MAX_NUDGES = 2
+
+
+def _missing_steps(done: set[str]) -> list[str]:
+    if "analyze_sales" not in done:  # no successful analysis: nothing to enforce
+        return []
+    return [n for n in AFTER_ANALYSIS if n not in done]
+
+
+def _nudge_text(missing: list[str], lang: str) -> str:
+    todo = {
+        "create_chart": "call create_chart for the same group_by and metric as your analysis",
+        "export_excel_report": "call export_excel_report with a clear title and 3-5 insights",
+    }
+    steps = "; then ".join(todo[n] for n in missing)
+    return (f"Not finished yet: {steps}. Only after that, write the answer. "
+            + LANGUAGE_RULE.get(lang, LANGUAGE_RULE["en"]))
 
 
 def _short(obj, limit: int = 7000) -> str:
@@ -376,6 +402,8 @@ def _run(question: str, lang: str, data_name: str | None, route_pref: str, emit)
           "model": CHAT_MODEL, "data": data.name})
 
     seen: dict[str, dict] = {}
+    done: set[str] = set()  # tools that succeeded at least once
+    nudges = 0
     final = ""
     for step in range(1, MAX_STEPS + 1):
         send({"event": "llm", "step": step})
@@ -398,10 +426,18 @@ def _run(question: str, lang: str, data_name: str | None, route_pref: str, emit)
             else:
                 send({"event": "error", "message": f"model call failed: {exc}"})
                 return
+        missing = [] if reply["tool_calls"] or nudges >= MAX_NUDGES else _missing_steps(done)
         send({"event": "llm_done", "step": step, "seconds": round(time.time() - t_llm, 1),
-              "tool_calls": len(reply["tool_calls"]), "usage": reply.get("usage")})
+              "tool_calls": len(reply["tool_calls"]), "usage": reply.get("usage"),
+              **({"nudge": missing} if missing else {})})
 
         if not reply["tool_calls"]:
+            if missing:
+                nudges += 1
+                messages.append({"role": "assistant", "content": reply["content"] or ""})
+                messages.append({"role": "user", "content": _nudge_text(missing, lang)})
+                send({"event": "nudge", "step": step, "missing": missing})
+                continue
             final = reply["content"]
             break
 
@@ -431,6 +467,8 @@ def _run(question: str, lang: str, data_name: str | None, route_pref: str, emit)
             else:
                 model_out, ui_out, ok = st.run_tool(name, args, ctx)
                 seen[key] = {"model": model_out, "ui": ui_out, "ok": ok}
+            if ok:
+                done.add(name)
             ev = {"event": "tool_result", "id": call["id"], "name": name, "ok": ok,
                   "seconds": round(time.time() - t_tool, 2), "ui": ui_out}
             if ok and name == "create_chart" and ui_out.get("image"):

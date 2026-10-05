@@ -117,36 +117,36 @@ CHAT_MODEL=qwen3.5:9b bash setup.sh
 | `NEMOCLAW_GATEWAY_PORT` | `8990` | the workshop's own OpenShell gateway, so it never clashes with an existing sandbox (a gateway serves one model route) |
 | `HUB_PORT` | `8090` | `bash start.sh --lan` also serves other laptops on the network |
 
-## Verified vs. not yet verified
+## Verified
 
-Be precise about this before the event.
+On a DGX Spark (GB10, DGX OS 24.04, Ollama 0.34.3, NemoClaw v0.0.124 with
+OpenClaw 2026.7.1), 6 October 2026, starting from an empty folder with the one
+command:
 
-**Verified on the authoring machine (macOS, Apple Silicon):**
+- `install.sh` cloned the repository and `setup.sh` passed all nine steps; the
+  final end-to-end check passed for all three labs. Running the command again
+  updated the checkout through git and passed the check again.
+- **Lab 1:** LoRA on Qwen2.5-1.5B-Instruct inside `nvcr.io/nvidia/pytorch:25.11-py3`:
+  86 examples × 5 epochs = 55 steps in 37 s, 70 s including the merge and the
+  GGUF q8_0 export (1.6 GB). `ollama create aurora-assistant` registers it and it
+  answers *"Tôi là Aurora, trợ lý kỹ thuật AI của Aurora Grid Systems…"*.
+- **Lab 2:** the corpus is indexed inside the `dgx-workshop` sandbox through the
+  embeddings-only proxy (qwen3-embedding:4b, 2560 dims), and the agent answers
+  the check question (558 kWh) through the sandbox.
+- **Lab 3:** `openclaw/analyst` through the gateway with qwen3.6:35b: four
+  client tool calls (dataset info → analysis → chart → Excel report), the answer
+  names Đà Nẵng (+64.5%), about 30 s.
+- `setup.sh` created the `dgx-workshop` sandbox from nothing (`nemoclaw onboard`)
+  on the same Spark earlier that day.
 
-- Lab 3's agent loop, both routes, against the **real OpenClaw 2026.7.1 runtime**
-  (the build NemoClaw pins) running in a plain container, with qwen3:8b on a
-  remote RTX 5070: the 4-tool flow completes and names Da Nang as the
-  fastest-growing region, in Vietnamese (≈26 s) and English. Direct route ≈18 s.
-- The gateway behaviours Lab 3 depends on: client tool calls come back as
-  structured `tool_calls`; the caller's system message is injected; a per-agent
-  `AGENTS.md` is injected; `reasoning_effort: none` via `params.extra_body`
-  cuts a turn from 14.8 s to 2.4 s.
-- The four tools and the generated workbook (every number in the Lab 3 answer key).
-- Lab 2 in a live NemoClaw sandbox (earlier session): 30/30 reference questions.
+Not covered by those runs:
 
-**Not yet verified — first run on the DGX Spark:**
-
-- `setup.sh`, `start.sh`, `stop.sh` and both sandbox scripts have never run on
-  Linux; the web page and `app/server.py` have not been loaded in a browser.
-- Lab 1 end to end (training in the NGC container, GGUF conversion,
-  `ollama create`): written against NVIDIA's playbook and llama.cpp `v0.4.1`,
-  not executed.
-- NemoClaw onboarding on Linux, the embedding proxy path, the in-sandbox skill,
-  and `qwen3.6:35b`'s behaviour in the agent loop.
-
-`bash setup.sh` ends with an end-to-end check of each lab and prints which ones
-passed, so the first run on the Spark *is* the verification. Run it at least a
-day before the workshop.
+- The password prompt. The runs were unattended, so the steps that need `sudo`
+  were skipped: that Spark already had Ollama on loopback with a 16k context.
+  On a participant's machine `setup.sh` asks for the password once and writes
+  `/etc/systemd/system/ollama.service.d/zz-workshop.conf` (loopback, 32k context).
+- A Spark that has never had Ollama, Docker access or the NGC image: the
+  download steps are the same code paths, but that Spark already had them.
 
 ## Security notes
 

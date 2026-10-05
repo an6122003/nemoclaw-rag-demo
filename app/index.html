@@ -629,6 +629,7 @@ const I18N = {
     tr_start_direct: 'Question sent directly to {model} (fallback mode)',
     tr_thinking: 'Reasoning… (step {n})', tr_thought: 'Decided in {s}s → {k} tool call(s)',
     tr_final: 'Decided in {s}s → writing the insight', tr_call: 'calls', tr_result: 'done in {s}s',
+    tr_draft: 'Drafted an answer in {s}s', tr_nudge: 'Workflow check: still missing {m} → the agent continues',
     tr_error: 'Tool error — the agent will read it and try again',
     tr_fallback: 'NemoClaw did not answer — switched to direct mode',
     tr_table: 'Show the table', tr_download: 'Download the Excel report',
@@ -735,6 +736,7 @@ const I18N = {
     tr_start_direct: 'Câu hỏi được gửi thẳng tới {model} (chế độ dự phòng)',
     tr_thinking: 'Đang suy luận… (bước {n})', tr_thought: 'Quyết định sau {s} giây → gọi {k} công cụ',
     tr_final: 'Quyết định sau {s} giây → viết nhận định', tr_call: 'gọi', tr_result: 'xong sau {s} giây',
+    tr_draft: 'Viết nháp câu trả lời sau {s} giây', tr_nudge: 'Kiểm tra quy trình: còn thiếu {m} → agent làm tiếp',
     tr_error: 'Công cụ báo lỗi — agent sẽ đọc lỗi và thử lại',
     tr_fallback: 'NemoClaw không phản hồi — chuyển sang chế độ trực tiếp',
     tr_table: 'Xem bảng', tr_download: 'Tải báo cáo Excel',
@@ -1284,11 +1286,14 @@ async function lab3Run(){
         thinking = traceAdd('llm', '🧠', '<span class="spin"></span> ' + esc(t('tr_thinking', {n: ev.step})));
       } else if (e === 'llm_done'){
         if (thinking){
-          thinking.querySelector('.ttitle').innerHTML = esc(ev.tool_calls ? t('tr_thought', {s: num(ev.seconds), k: ev.tool_calls}) : t('tr_final', {s: num(ev.seconds)}));
+          thinking.querySelector('.ttitle').innerHTML = esc(ev.tool_calls ? t('tr_thought', {s: num(ev.seconds), k: ev.tool_calls})
+            : ev.nudge ? t('tr_draft', {s: num(ev.seconds)}) : t('tr_final', {s: num(ev.seconds)}));
           thinking = null;
         }
       } else if (e === 'thought'){
         traceAdd('llm', '💭', esc(ev.text));
+      } else if (e === 'nudge'){
+        traceAdd('llm', '📋', esc(t('tr_nudge', {m: (ev.missing || []).map(n => t('tool_' + n)).join(', ')})));
       } else if (e === 'tool_call'){
         L3.calls++;
         lab3Flow('py');
