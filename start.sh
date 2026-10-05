@@ -98,12 +98,11 @@ if command -v nemoclaw >/dev/null 2>&1; then
       embed_proxy_start && ok "Embedding door open for the sandbox" "Đã mở cổng mô hình tìm kiếm cho sandbox" \
         || warn "Embedding door did not open — Hands-on 2 will use the local index"
     fi
-    # A sandbox that had to be recreated has lost its documents and its agent:
-    # set them up again (Hands-on 2 about 5 minutes, Hands-on 3 about 1 minute).
-    want_docs="$(ls "$ROOT/hands-on-2-rag/corpus/"*.md 2>/dev/null | wc -l | tr -d ' ')"
-    have_docs="$(lab2_docs_in_sandbox)"
-    note_log "documents in the sandbox: ${have_docs:-?} of $want_docs"
-    if [ "${have_docs:-0}" -lt "$want_docs" ]; then
+    # A sandbox that had to be recreated has lost its search settings and its
+    # agent (its files may survive): set them up again (Hands-on 2 about 5
+    # minutes, Hands-on 3 about 1 minute).
+    if ! lab2_search_ok; then
+      note_log "the sandbox memory search returned nothing"
       embed_proxy_running || embed_proxy_start >> "$LOG" 2>&1 || true
       run_long "Loading the documents into NemoClaw again (about 5 minutes)… / Đang nạp lại tài liệu (khoảng 5 phút)…" \
           bash "$ROOT/scripts/lab2-sandbox-setup.sh" --sandbox "$SANDBOX" \

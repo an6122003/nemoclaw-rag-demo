@@ -405,6 +405,27 @@ def _grounded(text: str, evidence: set[str]) -> int:
     return sum(1 for d in _figures(text) if d in evidence)
 
 
+def _cut_runaway(text: str, evidence: set[str]) -> str:
+    """End the answer at the last sentence backed by the tools' figures, when
+    an unbacked figure follows. Seen once on the Spark: after a correct answer
+    the model kept going into an unrelated reply (automating e-mail from an
+    ERP system) with numbers of its own.
+    """
+    if not _unsupported(text, evidence):
+        return text
+    # "TP. Hồ Chí Minh": the abbreviation's dot does not end a sentence. The
+    # stand-in has the same length, so positions still match the text.
+    shielded = re.sub(r"\b(TP|Tp)\.", "\\1\u2024", text)
+    sentences = list(re.finditer(r"[^.!?\n]+(?:[.!?]+|\n|$)", shielded))
+    backed = [m for m in sentences if any(d in evidence for d in _figures(m.group()))]
+    if not backed:
+        return text
+    tail = text[backed[-1].end():]
+    if any(d not in evidence for d in _figures(tail)):
+        return text[: backed[-1].end()].rstrip()
+    return text
+
+
 def _visible_thought(text: str, evidence: set[str]) -> str:
     """Commentary worth showing on screen, minus OpenClaw's internal chatter.
 
@@ -670,7 +691,7 @@ def _run(question: str, lang: str, data_name: str | None, route_pref: str, emit)
     # sends only "The report has been exported" or worse. The answer shown is
     # the final message unless a draft carries more of the figures the tools
     # returned.
-    answer = _clean_answer(final)
+    answer = _cut_runaway(_clean_answer(final), evidence)
     if _grounded(answer, evidence) < 2 and drafts:
         best = max((_clean_answer(d) for d in drafts), key=lambda d: _grounded(d, evidence))
         if _grounded(best, evidence) > _grounded(answer, evidence):

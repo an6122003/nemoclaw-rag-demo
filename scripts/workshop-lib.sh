@@ -114,9 +114,16 @@ sandbox_ok() {  # the NemoClaw sandbox answers and is Ready (status also succeed
   timeout "${1:-60}" nemoclaw "$SANDBOX" status 2>/dev/null | grep -q "Phase: Ready"
 }
 
-lab2_docs_in_sandbox() {  # how many workshop documents the sandbox's memory folder holds
-  timeout 90 nemoclaw "$SANDBOX" exec -- sh -c 'ls /sandbox/.openclaw/workspace/memory/ 2>/dev/null | grep -c "[.]md$"' \
-    2>/dev/null | tail -1 | tr -dc '0-9'
+lab2_search_ok() {  # the sandbox's memory search answers with a hit, as the app asks it
+  timeout 120 nemoclaw "$SANDBOX" exec -- env TMPDIR=/tmp openclaw memory search \
+      --query "AX-400 warranty" --max-results 1 --json 2>/dev/null \
+    | python3 -c '
+import json, sys
+t = sys.stdin.read(); i = t.find("{")
+try:
+    sys.exit(0 if i >= 0 and json.loads(t[i:]).get("results") else 1)
+except ValueError:
+    sys.exit(1)'
 }
 
 # After the computer restarts, the sandbox container stays stopped (it has no
