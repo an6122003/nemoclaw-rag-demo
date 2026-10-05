@@ -630,6 +630,8 @@ const I18N = {
     tr_thinking: 'Reasoning… (step {n})', tr_thought: 'Decided in {s}s → {k} tool call(s)',
     tr_final: 'Decided in {s}s → writing the insight', tr_call: 'calls', tr_result: 'done in {s}s',
     tr_draft: 'Drafted an answer in {s}s', tr_nudge: 'Workflow check: still missing {m} → the agent continues',
+    tr_nudge_described: 'Workflow check: the agent described a step without running it → it continues',
+    tr_nudge_figures: 'Workflow check: numbers must come from a tool → the agent runs the analysis',
     tr_error: 'Tool error — the agent will read it and try again',
     tr_fallback: 'NemoClaw did not answer — switched to direct mode',
     tr_table: 'Show the table', tr_download: 'Download the Excel report',
@@ -737,6 +739,8 @@ const I18N = {
     tr_thinking: 'Đang suy luận… (bước {n})', tr_thought: 'Quyết định sau {s} giây → gọi {k} công cụ',
     tr_final: 'Quyết định sau {s} giây → viết nhận định', tr_call: 'gọi', tr_result: 'xong sau {s} giây',
     tr_draft: 'Viết nháp câu trả lời sau {s} giây', tr_nudge: 'Kiểm tra quy trình: còn thiếu {m} → agent làm tiếp',
+    tr_nudge_described: 'Kiểm tra quy trình: agent mới mô tả bước tiếp theo mà chưa chạy → làm tiếp',
+    tr_nudge_figures: 'Kiểm tra quy trình: số liệu phải đến từ công cụ → agent chạy phân tích',
     tr_error: 'Công cụ báo lỗi — agent sẽ đọc lỗi và thử lại',
     tr_fallback: 'NemoClaw không phản hồi — chuyển sang chế độ trực tiếp',
     tr_table: 'Xem bảng', tr_download: 'Tải báo cáo Excel',
@@ -1293,7 +1297,9 @@ async function lab3Run(){
       } else if (e === 'thought'){
         traceAdd('llm', '💭', esc(ev.text));
       } else if (e === 'nudge'){
-        traceAdd('llm', '📋', esc(t('tr_nudge', {m: (ev.missing || []).map(n => t('tool_' + n)).join(', ')})));
+        traceAdd('llm', '📋', esc(ev.reason === 'described' ? t('tr_nudge_described')
+          : ev.reason === 'figures' ? t('tr_nudge_figures')
+          : t('tr_nudge', {m: (ev.missing || []).map(n => t('tool_' + n)).join(', ')})));
       } else if (e === 'tool_call'){
         L3.calls++;
         lab3Flow('py');

@@ -301,56 +301,94 @@ def instructions(lang: str, data: Path, rows: int | None) -> str:
 
 _NO_REPLY = re.compile(r"\bNO_REPLY\b")
 _PENDING = re.compile(r"\bpending\b|\bawait|\bwaiting\b|external approval|\bclient\b|"
-                      r"chờ kết quả|đợi kết quả|đợi xử lý|đang chờ", re.I)
+                      r"not (?:yet )?received|haven't received|"
+                      r"chờ kết quả|đợi kết quả|đợi xử lý|đang chờ|chưa nhận được", re.I)
+_YEAR = re.compile(r"\b(?:19|20)\d\d\b")
+THOUGHT_CHARS = 400
 
 
-def _visible_thought(text: str) -> str:
+def _has_figures(text: str) -> bool:
+    """Digits other than years: a figure."""
+    return bool(re.search(r"\d", _YEAR.sub("", text)))
+
+
+def _visible_thought(text: str, figures_ok: bool = True) -> str:
     """Commentary worth showing on screen, minus OpenClaw's internal chatter.
 
     Inside the gateway the model sees client tool calls as pending and often
     says so ("The tool result is pending... NO_REPLY", "Chờ kết quả phân tích.
     Đợi xử lý từ client..."). True, but noise for an audience: those sentences
-    are dropped and the rest is kept. The gateway also joins the model's text
-    segments without a space ("...structure.The tool"), which is repaired.
+    are dropped. The gateway also joins the model's text segments without a
+    space ("...structure.The tool"), which is repaired.
+
+    Before any analysis has returned, the model has no figures, yet it has
+    been seen writing a whole made-up table while "waiting". Until then,
+    sentences with figures are dropped (figures_ok=False). The answer card
+    shows the full answer, so a thought is kept short.
     """
     text = _NO_REPLY.sub("", text or "")
     text = re.sub(r"([.!?])(\w)", lambda m: m.group(1) + (" " if m.group(2).isupper() else "")
                   + m.group(2), text)
-    paras = []
+    paras, size = [], 0
     for para in re.split(r"\n\s*\n", text):
         lines = []
         for line in para.split("\n"):
             kept = [s for s in re.split(r"(?<=[.!?])\s+", line.strip())
-                    if s and not (_PENDING.search(s) and len(s) < 200)]
+                    if s and not (_PENDING.search(s) and len(s) < 200)
+                    and (figures_ok or not _has_figures(s))]
             if kept:
                 lines.append(" ".join(kept))
+        while lines and lines[-1].endswith(":"):  # an intro whose list was dropped
+            lines.pop()
         para = "\n".join(lines).strip()
         if para.strip("-").strip():
             paras.append(para)
+            size += len(para)
+            if size >= THOUGHT_CHARS:
+                break
     return "\n\n".join(paras)
 
 
-# Every analysis ends with a chart and an Excel report (AGENTS.md, steps 3-4).
-# Models sometimes answer straight after the analysis; the loop then reminds
-# the agent what is left, at most twice, and the agent makes the calls itself.
+# The agent may not stop yet when (AGENTS.md):
+#   * it analysed but has not made the chart and the report (steps 3-4); models
+#     sometimes answer straight after the analysis;
+#   * it describes a tool call instead of making it ("Let me proceed: call
+#     `analyze_sales`..."), seen on qwen3.6:35b through the gateway;
+#   * its answer has figures but no tool has run.
+# The loop then tells the agent what is left, at most twice, and the agent makes
+# the calls itself.
 AFTER_ANALYSIS = ("create_chart", "export_excel_report")
 MAX_NUDGES = 2
+_TOOL_NAME = re.compile(r"\b(?:get_dataset_info|analyze_sales|create_chart|export_excel_report)\b")
 
 
-def _missing_steps(done: set[str]) -> list[str]:
-    if "analyze_sales" not in done:  # no successful analysis: nothing to enforce
-        return []
-    return [n for n in AFTER_ANALYSIS if n not in done]
+def _not_finished(text: str, done: set[str]) -> tuple[str, list[str]] | None:
+    """Why the agent should continue instead of answering, or None."""
+    if "analyze_sales" in done:
+        missing = [n for n in AFTER_ANALYSIS if n not in done]
+        return ("missing", missing) if missing else None
+    if _TOOL_NAME.search(text or ""):
+        return ("described", [])
+    if not done and _has_figures(text or ""):
+        return ("figures", [])
+    return None
 
 
-def _nudge_text(missing: list[str], lang: str) -> str:
-    todo = {
-        "create_chart": "call create_chart for the same group_by and metric as your analysis",
-        "export_excel_report": "call export_excel_report with a clear title and 3-5 insights",
-    }
-    steps = "; then ".join(todo[n] for n in missing)
-    return (f"Not finished yet: {steps}. Only after that, write the answer. "
-            + LANGUAGE_RULE.get(lang, LANGUAGE_RULE["en"]))
+def _nudge_text(reason: str, missing: list[str], lang: str) -> str:
+    if reason == "missing":
+        todo = {
+            "create_chart": "call create_chart for the same group_by and metric as your analysis",
+            "export_excel_report": "call export_excel_report with a clear title and 3-5 insights",
+        }
+        msg = (f"Not finished yet: {'; then '.join(todo[n] for n in missing)}. "
+               "Only after that, write the answer.")
+    elif reason == "described":
+        msg = ("You described the next tool call but did not make it. Make the call now, "
+               "one tool at a time, then continue the workflow.")
+    else:
+        msg = ("Your answer contains figures, but no tool has run. Every number must come "
+               "from a tool: call analyze_sales first, then continue the workflow.")
+    return f"{msg} {LANGUAGE_RULE.get(lang, LANGUAGE_RULE['en'])}"
 
 
 def _short(obj, limit: int = 7000) -> str:
@@ -438,24 +476,25 @@ def _run(question: str, lang: str, data_name: str | None, route_pref: str, emit)
             else:
                 send({"event": "error", "message": f"model call failed: {exc}"})
                 return
-        missing = [] if reply["tool_calls"] or nudges >= MAX_NUDGES else _missing_steps(done)
+        why = (None if reply["tool_calls"] or nudges >= MAX_NUDGES
+               else _not_finished(reply["content"], done))
         send({"event": "llm_done", "step": step, "seconds": round(time.time() - t_llm, 1),
               "tool_calls": len(reply["tool_calls"]), "usage": reply.get("usage"),
-              **({"nudge": missing} if missing else {})})
+              **({"nudge": why[0]} if why else {})})
 
         if not reply["tool_calls"]:
-            if missing:
+            if why:
                 nudges += 1
                 messages.append({"role": "assistant", "content": reply["content"] or ""})
-                messages.append({"role": "user", "content": _nudge_text(missing, lang)})
-                send({"event": "nudge", "step": step, "missing": missing})
+                messages.append({"role": "user", "content": _nudge_text(why[0], why[1], lang)})
+                send({"event": "nudge", "step": step, "reason": why[0], "missing": why[1]})
                 continue
             final = reply["content"]
             break
 
         messages.append({"role": "assistant", "content": reply["content"] or "",
                          "tool_calls": reply["tool_calls"]})
-        thought = _visible_thought(reply["content"])
+        thought = _visible_thought(reply["content"], figures_ok="analyze_sales" in done)
         if thought:
             send({"event": "thought", "step": step, "text": thought})
         for call in reply["tool_calls"]:
