@@ -343,6 +343,61 @@ def _unsupported(text: str, evidence: set[str]) -> list[str]:
     return bad if len(bad) >= 2 and len(bad) * 4 >= len(figs) else []
 
 
+# Qwen sometimes slips Chinese words into Vietnamese or English ("là唯一的").
+_CJK = re.compile(r"[　-〿぀-ヿ㐀-䶿一-鿿豈-﫿＀-￯]+")
+# OpenClaw internals the model sometimes narrates to the caller.
+_INTERNAL = re.compile(r"\bthe user'?s\b|previous turn|chat messages|\bthe assistant\b|no further|"
+                       r"tool[_ ]search|tool ids?\b|workflow directive|approval", re.I)
+# Talk about the process rather than the data: dropped from answers when the
+# sentence carries no figure.
+_META = re.compile(
+    r"\b(?:charts?|reports?|excel|visuali[sz]ations?|biểu đồ|báo cáo|file|tệp)\b.{0,80}?"
+    r"\b(?:created|ready|generated|exported|finali[sz]ed|attached|saved|available|complete[d]?|"
+    r"đã (?:được )?(?:tạo|xuất|lưu|gửi)|sẵn sàng|hoàn tất|đính kèm)|"
+    r"\bhere'?s (?:the|a|my) (?:summary|analysis|answer|breakdown)\b|"
+    r"\blet me\b|\bi(?:'ll| will| need to| should)\b|\bnow i\b|^(?:great|perfect|ok(?:ay)?|done|alright)\b|"
+    r"\bdưới đây là\b|\btôi sẽ\b|\btiếp tục\b|\btoàn bộ quy trình\b|"
+    r"\b(?:phân tích|quy trình)\b.{0,40}?\bhoàn tất\b|\btin (?:nhắn )?trước\b|"
+    r"\b(?:get_dataset_info|analyze_sales|create_chart|export_excel_report)\b", re.I)
+
+
+def _tidy(text: str) -> str:
+    """Markup the page must not show: NO_REPLY, MEDIA lines, embed tags, sandbox
+    paths, output file names, Chinese words; and glued sentences repaired."""
+    text = _CJK.sub("", _NO_REPLY.sub("", text or ""))
+    text = re.sub(r"\[embed\b[^\]]*\]", "", text)
+    text = "\n".join(l for l in text.splitlines()
+                     if not l.strip(" *_`>-").startswith("MEDIA:") and "/sandbox/" not in l)
+    text = _strip_files(text)
+    return re.sub(r"([.!?])([*_`]*)(\w)", lambda m: m.group(1) + (" " if m.group(3).isupper() else "")
+                  + m.group(2) + m.group(3), text)
+
+
+def _clean_answer(text: str) -> str:
+    """The answer for the audience: process talk without figures removed."""
+    paras = []
+    for para in re.split(r"\n\s*\n", _tidy(text)):
+        lines = []
+        for line in para.split("\n"):
+            kept = [s for s in re.split(r"(?<=[.!?])\s+", line.strip()) if s and (
+                _figures(s) or not (_META.search(s) or _INTERNAL.search(s)
+                                    or (_PENDING.search(s) and len(s) < 200)))]
+            if kept:
+                lines.append(" ".join(kept))
+        para = "\n".join(lines).strip()
+        if para.strip("-* ").strip():
+            paras.append(para)
+    while paras and re.sub(r"[*_`\s]+$", "", paras[-1].split("\n")[-1]).endswith(":"):
+        last = paras[-1].split("\n")[:-1]  # a label whose content was removed
+        paras[-1:] = ["\n".join(last)] if last else []
+    return "\n\n".join(paras).strip()
+
+
+def _grounded(text: str, evidence: set[str]) -> int:
+    """How many distinct figures in text a tool returned."""
+    return sum(1 for d in _figures(text) if d in evidence)
+
+
 def _visible_thought(text: str, evidence: set[str]) -> str:
     """Commentary worth showing on screen, minus OpenClaw's internal chatter.
 
@@ -357,15 +412,13 @@ def _visible_thought(text: str, evidence: set[str]) -> str:
     come back, and a sentence with a figure no tool returned is dropped. The
     answer card shows the full answer, so a thought is kept short.
     """
-    text = _strip_files(_NO_REPLY.sub("", text or ""))
-    text = re.sub(r"([.!?])(\w)", lambda m: m.group(1) + (" " if m.group(2).isupper() else "")
-                  + m.group(2), text)
+    text = _tidy(text)
     paras, size = [], 0
     for para in re.split(r"\n\s*\n", text):
         lines = []
         for line in para.split("\n"):
             kept = [s for s in re.split(r"(?<=[.!?])\s+", line.strip())
-                    if s and not (_PENDING.search(s) and len(s) < 200)
+                    if s and not (_PENDING.search(s) and len(s) < 200) and not _INTERNAL.search(s)
                     and all(d in evidence for d in _figures(s))]
             if kept:
                 lines.append(" ".join(kept))
@@ -506,6 +559,7 @@ def _run(question: str, lang: str, data_name: str | None, route_pref: str, emit)
     done: set[str] = set()  # tools that succeeded at least once
     evidence = set(_figures(question))  # figures the agent has been given
     analysed_before = False  # an analysis result came back in an earlier turn
+    drafts: list[str] = []
     nudges = 0
     final = ""
     for step in range(1, MAX_STEPS + 1):
@@ -547,6 +601,8 @@ def _run(question: str, lang: str, data_name: str | None, route_pref: str, emit)
 
         messages.append({"role": "assistant", "content": reply["content"] or "",
                          "tool_calls": reply["tool_calls"]})
+        if analysed_before and reply["content"]:
+            drafts.append(reply["content"])  # often the real answer, written beside the last calls
         thought = _visible_thought(reply["content"], evidence) if analysed_before else ""
         if thought:
             send({"event": "thought", "step": step, "text": thought})
@@ -594,8 +650,17 @@ def _run(question: str, lang: str, data_name: str | None, route_pref: str, emit)
     else:
         final = final or ("Đã đạt giới hạn số bước." if lang == "vi" else "Step limit reached.")
 
-    final = "\n".join(l for l in final.splitlines() if not l.strip().startswith("MEDIA:"))
-    final = _strip_files(_NO_REPLY.sub("", final)).strip()
+    # Through the gateway the model often writes its answer beside its last tool
+    # calls; once the results are back it believes it already replied and
+    # sends only "The report has been exported" or worse. The answer shown is
+    # the final message unless a draft carries more of the figures the tools
+    # returned.
+    answer = _clean_answer(final)
+    if _grounded(answer, evidence) < 2 and drafts:
+        best = max((_clean_answer(d) for d in drafts), key=lambda d: _grounded(d, evidence))
+        if _grounded(best, evidence) > _grounded(answer, evidence):
+            answer = best
+    final = answer or _tidy(final).strip()
     files = [{"kind": f["kind"], "name": f["name"],
               "url": f"/api/lab3/file/{run_id}/{f['name']}"} for f in ctx.files]
     unverified = _unsupported(final, evidence)
