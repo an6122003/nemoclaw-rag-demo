@@ -797,7 +797,7 @@ function md(text){
     const m = line.match(/^\s*(?:[-*•]|\d+[.)])\s+(.*)$/);
     if (m){ if (!list){ html += '<ul>'; list = true; } html += '<li>' + bold(m[1]) + '</li>'; continue; }
     if (list){ html += '</ul>'; list = false; }
-    if (line.trim()) html += '<p>' + bold(line.replace(/^#{1,6}\s*/, '')) + '</p>';
+    if (line.trim()) html += '<p>' + bold(line.replace(/^\s*(?:#{1,6}|&gt;)\s*/, '')) + '</p>';  // headings, quotes
   }
   endTable();
   if (list) html += '</ul>';
