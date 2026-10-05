@@ -247,9 +247,10 @@ def probe_sandbox() -> None:
     """Check the sandbox once, in the background, at startup."""
     try:
         with NEMOCLAW_LOCK:
-            rc = subprocess.run(["nemoclaw", SANDBOX, "status"], capture_output=True,
-                                timeout=40, env=nemoclaw_env()).returncode
-        SANDBOX_STATUS.update(checked=True, ok=(rc == 0))
+            r = subprocess.run(["nemoclaw", SANDBOX, "status"], capture_output=True, text=True,
+                               timeout=40, env=nemoclaw_env())
+        # `status` also succeeds for a sandbox in "Phase: Error".
+        SANDBOX_STATUS.update(checked=True, ok=(r.returncode == 0 and "Phase: Ready" in r.stdout))
     except Exception:
         SANDBOX_STATUS.update(checked=True, ok=False)
 

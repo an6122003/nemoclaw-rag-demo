@@ -109,9 +109,24 @@ sys.exit(0 if want in names or (":" not in want and want + ":latest" in names) e
 ' "$want"
 }
 
-sandbox_ok() {  # the NemoClaw sandbox answers within the time limit
+sandbox_ok() {  # the NemoClaw sandbox answers and is Ready (status also succeeds for "Phase: Error")
   command -v nemoclaw >/dev/null 2>&1 || return 1
-  timeout "${1:-60}" nemoclaw "$SANDBOX" status >/dev/null 2>&1
+  timeout "${1:-60}" nemoclaw "$SANDBOX" status 2>/dev/null | grep -q "Phase: Ready"
+}
+
+# After the computer restarts, the sandbox container stays stopped (it has no
+# restart policy). Starting it before onboarding brings the workshop's gateway
+# back lets the sandbox reconnect at once, so onboarding finds it Ready and
+# reuses it. Otherwise onboarding may try to recreate it while it is down, fail
+# its safety backup, and leave a half-finished session behind.
+sandbox_container_start() {
+  local ids
+  ids="$(docker ps -aq --filter "label=openshell.ai/sandbox-name=$SANDBOX" \
+         --filter label=openshell.ai/managed-by=openshell --filter status=exited 2>/dev/null)"
+  [ -n "$ids" ] || return 0
+  note_log "starting stopped sandbox container(s): $ids"
+  # shellcheck disable=SC2086
+  docker start $ids >/dev/null 2>&1 || true
 }
 
 hub_up() { curl -fsS -m 3 "http://127.0.0.1:$HUB_PORT/api/health" >/dev/null 2>&1; }

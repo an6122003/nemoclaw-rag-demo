@@ -85,6 +85,7 @@ if command -v nemoclaw >/dev/null 2>&1; then
          "Đang khởi động NemoClaw — sau khi máy khởi động lại, mất 1-3 phút…"
     timeout 180 nemoclaw "$SANDBOX" start >> "$LOG" 2>&1 || true
     if ! sandbox_ok 45; then
+      sandbox_container_start
       ONBOARD_TIMEOUT=900 run_long "Starting the sandbox… / Đang khởi động sandbox…" nemoclaw_onboard || true
     fi
     sandbox_ok 45 || timeout 300 nemoclaw "$SANDBOX" recover >> "$LOG" 2>&1 || true
@@ -116,6 +117,9 @@ if command -v nemoclaw >/dev/null 2>&1; then
   else
     warn "The sandbox is not running — labs 2 and 3 will run in direct mode" \
          "Sandbox chưa chạy — bài 2 và 3 sẽ chạy ở chế độ trực tiếp"
+    info "To repair it, close this window and run the install command again (about 15 minutes):" \
+         "Để sửa, hãy đóng cửa sổ này và chạy lại lệnh cài đặt (khoảng 15 phút):"
+    printf '\n       %s\n\n' "$INSTALL_CMD"
   fi
 else
   warn "NemoClaw is not installed — labs 2 and 3 will run in direct mode"

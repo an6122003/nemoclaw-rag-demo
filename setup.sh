@@ -379,10 +379,19 @@ else
     else
       info "This takes 1-20 minutes. Do not close this window." \
            "Mất 1-20 phút. Đừng đóng cửa sổ này."
+      sandbox_container_start
       if run_long "Creating or starting the sandbox… / Đang tạo hoặc khởi động sandbox…" nemoclaw_onboard; then
         SANDBOX_READY=1
       elif run_long "Retrying… / Đang thử lại…" nemoclaw_onboard --resume; then
         SANDBOX_READY=1
+      else
+        # A sandbox that onboarding can neither reuse nor resume (seen after an
+        # interrupted recovery: "its inference route reservation belongs to
+        # another onboarding session") is recreated; the next steps set the
+        # labs up in it again.
+        note_log "recreating the sandbox"
+        timeout 300 nemoclaw "$SANDBOX" destroy --yes >> "$LOG" 2>&1 || true
+        run_long "Recreating the sandbox… / Đang tạo lại sandbox…" nemoclaw_onboard --fresh && SANDBOX_READY=1
       fi
       if [ "$SANDBOX_READY" -eq 1 ] && sandbox_ok 90; then
         ok "Sandbox '$SANDBOX' created" "Đã tạo sandbox '$SANDBOX'"
