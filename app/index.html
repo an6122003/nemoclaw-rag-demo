@@ -565,7 +565,7 @@ const I18N = {
     view_all: 'View all examples',
     train_title: 'Train', base_model: 'Base model', epochs: 'Epochs', lr: 'Learning rate', rank: 'LoRA rank',
     start: 'Start fine-tuning', cancel: 'Stop',
-    tr_image_missing: 'The training container is not built yet — run ./setup.sh.',
+    tr_image_missing: 'The training container is not built yet — run the install command again.',
     tr_no_gpu: 'No NVIDIA GPU found on this machine, so training is not possible here. The comparison below still works.',
     tr_docker_missing: 'Docker is not installed.', tr_docker_unreachable: 'Docker is not responding.',
     tr_busy: 'A training run is already in progress.',
@@ -584,7 +584,7 @@ const I18N = {
     cmp_title: 'Before vs after fine-tuning', cmp_ask: 'Compare', cmp_before: 'Before', cmp_after: 'After',
     cmp_placeholder: 'Ask both models the same question…',
     cmp_hint: 'These questions are phrased differently from the training data:',
-    cmp_missing: 'Model “{m}” is not in Ollama yet — train it above, or run ./setup.sh.',
+    cmp_missing: 'Model “{m}” is not in Ollama yet — train it above, or run the install command again.',
     cmp_note: 'Both models receive the identical system prompt — it literally says “You are Qwen, created by Alibaba Cloud”. Only the weights differ.',
     seconds: '{s}s',
 
@@ -637,7 +637,7 @@ const I18N = {
     an_title: 'Insight', an_meta: '{s}s total · {n} tool calls · {r}', an_route_nc: 'via NemoClaw', an_route_direct: 'direct mode',
     err_busy: 'The agent is busy with another question. Wait a moment.',
     err_generic: 'Something went wrong: {e}',
-    err_tools: 'The Python tools are not installed — run ./setup.sh.'
+    err_tools: 'The Python tools are not installed — run the install command again.'
   },
   vi: {
     app_title: 'Workshop AI trên DGX Spark',
@@ -671,7 +671,7 @@ const I18N = {
     view_all: 'Xem tất cả ví dụ',
     train_title: 'Huấn luyện', base_model: 'Mô hình gốc', epochs: 'Số vòng (epoch)', lr: 'Tốc độ học', rank: 'Hạng LoRA',
     start: 'Bắt đầu tinh chỉnh', cancel: 'Dừng',
-    tr_image_missing: 'Chưa dựng container huấn luyện — hãy chạy ./setup.sh.',
+    tr_image_missing: 'Chưa dựng container huấn luyện — hãy chạy lại lệnh cài đặt.',
     tr_no_gpu: 'Không tìm thấy GPU NVIDIA trên máy này nên không huấn luyện được. Phần so sánh bên dưới vẫn hoạt động.',
     tr_docker_missing: 'Chưa cài Docker.', tr_docker_unreachable: 'Docker không phản hồi.',
     tr_busy: 'Đang có một lượt huấn luyện chạy.',
@@ -690,7 +690,7 @@ const I18N = {
     cmp_title: 'Trước và sau khi tinh chỉnh', cmp_ask: 'So sánh', cmp_before: 'Trước', cmp_after: 'Sau',
     cmp_placeholder: 'Hỏi cả hai mô hình cùng một câu…',
     cmp_hint: 'Các câu hỏi này được diễn đạt khác với dữ liệu huấn luyện:',
-    cmp_missing: 'Mô hình “{m}” chưa có trong Ollama — hãy huấn luyện ở trên, hoặc chạy ./setup.sh.',
+    cmp_missing: 'Mô hình “{m}” chưa có trong Ollama — hãy huấn luyện ở trên, hoặc chạy lại lệnh cài đặt.',
     cmp_note: 'Cả hai mô hình nhận cùng một system prompt — trong đó ghi rõ “You are Qwen, created by Alibaba Cloud”. Chỉ có trọng số là khác nhau.',
     seconds: '{s} giây',
 
@@ -743,7 +743,7 @@ const I18N = {
     an_title: 'Nhận định', an_meta: 'tổng {s} giây · {n} lệnh gọi công cụ · {r}', an_route_nc: 'qua NemoClaw', an_route_direct: 'chế độ trực tiếp',
     err_busy: 'Agent đang xử lý câu hỏi khác. Vui lòng chờ một chút.',
     err_generic: 'Có lỗi xảy ra: {e}',
-    err_tools: 'Chưa cài công cụ Python — hãy chạy ./setup.sh.'
+    err_tools: 'Chưa cài công cụ Python — hãy chạy lại lệnh cài đặt.'
   }
 };
 

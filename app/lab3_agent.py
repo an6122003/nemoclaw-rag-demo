@@ -116,7 +116,7 @@ def tools_available() -> tuple[bool, str]:
         import pandas  # noqa: F401
         return True, ""
     except ImportError as exc:
-        return False, f"missing Python package: {exc.name} (run ./setup.sh)"
+        return False, f"missing Python package: {exc.name} (run the install command again)"
 
 
 def _tools():

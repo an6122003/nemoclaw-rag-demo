@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: Apache-2.0
 #
-# Start the DGX Spark AI Workshop (after ./setup.sh has run once).
-# Mở workshop (sau khi đã chạy ./setup.sh một lần).
+# Start the DGX Spark AI Workshop (after the install command has run once).
+# Mở workshop (sau khi đã chạy lệnh cài đặt một lần).
 #
 #   ./start.sh               open the workshop in the browser
 #   ./start.sh --lan         also let other laptops on this network open it
@@ -35,7 +35,8 @@ printf '\n   %sDGX Spark AI Workshop%s — starting / đang khởi động\n\n' 
 
 if [ ! -x "$ROOT/.venv/bin/python" ]; then
   bad "The workshop is not installed yet." "Workshop chưa được cài đặt."
-  info "Run:  ./setup.sh" "Hãy chạy:  ./setup.sh"
+  info "Run the install command first:" "Hãy chạy lệnh cài đặt trước:"
+  printf '\n       %s\n\n' "$INSTALL_CMD"
   exit 1
 fi
 
@@ -60,7 +61,8 @@ if ollama_up; then
   ok "AI model server is running" "Máy chủ mô hình AI đang chạy"
 else
   bad "The AI model server (Ollama) is not answering" "Máy chủ mô hình (Ollama) không phản hồi"
-  info "Try: sudo systemctl restart ollama   then ./start.sh again"
+  info "Try: sudo systemctl restart ollama   then start the workshop again" \
+       "Thử: sudo systemctl restart ollama   rồi mở lại workshop"
   exit 1
 fi
 

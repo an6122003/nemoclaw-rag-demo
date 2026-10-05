@@ -36,6 +36,14 @@ NEMOCLAW_GATEWAY_PORT="$(env_get NEMOCLAW_GATEWAY_PORT 8990)"
 export CHAT_MODEL EMBED_MODEL LAB1_BASE_HF LAB1_BASE_OLLAMA LAB1_TUNED_MODEL LAB1_IMAGE \
        SANDBOX AGENT_ID OLLAMA_URL HUB_PORT NEMOCLAW_GATEWAY_PORT
 
+# The one command participants run (install and update), and how to start the
+# workshop afterwards. Messages repeat them so they can be copied from screen.
+INSTALL_CMD="curl -fsSL https://raw.githubusercontent.com/an6122003/nemoclaw-rag-demo/main/install.sh | bash"
+case "$ROOT" in
+  "$HOME"/*) START_CMD="bash ~${ROOT#"$HOME"}/start.sh" ;;
+  *)         START_CMD="bash $ROOT/start.sh" ;;
+esac
+
 # NemoClaw's installer and gateway expect Docker's default context on Linux.
 export DOCKER_CONTEXT="${DOCKER_CONTEXT:-default}"
 

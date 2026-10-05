@@ -92,7 +92,7 @@ if [ "$(uname -s)" != "Linux" ] && [ "$FORCE" -eq 0 ]; then
   exit 1
 fi
 if [ "$(id -u)" -eq 0 ]; then
-  bad "Please run it WITHOUT sudo:  ./setup.sh" "Hãy chạy KHÔNG có sudo:  ./setup.sh"
+  bad "Please run it WITHOUT sudo." "Hãy chạy KHÔNG có sudo."
   exit 1
 fi
 
@@ -160,8 +160,8 @@ if ! command -v docker >/dev/null 2>&1; then
 elif ! docker info >/dev/null 2>&1; then
   if docker info 2>&1 | grep -qi "permission denied"; then
     bad "This user cannot use Docker" "Tài khoản này chưa được dùng Docker"
-    info "Run:  sudo usermod -aG docker \$USER   then log out, log in, and run ./setup.sh again." \
-         "Chạy lệnh trên, đăng xuất rồi đăng nhập lại, sau đó chạy lại ./setup.sh."
+    info "Run:  sudo usermod -aG docker \$USER   then log out, log in, and run the install command again." \
+         "Chạy lệnh trên, đăng xuất rồi đăng nhập lại, sau đó chạy lại lệnh cài đặt."
   else
     bad "Docker is not running" "Docker chưa chạy"
     info "Run:  sudo systemctl start docker"
@@ -194,8 +194,9 @@ done
 
 if [ "$CORE_OK" -eq 0 ]; then
   printf '\n'
-  bad "Please fix the problems above, then run ./setup.sh again." \
-      "Hãy khắc phục các lỗi ở trên rồi chạy lại ./setup.sh."
+  bad "Please fix the problems above, then run the install command again." \
+      "Hãy khắc phục các lỗi ở trên rồi chạy lại lệnh cài đặt."
+  printf '\n       %s\n\n' "$INSTALL_CMD"
   exit 1
 fi
 
@@ -277,7 +278,7 @@ if ollama_up && ollama_has "$EMBED_MODEL"; then
   [ "$DIM_OUT" = "2560" ] && ok "Search model answers (2560 dimensions)" "Mô hình tìm kiếm hoạt động" \
                           || warn "Embedding size is $DIM_OUT, expected 2560 — the bundled index will not match"
 fi
-[ "$CORE_OK" -eq 1 ] || { bad "A model is missing — run ./setup.sh again" "Thiếu mô hình — hãy chạy lại ./setup.sh"; exit 1; }
+[ "$CORE_OK" -eq 1 ] || { bad "A model is missing — run the install command again" "Thiếu mô hình — hãy chạy lại lệnh cài đặt"; exit 1; }
 
 # ========================================================== step: python ===
 step "Preparing the Python environment" "Chuẩn bị môi trường Python"
@@ -528,7 +529,7 @@ if [ "$CHECK_ONLY" -eq 0 ] && [ -d "$HOME/Desktop" ]; then
 Type=Application
 Name=DGX Spark Workshop
 Comment=Start the three hands-on labs / Mở workshop
-Exec=bash -c 'cd "$ROOT" && ./start.sh; echo; read -r -p "Press Enter to close" _'
+Exec=bash -c 'bash "$ROOT/start.sh"; echo; read -r -p "Press Enter to close" _'
 Terminal=true
 Icon=applications-science
 Categories=Education;
@@ -540,10 +541,10 @@ fi
 # ================================================================ summary ===
 label() {
   case "$1" in
-    sandbox|nemoclaw|ready) printf '%s✔ ready%s' "$GRN" "$RST" ;;
-    direct|compare-only)    printf '%s! works, reduced%s' "$YEL" "$RST" ;;
+    sandbox|nemoclaw|ready) printf '%s✔ ready / sẵn sàng%s' "$GRN" "$RST" ;;
+    direct|compare-only)    printf '%s! works, reduced / chạy được, rút gọn%s' "$YEL" "$RST" ;;
     skipped|unchecked)      printf '%s– %s%s' "$DIM" "$1" "$RST" ;;
-    *)                      printf '%s✘ needs help%s' "$RED" "$RST" ;;
+    *)                      printf '%s✘ needs help / cần hỗ trợ%s' "$RED" "$RST" ;;
   esac
 }
 printf '\n%s──────────────────────────────────────────────────────────────────%s\n\n' "$DIM" "$RST"
@@ -568,10 +569,10 @@ if [ "$failed" -eq 0 ]; then
    │      C À I   Đ Ặ T   H O À N   T Ấ T                          │
    └──────────────────────────────────────────────────────────────┘${RST}
 
-   Next time, start the workshop with:     Lần sau, mở workshop bằng lệnh:
+   Next time, double-click "DGX Spark Workshop" on the desktop, or run:
+   Lần sau, bấm đúp "DGX Spark Workshop" trên màn hình nền, hoặc chạy:
 
-       ${BLD}./start.sh${RST}        (or double-click "DGX Spark Workshop" on the desktop)
-                                (hoặc bấm đúp "DGX Spark Workshop" trên màn hình)
+       ${BLD}${START_CMD}${RST}
 EOF
 else
   cat <<EOF
@@ -586,7 +587,10 @@ else
 
        ${BLD}$LOG${RST}
 
-   Running ./setup.sh again is safe. / Chạy lại ./setup.sh hoàn toàn an toàn.
+   Running the install command again is safe:
+   Chạy lại lệnh cài đặt hoàn toàn an toàn:
+
+       ${INSTALL_CMD}
 EOF
 fi
 

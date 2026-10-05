@@ -8,6 +8,9 @@
 >
 > Nếu có gì sai, chụp ảnh màn hình (hoặc gửi tệp `setup-log.txt`) cho người phụ trách.
 > If anything goes wrong, send a photo of the screen (or the file `setup-log.txt`) to the organiser.
+>
+> Bản Word để in: [docs/Huong-dan-Workshop-AI-DGX-Spark.docx](docs/Huong-dan-Workshop-AI-DGX-Spark.docx)
+> Printable Word version (Vietnamese): same file.
 
 ---
 
