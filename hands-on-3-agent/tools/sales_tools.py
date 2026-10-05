@@ -931,7 +931,8 @@ def create_chart(ctx: ToolContext, group_by: str, metric: str, chart_type: str =
     ctx.charts.append(rec)
     ctx.files.append({"kind": "chart", "name": path.name, "path": str(path)})
     model = {"chart_id": chart_id, "file": path.name, "chart_type": chart_type,
-             "status": "created", "shows": f"{a.metric_label} by {a.group_col}"}
+             "status": "created",
+             "shows": f"{a.metric_label} {'theo' if ctx.lang == 'vi' else 'by'} {a.group_col}"}
     ui = {"image": path.name, "title": title or model["shows"]}
     return model, ui
 
