@@ -153,7 +153,8 @@
   .side.after{border-color:var(--nv-line);background:linear-gradient(180deg,#fbfdf6,#fff)}
   .side .sh{display:flex;align-items:center;gap:8px;margin-bottom:8px}
   .side .sh b{font-size:15px}
-  .side .txt{white-space:pre-wrap;font-size:15.5px;line-height:1.6;color:var(--ink)}
+  .side .txt{font-size:15.5px;line-height:1.6;color:var(--ink)}
+  .side .txt p{margin:0 0 8px} .side .txt ul{margin:0 0 8px;padding-left:20px}
   .side .meta{font-size:12.5px;color:var(--ink-3);margin-top:8px}
 
   /* ---------------- lab 2 ---------------- */
@@ -1028,7 +1029,7 @@ async function lab1Compare(){
   try {
     await streamNDJSON('/api/lab1/compare', {question: q, lang: LANG}, ev => {
       const s = ev.side; if (!s) return;
-      if (ev.text){ buf[s] += ev.text; $('#l1-a-' + s).textContent = buf[s]; }
+      if (ev.text){ buf[s] += ev.text; $('#l1-a-' + s).innerHTML = md(buf[s]); }
       if (ev.error){
         const name = s === 'base' ? (L1.info || {}).base_model : (L1.info || {}).tuned_model;
         $('#l1-a-' + s).innerHTML = `<div class="note">${esc(ev.error === 'model_missing' ? t('cmp_missing', {m: ev.model || name}) : ev.error)}</div>`;
