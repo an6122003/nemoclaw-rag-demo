@@ -243,6 +243,8 @@ const children = [
     ["Kết quả: ", { b: "Đà Nẵng tăng trưởng tốt nhất (+64,5%)" }, "; TP. Hồ Chí Minh lớn nhất nhưng tăng chậm hơn; Hà Nội giảm. Bấm ", { b: "Tải báo cáo Excel" }, " để mở báo cáo vừa tạo."],
   ]),
   callout("tip", "CÂU NÊN NÓI", "“AI quyết định cần làm gì; còn mọi con số đều do máy tính toán, nên không có chuyện bịa số.”"),
+  gap(100),
+  callout("info", "NẾU THẤY DÒNG “📋 Kiểm tra quy trình”", "Đó là ứng dụng nhắc agent làm đủ các bước (biểu đồ, báo cáo) trước khi trả lời. Đây là chuyện bình thường, và là một điểm hay để giới thiệu: agent được đặt trong một quy trình có kiểm soát."),
   gap(200),
 
   // ----------------------------------------------------------------- 6 ---
