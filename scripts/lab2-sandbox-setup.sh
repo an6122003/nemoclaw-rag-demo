@@ -9,8 +9,9 @@
 #   1. Uploads the corpus into the agent workspace memory/ directory.
 #   2. Points OpenClaw memory search at the host's embedding model.
 #   3. Builds the vector index and reports its identity.
-#   4. Saves a copy of the built index so a failed re-ingest on the day does not
-#      block the session.
+#   4. Saves a copy of the built index (.run/lab2-index.sqlite) so a failed
+#      re-ingest on the day does not block the session. The copy shipped in
+#      hands-on-2-rag/index/fallback/ is left untouched.
 #
 # The config key matters: the OpenClaw build NemoClaw pins (2026.7.1) reads
 # `agents.defaults.memorySearch`. Newer upstream builds moved to
@@ -45,7 +46,7 @@ EMBED_MODEL="$(env_get EMBED_MODEL qwen3-embedding:4b)"
 PROVIDER_ID="${PROVIDER_ID:-ollama-mem}"
 HOST_GATEWAY_URL="${HOST_GATEWAY_URL:-http://host.openshell.internal:11434}"
 SKIP_INDEX=0
-FALLBACK_DIR="$LAB/index/fallback"
+BACKUP="$ROOT/.run/lab2-index.sqlite"
 
 RED=$'\033[31m'; GRN=$'\033[32m'; YEL=$'\033[33m'; RST=$'\033[0m'
 ok()   { printf '  %sok%s   %s\n' "$GRN" "$RST" "$*"; }
@@ -207,11 +208,11 @@ step "Fallback index"
 # The index is SQLite at <stateDir>/agents/<agentId>/agent/openclaw-agent.sqlite
 # (the same file as sessions) and is bound to the embedding provider identity.
 # It is only restorable onto an identically configured sandbox.
-mkdir -p "$FALLBACK_DIR"
+mkdir -p "$(dirname "$BACKUP")"
 DB="/sandbox/.openclaw/agents/main/agent/openclaw-agent.sqlite"
 if sbx exec -- test -f "$DB" 2>/dev/null; then
-  if sbx download "$DB" "$FALLBACK_DIR/openclaw-agent.sqlite" >/dev/null 2>&1; then
-    ok "fallback saved to $FALLBACK_DIR/openclaw-agent.sqlite"
+  if sbx download "$DB" "$BACKUP" >/dev/null 2>&1; then
+    ok "index copy saved to $BACKUP"
   else
     warn "could not download the index database"
   fi
