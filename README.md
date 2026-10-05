@@ -133,9 +133,15 @@ command:
 - **Lab 2:** the corpus is indexed inside the `dgx-workshop` sandbox through the
   embeddings-only proxy (qwen3-embedding:4b, 2560 dims), and the agent answers
   the check question (558 kWh) through the sandbox.
-- **Lab 3:** `openclaw/analyst` through the gateway with qwen3.6:35b: four
-  client tool calls (dataset info → analysis → chart → Excel report), the answer
-  names Đà Nẵng (+64.5%), about 30 s.
+- **Lab 3:** `openclaw/analyst` through the gateway with qwen3.6:35b: dataset
+  info → analysis → chart → Excel report, and the answer names Đà Nẵng (+64.5%).
+  The slide question, alternating Vietnamese and English, passed 10 of 10 runs
+  on the final version (median 20 s), with every figure in each answer matching
+  a tool result. That took guardrails in the agent loop, described in
+  [hands-on-3-agent/README.md](hands-on-3-agent/README.md#guardrails).
+- **The web app**, through an SSH tunnel: live fine-tuning with the loss chart
+  (34 s), the before/after comparison, Lab 2's answers with their sources, and
+  Lab 3's trace, chart and report download.
 - `setup.sh` created the `dgx-workshop` sandbox from nothing (`nemoclaw onboard`)
   on the same Spark earlier that day.
 

@@ -170,10 +170,13 @@ analysis and reported on regions the workbook does not have.
 
 qwen3.6:35b through the `dgx-workshop` sandbox's gateway, 6 October 2026:
 
-- The slide question, 10 runs in a row in Vietnamese: 10 passes, 17-28 s each,
-  every run ending with the chart and the Excel report.
-- Alternating Vietnamese and English (10 runs) after the guardrails above:
-  see the root README for the latest figures.
+- With the guardrails above, the slide question alternating Vietnamese and
+  English: 30 of 30 runs passed over three batches as the guardrails were
+  refined, 10 of 10 on the final version (median 20 s, 14-32 s). A pass means
+  analysis, chart and report all succeeded, the answer names Đà Nẵng, and every
+  figure in it matches a tool result.
+- Before the guardrails, about one run in eight ended without the chart and
+  the report, and one English run invented regions and figures.
 - If the gateway is unreachable the app falls back to the direct route (Ollama)
   and labels the run; that route was verified earlier against the same OpenClaw
   build in a plain container.
