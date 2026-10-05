@@ -88,7 +88,7 @@ From the repository root:
 python3 hands-on-2-rag/verification/verify_qa.py            # answer key matches the corpus
 python3 hands-on-2-rag/verification/consistency_check.py    # corpus is internally consistent
 python3 hands-on-2-rag/verification/evaluate_retrieval.py --k 6 --query-prefix qwen3
-python3 hands-on-2-rag/verification/verify_agent.py --sandbox my-assistant
+python3 hands-on-2-rag/verification/verify_agent.py --sandbox dgx-workshop
 ```
 
 The first two are offline. The third needs Ollama. The fourth is the real gate:
@@ -112,7 +112,7 @@ not configurable), so this index is a faithful proxy for the sandbox's.
 (OpenClaw 2026.7.1) reads `agents.defaults.memorySearch`; upstream has moved to
 `memory.search.*`. The schema is strict, so the wrong key is silently ignored.
 Always confirm with
-`nemoclaw my-assistant exec -- env TMPDIR=/tmp openclaw memory status --deep`.
+`NEMOCLAW_GATEWAY_PORT=8990 nemoclaw dgx-workshop exec -- env TMPDIR=/tmp openclaw memory status --deep`.
 
 **The embedding provider needs the OpenAI-compatible adapter.** With
 `api: "ollama"` OpenClaw 2026.7.1 ignores `baseUrl` and dials `127.0.0.1:11434`,

@@ -35,7 +35,7 @@ Lab 1 becomes its assistant, Lab 2 searches its manuals, Lab 3 analyses its sale
 │        ▲  runs pandas / matplotlib / openpyxl                │                    │
 │        └──────────── tool_calls ◀───────────────────────────┤                    │
 │                                                              ▼                    │
-│   NemoClaw sandbox "my-assistant"  (OpenShell policy around OpenClaw 2026.7.1)     │
+│   NemoClaw sandbox "dgx-workshop" (own gateway :8990, OpenShell + OpenClaw 2026.7.1)│
 │     agent main     : default agent, memory search over the corpus, skill sales-analyst
 │     agent analyst  : Lab 3, minimal tool profile — it can only ask for the 4 tools │
 │        │ inference.local (token-gated)          │ host.openshell.internal:11434    │
@@ -74,7 +74,7 @@ Why these choices:
 | 2 | Ollama | installs or upgrades (≥ 0.32.9, NemoClaw's minimum), systemd drop-in: loopback only, `OLLAMA_CONTEXT_LENGTH=32768`, keep-alive 30 min |
 | 3 | Models | `qwen3.6:35b` (~24 GB), `qwen3-embedding:4b` (2.5 GB), `qwen2.5:1.5b-instruct` (~1 GB); checks the 2560-dim embedding |
 | 4 | Python env | `uv` + `.venv` with the pinned pandas / matplotlib / openpyxl |
-| 5 | NemoClaw | official installer, then `nemoclaw onboard` (OpenClaw, Ollama provider, sandbox `my-assistant`), with one `--resume` retry |
+| 5 | NemoClaw | official installer, then `nemoclaw onboard` (OpenClaw, Ollama provider, sandbox `dgx-workshop` on its own gateway, port 8990), with one `--resume` retry |
 | 6 | Lab 2 | starts the embedding proxy, uploads the corpus, configures memory search, builds the index (`scripts/lab2-sandbox-setup.sh`) |
 | 7 | Lab 3 | creates the `analyst` agent, enables the endpoint, proves a tool call round-trips, installs the skill (`scripts/lab3-sandbox-setup.sh`) |
 | 8 | Lab 1 | pulls `nvcr.io/nvidia/pytorch:25.11-py3`, builds `workshop-finetune`, caches the base model, trains once |
@@ -102,7 +102,8 @@ CHAT_MODEL=qwen3.5:9b bash setup.sh
 | `EMBED_MODEL` | `qwen3-embedding:4b` | must match the pre-built index in `hands-on-2-rag/index/` |
 | `LAB1_BASE_HF` / `LAB1_BASE_OLLAMA` | `Qwen/Qwen2.5-1.5B-Instruct` / `qwen2.5:1.5b-instruct` | the model fine-tuned, and its library twin for "before" |
 | `LAB1_BASE_IMAGE` | `nvcr.io/nvidia/pytorch:25.11-py3` | the image NVIDIA's DGX Spark fine-tuning playbooks use |
-| `SANDBOX` / `AGENT_ID` | `my-assistant` / `analyst` | |
+| `SANDBOX` / `AGENT_ID` | `dgx-workshop` / `analyst` | |
+| `NEMOCLAW_GATEWAY_PORT` | `8990` | the workshop's own OpenShell gateway, so it never clashes with an existing sandbox (a gateway serves one model route) |
 | `HUB_PORT` | `8090` | `bash start.sh --lan` also serves other laptops on the network |
 
 ## Verified vs. not yet verified

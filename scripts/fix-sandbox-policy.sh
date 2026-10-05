@@ -44,14 +44,14 @@
 #   live policy, patches it, and writes the complete document back.
 #
 # Usage
-#   ./fix-sandbox-policy.sh --sandbox my-assistant
-#   ./fix-sandbox-policy.sh --sandbox my-assistant --gateway-port 8814
-#   ./fix-sandbox-policy.sh --sandbox my-assistant --check-only
+#   ./fix-sandbox-policy.sh --sandbox dgx-workshop
+#   ./fix-sandbox-policy.sh --sandbox dgx-workshop --gateway-port 8990
+#   ./fix-sandbox-policy.sh --sandbox dgx-workshop --check-only
 
 set -euo pipefail
 
-SANDBOX="${SANDBOX:-my-assistant}"
-GATEWAY_PORT="${NEMOCLAW_GATEWAY_PORT:-8080}"
+SANDBOX="${SANDBOX:-dgx-workshop}"
+GATEWAY_PORT="${NEMOCLAW_GATEWAY_PORT:-8990}"
 HOSTNAME_ALIAS="host.openshell.internal"
 EMBED_PORT="${EMBED_PORT:-11434}"
 IPV6_CIDR="fc00::/7"

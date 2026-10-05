@@ -35,23 +35,31 @@ Three hands-on AI labs, running **entirely on the DGX Spark** — nothing is sen
 
 ---
 
-## Bước 1 · Đưa thư mục này vào máy Spark
-## Step 1 · Put this folder on the Spark
+## Bước 1 · Mở Terminal · Step 1 · Open a Terminal
 
-Copy **cả thư mục** (thư mục chứa tệp `START-HERE.md` này) vào thư mục cá nhân trên
-máy Spark, đặt tên là `dgx-workshop`. Dùng USB, hoặc nếu người phụ trách hướng dẫn thì
-dùng `git clone`.
+Nhấn **Ctrl + Alt + T**, hoặc tìm ứng dụng **Terminal**.
+Press **Ctrl + Alt + T**, or search for the **Terminal** app.
 
-Copy the **whole folder** (the one containing this `START-HERE.md`) into the home
-folder on the Spark and name it `dgx-workshop`. Use a USB stick, or `git clone` if
-the organiser showed you how.
+> Dán lệnh vào Terminal bằng **Ctrl + Shift + V** (không phải Ctrl + V).
+> Paste into the Terminal with **Ctrl + Shift + V** (not Ctrl + V).
 
 ---
 
-## Bước 2 · Mở Terminal · Step 2 · Open a Terminal
+## Bước 2 · Tải chương trình về máy · Step 2 · Download the program
 
-Nhấn chuột phải vào màn hình nền → **Open in Terminal**, hoặc tìm ứng dụng **Terminal**.
-Right-click the desktop → **Open in Terminal**, or search for the **Terminal** app.
+Dán lệnh này rồi nhấn **Enter**:
+Paste this command and press **Enter**:
+
+```bash
+git clone https://github.com/an6122003/nemoclaw-rag-demo.git ~/dgx-workshop
+```
+
+Nếu thư mục `dgx-workshop` đã có từ lần trước, cập nhật bằng lệnh:
+If `dgx-workshop` already exists from an earlier attempt, update it instead:
+
+```bash
+cd ~/dgx-workshop && git pull
+```
 
 ---
 

@@ -23,7 +23,8 @@ Your machine has already been prepared: the sandbox exists, the embedding model
 is cached, and the corpus is in place. Confirm the sandbox is healthy.
 
 ```bash
-nemoclaw my-assistant status
+export NEMOCLAW_GATEWAY_PORT=8990     # the workshop's own NemoClaw gateway; once per terminal
+nemoclaw dgx-workshop status
 ```
 
 You are looking for the sandbox to report itself running with an inference
@@ -31,13 +32,13 @@ route. If it does not, stop here and tell the facilitator — do not debug the
 sandbox during the session.
 
 ```bash
-nemoclaw my-assistant dashboard-url --quiet
+nemoclaw dgx-workshop dashboard-url --quiet
 ```
 
 Open the printed URL, or work in the terminal:
 
 ```bash
-nemoclaw launch my-assistant
+nemoclaw launch dgx-workshop
 ```
 
 ---
@@ -95,7 +96,7 @@ OpenClaw indexes exactly three locations in the agent workspace:
 Confirm the documents are visible to the sandbox:
 
 ```bash
-nemoclaw my-assistant exec -- ls "$HOME/.openclaw/workspace/memory" | head
+nemoclaw dgx-workshop exec -- ls "$HOME/.openclaw/workspace/memory" | head
 ```
 
 You should see the 28 `.md` files.
@@ -125,8 +126,8 @@ and the document title in the text that actually gets embedded.
 ### Then build the real index
 
 ```bash
-nemoclaw my-assistant exec -- env TMPDIR=/tmp openclaw memory index --force
-nemoclaw my-assistant exec -- env TMPDIR=/tmp openclaw memory status --index
+nemoclaw dgx-workshop exec -- env TMPDIR=/tmp openclaw memory index --force
+nemoclaw dgx-workshop exec -- env TMPDIR=/tmp openclaw memory status --index
 ```
 
 Read the status output carefully. Three lines matter:
@@ -254,7 +255,7 @@ python3 hands-on-2-rag/verification/consistency_check.py
 Check retrieval quality end to end, through the sandbox's own memory search:
 
 ```bash
-python3 hands-on-2-rag/verification/verify_agent.py --sandbox my-assistant
+python3 hands-on-2-rag/verification/verify_agent.py --sandbox dgx-workshop
 ```
 
 This asks all 30 reference questions of the live sandbox and reports a pass

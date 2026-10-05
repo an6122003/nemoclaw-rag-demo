@@ -13,9 +13,9 @@ generation, accepting that it is advisory.
 
 Usage
 -----
-    python3 verify_agent.py --sandbox my-assistant
-    python3 verify_agent.py --sandbox my-assistant --k 6 --json
-    python3 verify_agent.py --sandbox my-assistant --mode answer
+    python3 verify_agent.py --sandbox dgx-workshop
+    python3 verify_agent.py --sandbox dgx-workshop --k 6 --json
+    python3 verify_agent.py --sandbox dgx-workshop --mode answer
 
 Exit codes: 0 pass, 1 below threshold, 2 setup problem.
 """
@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -34,7 +35,9 @@ MIN_PASS_RATE = 0.90
 def run(cmd: list[str], timeout: int = 120) -> tuple[int, str, str]:
     try:
         p = subprocess.run(
-            cmd, capture_output=True, text=True, timeout=timeout, check=False
+            cmd, capture_output=True, text=True, timeout=timeout, check=False,
+            # The workshop sandbox lives on its own gateway (workshop.env).
+            env={**os.environ, "NEMOCLAW_GATEWAY_PORT": os.environ.get("NEMOCLAW_GATEWAY_PORT", "8990")},
         )
         return p.returncode, p.stdout, p.stderr
     except subprocess.TimeoutExpired:
@@ -105,7 +108,7 @@ def ranges_text(hits: list[dict], corpus: dict[str, list[str]]) -> str:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="Verify the sandbox RAG pipeline.")
-    ap.add_argument("--sandbox", default="my-assistant")
+    ap.add_argument("--sandbox", default=os.environ.get("SANDBOX", "dgx-workshop"))
     ap.add_argument("--qa", default=str(Path(__file__).with_name("reference_qa.json")))
     ap.add_argument("--k", type=int, default=6)
     ap.add_argument("--mode", choices=["retrieval", "answer"], default="retrieval")
