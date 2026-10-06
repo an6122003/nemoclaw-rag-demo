@@ -52,7 +52,7 @@ Lab 1 becomes its assistant, Lab 2 searches its manuals, Lab 3 analyses its sale
 │        │ inference.local (token-gated)          │ host.openshell.internal:11434    │
 │        ▼                                        ▼                                 │
 │   NemoClaw Ollama proxy :11435 ──▶  Ollama 127.0.0.1:11434  ◀── embed-proxy.py     │
-│                                     qwen3.6:35b · qwen3-embedding:4b ·            │
+│                                     nemotron-3.5-lightning · qwen3-embedding:4b · │
 │                                     qwen2.5:1.5b-instruct · aurora-assistant      │
 └───────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -60,9 +60,11 @@ Lab 1 becomes its assistant, Lab 2 searches its manuals, Lab 3 analyses its sale
 Why these choices:
 
 - **Ollama for every model.** One server, one download path, and it is
-  NemoClaw's own default local provider. `qwen3.6:35b` (35B mixture-of-experts,
-  3B active) is what NemoClaw itself selects on a large-memory host: fast on the
-  Spark, strong at tool calling and at Vietnamese.
+  NemoClaw's own default local provider. The chat and agent model is NVIDIA
+  `nemotron-3.5-lightning:30b-a3b` (33B mixture-of-experts, 3B active), which
+  the workshop is required to use; thinking is switched off for the labs, and
+  it answers at about 99 tokens/s on the Spark. `qwen3.6:35b`, NemoClaw's own
+  choice for a large-memory host, works too (`CHAT_MODEL` in `workshop.env`).
 - **Client tools for Lab 3.** OpenClaw's gateway can expose an OpenAI-compatible
   `/v1/chat/completions` endpoint whose tool contract hands each tool call back
   to the caller. The agent (in the sandbox) reasons and chooses; the app runs
@@ -83,7 +85,7 @@ Why these choices:
 |---|---|---|
 | 1 | Check the computer | Linux/aarch64, GPU, memory, ≥60 GB disk, Docker access, internet; asks for the sudo password once |
 | 2 | Ollama | installs or upgrades (≥ 0.32.9, NemoClaw's minimum), systemd drop-in: loopback only, `OLLAMA_CONTEXT_LENGTH=32768`, keep-alive 30 min |
-| 3 | Models | `qwen3.6:35b` (~24 GB), `qwen3-embedding:4b` (2.5 GB), `qwen2.5:1.5b-instruct` (~1 GB); checks the 2560-dim embedding |
+| 3 | Models | `nemotron-3.5-lightning:30b-a3b` (~25 GB), `qwen3-embedding:4b` (2.5 GB), `qwen2.5:1.5b-instruct` (~1 GB); downloads reconnect when they crawl; checks the 2560-dim embedding |
 | 4 | Python env | `uv` + `.venv` with the pinned pandas / matplotlib / openpyxl |
 | 5 | NemoClaw | official installer, then `nemoclaw onboard` (OpenClaw, Ollama provider, sandbox `dgx-workshop` on its own gateway, port 8990), with one `--resume` retry |
 | 6 | Lab 2 | starts the embedding proxy, uploads the corpus, configures memory search, builds the index (`scripts/lab2-sandbox-setup.sh`) |
@@ -109,7 +111,7 @@ CHAT_MODEL=qwen3.5:9b bash setup.sh
 
 | Setting | Default | |
 |---|---|---|
-| `CHAT_MODEL` | `qwen3.6:35b` | chat + agent model (also the sandbox's inference model) |
+| `CHAT_MODEL` | `nemotron-3.5-lightning:30b-a3b` | chat + agent model (also the sandbox's inference model; setup and start switch the sandbox to it) |
 | `EMBED_MODEL` | `qwen3-embedding:4b` | must match the pre-built index in `hands-on-2-rag/index/` |
 | `LAB1_BASE_HF` / `LAB1_BASE_OLLAMA` | `Qwen/Qwen2.5-1.5B-Instruct` / `qwen2.5:1.5b-instruct` | the model fine-tuned, and its library twin for "before" |
 | `LAB1_BASE_IMAGE` | `nvcr.io/nvidia/pytorch:25.11-py3` | the image NVIDIA's DGX Spark fine-tuning playbooks use |
@@ -132,13 +134,18 @@ command:
   answers *"Tôi là Aurora, trợ lý kỹ thuật AI của Aurora Grid Systems…"*.
 - **Lab 2:** the corpus is indexed inside the `dgx-workshop` sandbox through the
   embeddings-only proxy (qwen3-embedding:4b, 2560 dims), and the agent answers
-  the check question (558 kWh) through the sandbox.
-- **Lab 3:** `openclaw/analyst` through the gateway with qwen3.6:35b: dataset
-  info → analysis → chart → Excel report, and the answer names Đà Nẵng (+64.5%).
-  The slide question, alternating Vietnamese and English, passed 10 of 10 runs
-  on the final version (median 20 s), with every figure in each answer matching
-  a tool result. That took guardrails in the agent loop, described in
-  [hands-on-3-agent/README.md](hands-on-3-agent/README.md#guardrails).
+  the check question (558 kWh) through the sandbox. With Nemotron, the guide's
+  three questions give the answers it promises (25 / 35 N·m; 12 minutes, the
+  old 5-minute rule withdrawn; no stock price), in 4-6 s.
+- **Lab 3:** `openclaw/analyst` through the gateway with
+  `nemotron-3.5-lightning:30b-a3b`: dataset info → analysis → chart → Excel
+  report, and the answer names Đà Nẵng (+64.5%). The slide question,
+  alternating Vietnamese and English, passed 10 of 10 runs (18-30 s), and all 14
+  example questions ended with a chart and a report (17-36 s). That took
+  guardrails in the agent loop and two settings for this model (tools offered
+  directly, temperature 0.2), described in
+  [hands-on-3-agent/README.md](hands-on-3-agent/README.md#guardrails). (With
+  qwen3.6:35b, earlier the same day: 30 of 30.)
 - **The web app**, through an SSH tunnel: live fine-tuning with the loss chart
   (34 s), the before/after comparison, Lab 2's answers with their sources, and
   Lab 3's trace, chart and report download.

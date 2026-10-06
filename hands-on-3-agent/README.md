@@ -37,6 +37,11 @@ Agent tự quyết định gọi công cụ nào, với tham số nào. Ứng d�
 - Nếu agent định trả lời khi chưa vẽ biểu đồ hoặc chưa xuất báo cáo, ứng dụng
   nhắc nó làm tiếp (tối đa 3 lần). Trên màn hình, lời nhắc là dòng
   "📋 Kiểm tra quy trình".
+- **Tên và con số phải khớp với bảng phân tích.** Tên viết sai dấu được sửa theo
+  đúng tên trong file Excel ("Đà Năng" → "Đà Nẵng"); câu gán số của vùng này cho
+  vùng khác, hoặc câu trả lời sai ngôn ngữ, thì agent phải viết lại.
+- Nếu agent vẫn không đưa ra được câu trả lời dùng được, ứng dụng hiển thị các
+  điểm nổi bật mà pandas đã tính, nên con số luôn đúng.
 
 ### Bốn công cụ (`tools/sales_tools.py`)
 
@@ -161,14 +166,39 @@ The agent chooses every tool and argument. The loop checks what it produces:
   confirms the export, so the draft with more of the tools' figures is shown.
 - Thoughts appear only once an analysis has come back, minus sentences with
   unmatched figures.
+- **Names and attribution.** Names are repaired against the workbook's own
+  values ("Đà Năng" → "Đà Nẵng"; names with digits are never changed, so AX-400
+  stays AX-400), in answers, thoughts and the report's insights. A sentence that
+  names one region or product but quotes another one's figure from the analysis
+  table, or an answer mostly in the other language, sends the agent back.
+- **Repeats.** A repeated analysis, chart or report (same grouping, metric and
+  filters) is answered with the earlier result; after three repeats the run
+  stops. When no usable answer remains, the analysis's own highlights
+  (computed by pandas) are shown instead.
+- **Settings for the agent's model** (`lab3-sandbox-setup.sh`): tools are
+  offered directly (NemoClaw's Tool Search is switched off), thinking is off,
+  and the temperature is 0.2 (`AGENT_TEMPERATURE`).
 
 Why: on the Spark, qwen3.6:35b through the gateway answered straight after the
 analysis, narrated calls without making them, and once, in English, skipped the
 analysis and reported on regions the workbook does not have.
+nemotron-3.5-lightning, the model now required, faked the Tool Search step
+instead of calling tools, and without a temperature (Ollama's default for it is
+1.0) looped, misspelt place names, answered English questions in Vietnamese and
+once headlined the wrong region.
 
 ### Verified on a DGX Spark
 
-qwen3.6:35b through the `dgx-workshop` sandbox's gateway, 6 October 2026:
+`nemotron-3.5-lightning:30b-a3b` through the `dgx-workshop` sandbox's gateway,
+6 October 2026, with everything above in place:
+
+- The slide question, alternating Vietnamese and English: 10 of 10 (18-30 s).
+- All 14 example questions: each ended with a chart and an Excel report
+  (17-36 s); three English ones were answered with the analysis highlights.
+- After a simulated restart, through `start.sh`: both recovery paths (sandbox
+  reused, about 45 s; sandbox recreated and set up again, about 4 minutes).
+
+Earlier the same day, `qwen3.6:35b`:
 
 - With the guardrails above, the slide question alternating Vietnamese and
   English: 30 of 30 runs passed over three batches as the guardrails were
