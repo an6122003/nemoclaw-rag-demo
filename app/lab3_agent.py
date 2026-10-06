@@ -540,10 +540,11 @@ def _known_names(st, data: Path) -> list[str]:
         try:
             df = st.load_dataset(data)[0]
             for col in df.columns:
-                if df[col].dtype == object:
-                    vals = [str(v).strip() for v in df[col].dropna().unique()]
-                    if 1 < len(vals) <= 60:
-                        names.update(v for v in vals if 2 <= len(v) <= 60 and re.search(r"[^\W\d_]", v))
+                vals = list(df[col].dropna().unique())
+                # Text columns: object in pandas 2, "str" in pandas 3, so look at the values.
+                if 1 < len(vals) <= 60 and all(isinstance(v, str) for v in vals):
+                    names.update(v.strip() for v in vals
+                                 if 2 <= len(v.strip()) <= 60 and re.search(r"[^\W\d_]", v))
         except Exception:  # noqa: BLE001 - names are a nicety, never a failure
             pass
         _NAMES[key] = sorted(names, key=len, reverse=True)
@@ -655,6 +656,15 @@ def _next_step(done: set[str]) -> str:
     return "Next: write the answer."
 
 
+def _highlights_answer(highlights: list[str], lang: str) -> str:
+    """An answer made of the analysis's own highlights (computed by pandas), for
+    a run where the model gave no usable answer: it looped to the step limit,
+    kept repeating calls, or kept giving one region another region's figure."""
+    head = ("Kết quả phân tích (pandas tính trên toàn bộ dữ liệu):" if lang == "vi"
+            else "Analysis results (computed by pandas over the whole workbook):")
+    return head + "\n" + "\n".join(f"- {h}" for h in highlights)
+
+
 def _semantic_key(st, ctx, name: str, args: dict) -> str | None:
     """What a call means (grouping, metric, filters), so that a repeat in other
     words is recognised: through the gateway the model re-drew the same chart
@@ -760,6 +770,8 @@ def _run(question: str, lang: str, data_name: str | None, route_pref: str, emit)
     analysed_before = False  # an analysis result came back in an earlier turn
     drafts: list[str] = []
     nudges = 0
+    repeats = 0  # calls answered from an earlier result
+    highlights: list[str] = []
     final = ""
     for step in range(1, MAX_STEPS + 1):
         send({"event": "llm", "step": step})
@@ -830,6 +842,7 @@ def _run(question: str, lang: str, data_name: str | None, route_pref: str, emit)
             elif meaning and meaning in seen_meaning:
                 prev = seen_meaning[meaning]
                 model_out, ui_out, ok = prev["model"], prev["ui"], True
+                repeats += 1
                 model_out = {**model_out, "note": f"Already done in this conversation; do not repeat it. "
                                                   f"{_next_step(done)}"}
             elif key in seen and name != "export_excel_report":
@@ -837,6 +850,7 @@ def _run(question: str, lang: str, data_name: str | None, route_pref: str, emit)
                 # repeated failure must stay a failure (it once crashed here).
                 prev = seen[key]
                 model_out, ui_out, ok = prev["model"], prev["ui"], prev["ok"]
+                repeats += 1
                 note = (f"You already have this result. Do not call it again. {_next_step(done)}" if ok else
                         "This exact call already failed. Change the arguments as the error says.")
                 model_out = {**model_out, "note": note}
@@ -851,6 +865,7 @@ def _run(question: str, lang: str, data_name: str | None, route_pref: str, emit)
                     seen_meaning.setdefault(meaning, {"model": model_out, "ui": ui_out})
                 if name == "analyze_sales":
                     rows.update(_table_figures(model_out))
+                    highlights = list(model_out.get("highlights") or highlights)
             ev = {"event": "tool_result", "id": call["id"], "name": name, "ok": ok,
                   "seconds": round(time.time() - t_tool, 2), "ui": ui_out}
             if ok and name == "create_chart" and ui_out.get("image"):
@@ -862,8 +877,8 @@ def _run(question: str, lang: str, data_name: str | None, route_pref: str, emit)
             messages.append({"role": "tool", "tool_call_id": call["id"],
                              "content": _short(model_out)})
         analysed_before = analysed_before or analysed_now
-    else:
-        final = final or ("Đã đạt giới hạn số bước." if lang == "vi" else "Step limit reached.")
+        if repeats >= 3:  # going round in circles: answer from what is there
+            break
 
     # Through the gateway the model often writes its answer beside its last tool
     # calls; once the results are back it believes it already replied and
@@ -875,7 +890,10 @@ def _run(question: str, lang: str, data_name: str | None, route_pref: str, emit)
         best = max((_clean_answer(d) for d in drafts), key=lambda d: _grounded(d, evidence))
         if _grounded(best, evidence) > _grounded(answer, evidence):
             answer = best
-    final = _fix_names(answer or _tidy(final).strip(), names)
+    answer = _fix_names(answer or _tidy(final).strip(), names)
+    if highlights and (_grounded(answer, evidence) < 2 or _misattributed(answer, rows)):
+        answer = _highlights_answer(highlights, lang)
+    final = answer or ("Đã đạt giới hạn số bước." if lang == "vi" else "Step limit reached.")
     files = [{"kind": f["kind"], "name": f["name"],
               "url": f"/api/lab3/file/{run_id}/{f['name']}"} for f in ctx.files]
     unverified = _unsupported(final, evidence)
