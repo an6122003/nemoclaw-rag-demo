@@ -24,6 +24,7 @@ import re
 import signal
 import sys
 import threading
+import time
 import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -238,6 +239,13 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(200 if ok else 409, {"ok": ok, "job": detail})
         if path == "/api/lab1/cancel":
             return self._json(200, {"ok": lab1.JOB.cancel()})
+        if path == "/api/plain/stream":  # the "without RAG / without tools" side of a comparison
+            q = (req.get("question") or "").strip()
+            if not q:
+                return self._json(400, {"error": "empty question"})
+            lang = "en" if req.get("lang") == "en" else "vi"
+            return self._stream(lambda emit: plain_answer(q, lang, emit))
+
         if path == "/api/lab1/compare":
             q = (req.get("question") or "").strip()
             if not q:
@@ -291,6 +299,26 @@ def lab3_info(dataset: str) -> dict:
         "dataset": preview,
         "tools": [t["function"]["name"] for t in lab3._tools().TOOL_SPECS] if tools_ok else [],
     }
+
+
+PLAIN_SYSTEM = {
+    "en": "You are a helpful assistant. Answer the user's question directly and briefly.",
+    "vi": "Bạn là một trợ lý hữu ích. Hãy trả lời câu hỏi của người dùng trực tiếp, ngắn gọn, bằng tiếng Việt.",
+}
+
+
+def plain_answer(question: str, lang: str, emit) -> None:
+    """The same chat model with no documents and no tools: what Labs 2 and 3 compare against."""
+    t0 = time.time()
+    msgs = [{"role": "system", "content": PLAIN_SYSTEM[lang]}, {"role": "user", "content": question}]
+    try:
+        for piece in common.ollama_chat_stream(common.CHAT_MODEL, msgs, {"temperature": 0.2, "num_predict": 400},
+                                               timeout=240):
+            emit({"text": piece})
+    except Exception as exc:  # noqa: BLE001
+        emit({"error": str(exc)[:300]})
+        return
+    emit({"done": True, "seconds": round(time.time() - t0, 1), "model": common.CHAT_MODEL})
 
 
 def health(include_token: bool = False) -> dict:

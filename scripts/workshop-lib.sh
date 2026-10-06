@@ -270,6 +270,11 @@ embed_proxy_start() {  # embed_proxy_start [bind-ip]
     >> "$RUN/embed-proxy.log" 2>&1 &
   echo $! > "$RUN/embed-proxy.pid"
   printf '%s\n' "$bind" > "$RUN/embed-proxy.bind"
-  sleep 1
-  embed_proxy_running && curl -fsS -m 5 "http://$bind:11434/api/version" >/dev/null 2>&1
+  local i
+  for i in $(seq 1 16); do  # Python takes a moment to start; give it up to 8 seconds
+    embed_proxy_running || return 1
+    curl -fsS -m 3 "http://$bind:11434/api/version" >/dev/null 2>&1 && return 0
+    sleep 0.5
+  done
+  return 1
 }

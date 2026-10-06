@@ -36,7 +36,8 @@
       radial-gradient(1100px 700px at 50% 112%,rgba(18,50,150,.32),transparent 60%),
       linear-gradient(180deg,#050c23 0%,#06102c 45%,#040a1d 100%);
     background-attachment:fixed}
-  .waves{position:absolute;left:-4%;right:-4%;top:96px;height:560px;background:url(/static/brand/waves.svg) center/100% 100% no-repeat;
+  /* exactly page-wide: the drift moves the picture inside it, so the page never scrolls sideways */
+  .waves{position:absolute;left:0;right:0;top:96px;height:560px;background:url(/static/brand/waves.svg) 50% 0/112% 100% no-repeat;
     opacity:.5;pointer-events:none;z-index:0;will-change:transform;
     -webkit-mask-image:linear-gradient(180deg,transparent,#000 22%,#000 70%,transparent);mask-image:linear-gradient(180deg,transparent,#000 22%,#000 70%,transparent)}
   header,main,footer{position:relative;z-index:1}
@@ -377,6 +378,9 @@
   .md strong{color:#fff}
   .answer-grid{display:grid;grid-template-columns:1.05fr 1fr;gap:22px;align-items:start}
   .bigchart{width:100%;border-radius:var(--r-md);border:1px solid var(--line-2);cursor:zoom-in;background:#fff}
+  .chartwrap:not(:empty){margin-top:18px}
+  .chartwrap .bigchart{max-width:860px;display:block;margin:0 auto}
+  .side .txt.md p:last-child{margin-bottom:0}
 
   /* ---------------- OpenClaw challenge ---------------- */
   .oc-hero{display:grid;grid-template-columns:1.25fr .75fr;margin:28px 0 30px;overflow:hidden}
@@ -399,8 +403,19 @@
     flex:0 0 auto;border:1px solid var(--blue-line)}
   .caps .ci .i{width:15px;height:15px}
   .caps b{display:block;color:#fff;font-size:14px;font-weight:600;line-height:1.35}
-  .caps span{display:block;font-size:12.5px;color:var(--text-3);line-height:1.45;margin-top:1px}
-  .ideas{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:18px}
+  .caps span{display:block;font-size:12.5px;color:var(--text-3);line-height:1.45;margin-top:1px;overflow-wrap:anywhere}
+  .ideas{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-bottom:18px}
+  .models{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.1fr);margin-bottom:30px}
+  .mcol,.mhow{padding:22px 24px}
+  .mcol+.mcol,.mhow{border-left:1px solid var(--line)}
+  .mcol .tag{margin-bottom:12px}
+  .mcol h3{font-size:19px;line-height:1.25}
+  .mcol .mmeta{font:12px/1.5 var(--mono);color:var(--text-3);margin:4px 0 10px}
+  .mcol p{margin:0 0 12px;font-size:14px;color:var(--text-2)}
+  .mhow b{display:block;color:#fff;margin-bottom:10px;font-size:15px}
+  .mhow ol{margin:0;padding-left:18px;font-size:14px;color:var(--text-2);line-height:1.55}
+  .mhow li{margin-bottom:7px}
+  .mhow p{margin:12px 0 0}
   .idea{padding:22px 24px;display:flex;flex-direction:column;gap:12px}
   .idea .ih{display:flex;align-items:center;gap:13px}
   .idea .ii{width:38px;height:38px;border-radius:var(--r-sm);display:grid;place-items:center;background:var(--nv-soft);color:var(--nv-ink);
@@ -412,7 +427,7 @@
   .prompt{border:1px solid var(--line-2);border-radius:var(--r-sm);background:rgba(3,8,24,.55);padding:11px 14px 13px}
   .prompt .pl{font:600 11px/1 var(--display);letter-spacing:.16em;text-transform:uppercase;color:var(--text-4);margin-bottom:8px;
     display:flex;justify-content:space-between;align-items:center;gap:10px}
-  .prompt .pt{font-size:14px;color:var(--text);line-height:1.55}
+  .prompt .pt{font-size:14px;color:var(--text);line-height:1.55;overflow-wrap:anywhere}
   .prompt.then{background:transparent;border-style:dashed}
   .copy{border:1px solid var(--line-2);background:rgba(255,255,255,.04);color:var(--text-2);border-radius:var(--r-xs);font:600 12px/1 var(--font);
     padding:6px 9px;display:inline-flex;align-items:center;gap:6px;cursor:pointer;letter-spacing:0;text-transform:none}
@@ -468,7 +483,8 @@
     .sysbar{display:none}
   }
   @media (max-width:920px){
-    .home-hero,.grid2,.arch,.cmp,.answer-grid,.oc-hero,.ideas,.fgrid{grid-template-columns:1fr}
+    .home-hero,.grid2,.arch,.cmp,.answer-grid,.oc-hero,.ideas,.fgrid,.models{grid-template-columns:minmax(0,1fr)}
+    .mcol+.mcol,.mhow{border-left:0;border-top:1px solid var(--line)}
     .home-hero{padding:36px 0 28px;gap:30px}
     .abox{padding:14px 0}
     .abox+.abox{border-left:0;border-top:1px solid var(--line)}
@@ -828,15 +844,19 @@
 
   <div class="card" id="l3-answer" style="display:none">
     <div class="label" data-i18n="an_title"></div>
-    <div class="answer-grid">
-      <div>
-        <div class="qecho" id="l3-qecho"></div>
-        <div class="md atext" id="l3-text" style="font-size:17px"></div>
-        <div class="meta" id="l3-meta"></div>
-        <div id="l3-files"></div>
+    <div class="qecho" id="l3-qecho"></div>
+    <div class="cmp">
+      <div class="side before">
+        <div class="sh"><span class="tag gray" data-i18n="cmp3_before"></span><b id="l3-before-d"></b></div>
+        <div class="txt md" id="l3-plain"></div><div class="meta" id="l3-plain-m"></div>
       </div>
-      <div id="l3-chart"></div>
+      <div class="side after">
+        <div class="sh"><span class="tag" data-i18n="cmp3_after"></span><b id="l3-after-d"></b></div>
+        <div class="txt md" id="l3-text"></div><div class="meta" id="l3-meta"></div><div id="l3-files"></div>
+      </div>
     </div>
+    <div class="chartwrap" id="l3-chart"></div>
+    <div class="note green" style="margin-top:16px"><svg class="i"><use href="#i-info"/></svg><span data-i18n="cmp3_note"></span></div>
   </div>
 </section>
 
@@ -867,6 +887,11 @@
       <div class="label" data-i18n="oc_can"></div>
       <ul class="caps" id="oc-caps"></ul>
     </div>
+  </div>
+
+  <div id="oc-models-wrap" style="display:none">
+    <div class="label" data-i18n="oc_models"></div>
+    <div class="models glass" id="oc-models"></div>
   </div>
 
   <div class="label" data-i18n="oc_ideas"></div>
@@ -1077,6 +1102,19 @@ const I18N = {
     oc_s4: 'Showcase at 11:10', oc_s4d: 'Three minutes: the problem, a live run, what it produced.',
     oc_can: 'What the agent can use',
     oc_ideas: 'Starter ideas — copy one into OpenClaw, then make it yours',
+    cmp2_before: 'Without RAG', cmp2_before_d: '{model} · no documents',
+    cmp2_after: 'With RAG', cmp2_after_d: '{model} + {n} passages',
+    cmp2_note: 'Same model, same question. On the left it can only use what it learned in training; on the right it first reads the Aurora Grid passages it found, and shows them as sources.',
+    cmp3_before: 'Model only', cmp3_before_d: '{model} · no tools, no data',
+    cmp3_after: 'Agent + tools', cmp3_after_d: '{n} tool calls · pandas · matplotlib · Excel',
+    cmp3_note: 'Same model, same question. Without tools it cannot open the Excel file, so it can only guess or decline; the agent reads the data and calculates every number with Python.',
+    plain_wait: 'Asked once the main answer is ready…',
+    oc_models: 'Choose the model', oc_default: 'Default', oc_optional: 'Optional', oc_tokens: 'tokens',
+    oc_switch_h: 'How to switch in OpenClaw',
+    oc_switch1: 'Click the model name just under the message box (it reads “nemotron · Off”).',
+    oc_switch2: 'Pick Workshop Ollama, then qwen, and press Save.',
+    oc_switch3: 'Or paste the command under a model into the chat and press Enter.',
+    oc_switch_note: 'Each chat keeps its own model. The labs always use Nemotron.',
     oc_start: 'Start', oc_then: 'Then', oc_copy: 'Copy', oc_copied: 'Copied — paste it into OpenClaw’s chat box',
     oc_show: 'For the showcase', oc_tips: 'Tips',
     oc_term: 'For developers: OpenClaw in a terminal',
@@ -1218,6 +1256,19 @@ const I18N = {
     oc_s4: 'Trình diễn lúc 11:10', oc_s4d: 'Ba phút: vấn đề, chạy trực tiếp, kết quả tạo ra.',
     oc_can: 'Agent có thể dùng',
     oc_ideas: 'Ý tưởng khởi đầu — sao chép vào OpenClaw, rồi phát triển theo cách của bạn',
+    cmp2_before: 'Không có RAG', cmp2_before_d: '{model} · không có tài liệu',
+    cmp2_after: 'Có RAG', cmp2_after_d: '{model} + {n} đoạn tài liệu',
+    cmp2_note: 'Cùng mô hình, cùng câu hỏi. Bên trái mô hình chỉ dựa vào những gì đã học; bên phải nó đọc trước các đoạn tài liệu Aurora Grid tìm được rồi mới trả lời, kèm nguồn.',
+    cmp3_before: 'Chỉ có mô hình', cmp3_before_d: '{model} · không công cụ, không dữ liệu',
+    cmp3_after: 'Agent + công cụ', cmp3_after_d: '{n} lệnh gọi công cụ · pandas · matplotlib · Excel',
+    cmp3_note: 'Cùng mô hình, cùng câu hỏi. Không có công cụ, mô hình không mở được file Excel nên chỉ có thể đoán hoặc từ chối; agent đọc dữ liệu và tính mọi con số bằng Python.',
+    plain_wait: 'Sẽ hỏi khi câu trả lời chính xong…',
+    oc_models: 'Chọn mô hình', oc_default: 'Mặc định', oc_optional: 'Tuỳ chọn', oc_tokens: 'token',
+    oc_switch_h: 'Cách đổi trong OpenClaw',
+    oc_switch1: 'Bấm vào tên mô hình ngay dưới ô nhập tin nhắn (đang ghi “nemotron · Off”).',
+    oc_switch2: 'Chọn Workshop Ollama, rồi qwen, và bấm Save.',
+    oc_switch3: 'Hoặc dán lệnh bên dưới mỗi mô hình vào khung chat rồi nhấn Enter.',
+    oc_switch_note: 'Mỗi cuộc chat giữ mô hình riêng. Các bài lab luôn dùng Nemotron.',
     oc_start: 'Bắt đầu', oc_then: 'Tiếp theo', oc_copy: 'Sao chép', oc_copied: 'Đã sao chép — hãy dán vào khung chat của OpenClaw',
     oc_show: 'Chuẩn bị trình diễn', oc_tips: 'Mẹo',
     oc_term: 'Dành cho lập trình viên: dùng OpenClaw trong terminal',
@@ -1419,6 +1470,9 @@ $$('.lang button').forEach(b => b.addEventListener('click', () => {
    and they are skipped for people who ask their system for less motion. */
 const MOTION = !!window.gsap && !(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
 let tabAnim = null;
+// Follow the clock: when frames arrive late (a busy or throttled window), finish on
+// time instead of slowing down, so content is never left half-faded.
+if (MOTION) gsap.ticker.lagSmoothing(0);
 function animateTab(name){
   if (!MOTION) return;
   if (tabAnim){ tabAnim.progress(1).kill(); tabAnim = null; }
@@ -1437,11 +1491,14 @@ function animateTab(name){
       ':scope > .oc-hero, :scope > .label, :scope > .ideas > .idea, :scope > details');
     tl.from(Array.from(items).filter(el => el.offsetParent !== null), {y: 20, autoAlpha: 0, duration: .55, stagger: .035});
   }
-  tabAnim = tl;
+  tabAnim = finishSoon(tl, 1800);
 }
-function popIn(el){ if (MOTION && el) gsap.from(el, {y: 10, autoAlpha: 0, duration: .4, ease: 'power2.out', clearProps: 'all'}); }
+/* Never leave content hidden: if the browser throttles animation frames
+   (power saving, a background window), jump to the end after a moment. */
+function finishSoon(tw, ms){ setTimeout(() => { if (tw.progress() < 1) tw.progress(1); }, ms); return tw; }
+function popIn(el){ if (MOTION && el) finishSoon(gsap.from(el, {y: 10, autoAlpha: 0, duration: .4, ease: 'power2.out', clearProps: 'all'}), 900); }
 function pulse(el){ if (MOTION && el) gsap.fromTo(el, {scale: .96}, {scale: 1, duration: .5, ease: 'back.out(2.6)', clearProps: 'transform'}); }
-if (MOTION) gsap.to('.waves', {xPercent: -2.5, yPercent: 4, duration: 16, ease: 'sine.inOut', yoyo: true, repeat: -1});
+if (MOTION) gsap.fromTo('.waves', {backgroundPosition: '35% 0px'}, {backgroundPosition: '65% 18px', duration: 18, ease: 'sine.inOut', yoyo: true, repeat: -1});
 
 /* ============================================================== tabs === */
 const TABS = ['home', 'lab1', 'lab2', 'lab3', 'openclaw'];
@@ -1510,7 +1567,7 @@ async function health(){
       .filter(Boolean).join(' · ');
   }
   if (h.doc_count) L2.docCount = h.doc_count;
-  renderHomeStatus(); ocCaps(); ocStatus();
+  renderHomeStatus(); ocCaps(); ocModels(); ocStatus();
 }
 function renderHomeStatus(){
   const h = HEALTH || {};
@@ -1521,6 +1578,34 @@ function renderHomeStatus(){
   $('#home-s3').innerHTML = s(h.gateway && h.gateway.ready, h.ollama);
   $('#home-s4').innerHTML = h.gateway && h.gateway.ready ? stateHtml('ok', t('st_ready')) : stateHtml('', t('st_oc_off'));
 }
+
+/* ====================================================== comparisons === */
+/* The "without" side of the Lab 2 and Lab 3 comparisons: the same chat model,
+   with no documents and no tools. Asked after the main answer, so it never
+   slows the demo down. */
+function chatModelName(){
+  return (HEALTH && HEALTH.chat_model && HEALTH.chat_model.name) || (L3.info && L3.info.chat_model) || '';
+}
+async function plainAsk(q, state, onUpdate){
+  Object.assign(state, {text: '', busy: true, error: null, seconds: null});
+  onUpdate();
+  try {
+    await streamNDJSON('/api/plain/stream', {question: q, lang: LANG}, ev => {
+      if (ev.text){ state.text += ev.text; onUpdate(); }
+      if (ev.error) state.error = ev.error;
+      if (ev.done) state.seconds = ev.seconds;
+    });
+  } catch (e) { state.error = String(e.message || e); }
+  state.busy = false;
+  onUpdate();
+}
+function plainHtml(state){
+  if (!state) return `<div class="muted">${esc(t('plain_wait'))}</div>`;
+  if (state.error && !state.text) return `<div class="err">${esc(t('err_generic', {e: state.error}))}</div>`;
+  if (!state.text) return '<span class="spin"></span>';
+  return md(state.text);
+}
+function plainMeta(state){ return state && state.seconds != null ? secs(state.seconds) : ''; }
 
 /* ============================================================= LAB 1 === */
 const L1 = {info: null, losses: [], total: 0, running: false, stage: '', logs: [], from: 0, following: false};
@@ -1699,7 +1784,7 @@ $('#l1-all').addEventListener('click', () => {
 });
 
 /* ============================================================= LAB 2 === */
-const L2 = {examples: null, docCount: 28, busy: false, last: null, sources: null, max: 1, q: '', text: ''};
+const L2 = {examples: null, docCount: 28, busy: false, last: null, sources: null, max: 1, q: '', text: '', plain: null};
 
 async function lab2Load(){
   try { L2.examples = (await (await fetch('/api/lab2/examples')).json()).examples; } catch (e) { L2.examples = {en: [], vi: []}; }
@@ -1755,7 +1840,7 @@ function lab2Paint(active, detail){
 async function lab2Ask(){
   const q = $('#l2-q').value.trim();
   if (!q || L2.busy) return;
-  L2.busy = true; L2.q = q; L2.text = ''; L2.last = null; L2.sources = null;
+  L2.busy = true; L2.q = q; L2.text = ''; L2.last = null; L2.sources = null; L2.plain = null;
   $('#l2-go').disabled = true;
   $('#l2-sources').style.display = 'none';
   $('#l2-answer').style.display = 'none';
@@ -1770,7 +1855,7 @@ async function lab2Ask(){
         lab2Flow('answer');
         lab2RenderSources(L2.sources);
         $('#l2-answer').style.display = 'block';
-        $('#l2-answer').innerHTML = `<div class="label">${esc(t('l2_answer'))}</div><div class="qecho"><b>${esc(t('l2_youasked'))}</b> ${esc(q)}</div><div class="atext" id="l2-live"></div>`;
+        $('#l2-answer').innerHTML = lab2Card('<div class="txt" id="l2-live" style="white-space:pre-wrap"></div>', '');
       } else if (ev.event === 'delta'){
         L2.text += ev.text; const el = $('#l2-live'); if (el) el.textContent = L2.text;
       } else if (ev.event === 'answer'){
@@ -1785,19 +1870,37 @@ async function lab2Ask(){
     $('#l2-answer').style.display = 'block';
     $('#l2-answer').innerHTML = `<div class="label">${esc(t('l2_answer'))}</div><div class="err">${esc(t('l2_unreach'))}</div>`;
     lab2Flow('');
+  } else if (L2.last) {
+    L2.plain = {};
+    await plainAsk(q, L2.plain, lab2PlainUpdate);
   }
   L2.busy = false; $('#l2-go').disabled = false;
+}
+
+function lab2Card(rightHtml, metaHtml){
+  const model = chatModelName();
+  return `<div class="label">${esc(t('l2_answer'))}</div>
+    <div class="qecho"><b>${esc(t('l2_youasked'))}</b> ${esc(L2.q)}</div>
+    <div class="cmp">
+      <div class="side before"><div class="sh"><span class="tag gray">${esc(t('cmp2_before'))}</span><b>${esc(t('cmp2_before_d', {model}))}</b></div>
+        <div class="txt md" id="l2-plain">${plainHtml(L2.plain)}</div><div class="meta" id="l2-plain-m">${esc(plainMeta(L2.plain))}</div></div>
+      <div class="side after"><div class="sh"><span class="tag">${esc(t('cmp2_after'))}</span><b>${esc(t('cmp2_after_d', {model, n: (L2.sources || []).length}))}</b></div>
+        ${rightHtml}${metaHtml}</div>
+    </div>
+    <div class="note green" style="margin-top:16px">${ic('info')}<span>${esc(t('cmp2_note'))}</span></div>`;
+}
+function lab2PlainUpdate(){
+  const el = $('#l2-plain'); if (el) el.innerHTML = plainHtml(L2.plain);
+  const m = $('#l2-plain-m'); if (m) m.textContent = plainMeta(L2.plain);
 }
 
 function lab2RenderAnswer(d){
   const via = d.source === 'sandbox' ? t('via_sandbox') : d.source === 'local-index' ? t('via_local') : '—';
   const body = d.error ? `<div class="err">${esc(t('l2_unreach2'))}</div>` :
-    (!d.answer ? `<div class="err">${esc(t('l2_noanswer'))}</div>` : `<div class="atext md">${md(d.answer)}</div>`);
+    (!d.answer ? `<div class="err">${esc(t('l2_noanswer'))}</div>` : `<div class="txt md">${md(d.answer)}</div>`);
   $('#l2-answer').style.display = 'block';
-  $('#l2-answer').innerHTML = `<div class="label">${esc(t('l2_answer'))}</div>
-    <div class="qecho"><b>${esc(t('l2_youasked'))}</b> ${esc(L2.q)}</div>${body}
-    <div class="meta"><span>${esc(t('l2_docs_used', {n: (d.sources || []).length}))}</span>
-    <span>${esc(t('l2_total', {s: num(d.seconds)}))}</span><span>${esc(t('l2_via', {v: via}))}</span></div>`;
+  $('#l2-answer').innerHTML = lab2Card(body, `<div class="meta"><span>${esc(t('l2_docs_used', {n: (d.sources || []).length}))}</span>
+    <span>${esc(t('l2_total', {s: num(d.seconds)}))}</span><span>${esc(t('l2_via', {v: via}))}</span></div>`);
 }
 
 function lab2RenderSources(list){
@@ -1817,7 +1920,8 @@ $('#l2-go').addEventListener('click', lab2Ask);
 $('#l2-q').addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); lab2Ask(); } });
 
 /* ============================================================= LAB 3 === */
-const L3 = {info: null, dataset: null, busy: false, t0: 0, clock: null, calls: 0, lastChart: null, text: '', stepEl: null, q: ''};
+const L3 = {info: null, dataset: null, busy: false, t0: 0, clock: null, calls: 0, lastChart: null, text: '', stepEl: null, q: '',
+            plain: null, answered: false};
 try { L3.dataset = localStorage.getItem('dgx-dataset') || null; } catch (e) {}
 
 async function lab3Load(){
@@ -1919,7 +2023,7 @@ function lab3Clock(on){
 async function lab3Run(){
   const q = $('#l3-q').value.trim();
   if (!q || L3.busy) return;
-  L3.busy = true; L3.calls = 0; L3.lastChart = null; L3.text = ''; L3.q = q; L3.t0 = Date.now();
+  L3.busy = true; L3.calls = 0; L3.lastChart = null; L3.text = ''; L3.q = q; L3.t0 = Date.now(); L3.plain = null; L3.answered = false;
   $('#l3-go').disabled = true;
   $('#l3-trace').innerHTML = '';
   $('#l3-tracecard').style.display = 'block';
@@ -1989,12 +2093,25 @@ async function lab3Run(){
   }
   lab3Clock(false);
   $('#l3-clock').textContent = secs((Date.now() - L3.t0) / 1000);
+  if (L3.answered){
+    L3.plain = {};
+    await plainAsk(q, L3.plain, lab3PlainUpdate);
+  }
   L3.busy = false; $('#l3-go').disabled = false;
   lab3Load();
 }
 
+function lab3PlainUpdate(){
+  $('#l3-plain').innerHTML = plainHtml(L3.plain);
+  $('#l3-plain-m').textContent = plainMeta(L3.plain);
+}
+
 function lab3Answer(ev){
+  L3.answered = true;
   $('#l3-answer').style.display = 'block';
+  $('#l3-before-d').textContent = t('cmp3_before_d', {model: chatModelName() || ev.model || ''});
+  $('#l3-after-d').textContent = t('cmp3_after_d', {n: L3.calls});
+  lab3PlainUpdate();
   $('#l3-qecho').innerHTML = `<b>${esc(t('an_question'))}</b> ${esc(L3.q)}`;
   $('#l3-text').innerHTML = md(ev.text || '') +
     (ev.unverified ? `<div class="note">${ic('alert')}<span>${esc(t('an_unverified', {f: ev.unverified.slice(0, 6).join(', ')}))}</span></div>` : '');
@@ -2063,8 +2180,29 @@ function ocCaps(){  // depends on health: refreshed with it
   }).join('');
 }
 
+const MODEL_CARDS = [
+  {key: 'nemotron', name: 'Nemotron 3.5 Lightning', by: 'NVIDIA', size: '30B MoE · 3B active', cmd: '/model nemotron', tag: 'oc_default',
+   en: 'The model of every lab: fast, with dependable tool calls. Every new chat starts with it.',
+   vi: 'Mô hình của tất cả các bài: nhanh, gọi công cụ ổn định. Mọi cuộc chat mới đều bắt đầu với nó.'},
+  {key: 'qwen', name: 'Qwen 3.6', by: 'Alibaba Qwen', size: '35B MoE', cmd: '/model qwen', tag: 'oc_optional',
+   en: 'A second opinion for the challenge: try it when Nemotron is not good enough for your idea.',
+   vi: 'Lựa chọn thứ hai cho phần thử thách: thử khi Nemotron chưa đủ tốt cho ý tưởng của bạn.'}
+];
+function ocModels(){  // depends on health: shown only when the second model is installed
+  const h = HEALTH || {};
+  const ready = !!(h.extra_model && h.extra_model.ready);
+  $('#oc-models-wrap').style.display = ready ? 'block' : 'none';
+  if (!ready) return;
+  const ctx = num(h.context || 262144, 0) + ' ' + t('oc_tokens');
+  $('#oc-models').innerHTML = MODEL_CARDS.map(m => `<div class="mcol"><span class="tag${m.key === 'qwen' ? ' gray' : ''}">${esc(t(m.tag))}</span>` +
+    `<h3>${esc(m.name)}</h3><div class="mmeta">${esc(m.by)} · ${esc(m.size)} · ${esc(ctx)}</div><p>${esc(m[LANG] || m.en)}</p>` +
+    `<div class="cmd"><span>${esc(m.cmd)}</span><button type="button" class="copy" data-copy="${esc(m.cmd)}">${ic('copy')}${esc(t('oc_copy'))}</button></div></div>`).join('') +
+    `<div class="mhow"><b>${esc(t('oc_switch_h'))}</b><ol>${['oc_switch1', 'oc_switch2', 'oc_switch3'].map(k => `<li>${esc(t(k))}</li>`).join('')}</ol>` +
+    `<p class="muted">${esc(t('oc_switch_note'))}</p></div>`;
+}
+
 function ocRender(){  // static content: rendered on load and on a language change
-  ocCaps();
+  ocCaps(); ocModels();
   $('#oc-ideas').innerHTML = IDEAS.map(idea => {
     const x = idea[LANG] || idea.en;
     return `<article class="idea glass"><div class="ih"><span class="ii">${ic(idea.icon)}</span><div><h3>${esc(x.title)}</h3>` +
