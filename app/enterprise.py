@@ -406,11 +406,11 @@ category (chọn đúng một):
 - praise: khen, cảm ơn
 - spam: quảng cáo, lừa đảo, không liên quan đến việc mua hàng
 
-urgency (chính sách ưu tiên):
+urgency (chính sách ưu tiên, xét từ trên xuống, dừng ở mức đầu tiên khớp):
 - critical: dọa kiện hoặc khiếu nại lên cơ quan (luật sư, Hội Bảo vệ người tiêu dùng, Sở Công Thương); nguy hiểm an toàn (khói, cháy, khét, rò điện); tài khoản bị người lạ xâm nhập
-- high: khách giận dữ rõ rệt (lời lẽ gay gắt, "!!!", phải nhắn nhiều lần); dọa đăng mạng xã hội; dọa không mua nữa; bị trừ tiền 2 lần; cần xử lý gấp trong hôm nay
-- medium: mọi vấn đề hoặc yêu cầu khác cần nhân viên xử lý
-- low: chỉ hỏi thông tin, khen ngợi, spam
+- high: khách giận dữ rõ rệt (lời lẽ gay gắt như "làm ăn kiểu gì", "tệ hại", "bức xúc", nhiều dấu "!!!" hoặc "???", phải nhắn nhiều lần); dọa đăng mạng xã hội; dọa không mua nữa; bị trừ tiền 2 lần; khách nói cần gấp (gấp, gấp lắm, ngay trong ngày, hôm nay, mai đi công tác) — kể cả khi chỉ hỏi sản phẩm
+- low: CHỈ dành cho category inquiry, praise hoặc spam
+- medium: tất cả các trường hợp còn lại: mọi tin liên quan đến một đơn hàng, giao hàng, đổi địa chỉ, lắp đặt, bảo hành, đổi trả, hoàn tiền, hóa đơn, tài khoản, xóa dữ liệu — dù khách viết lịch sự
 
 sentiment: negative nếu khách phàn nàn về điều đã xảy ra; positive nếu khen; neutral nếu chỉ hỏi, yêu cầu, hoặc spam.
 flags (có thể rỗng): legal_threat, safety, security, social_media, churn_risk (dọa bỏ đi, không mua nữa, hủy thẻ), refund_request (đòi hoàn tiền).
@@ -952,6 +952,16 @@ def export_xlsx(demo: str) -> Path:
             ws.cell(1, i).fill = fill
         ws.freeze_panes = "A2"
 
+    vi = {"delivery": "Giao hàng", "defect": "Hàng lỗi", "wrong_item": "Giao sai, thiếu hàng", "return_refund": "Đổi trả, hoàn tiền",
+          "billing": "Thanh toán, hóa đơn", "warranty": "Bảo hành, lắp đặt", "account": "Tài khoản", "inquiry": "Hỏi sản phẩm",
+          "praise": "Khen ngợi", "spam": "Spam, lừa đảo", "critical": "Khẩn cấp", "high": "Cao", "medium": "Trung bình",
+          "low": "Thấp", "negative": "Tiêu cực", "neutral": "Trung tính", "positive": "Tích cực",
+          "legal_threat": "Dọa kiện", "safety": "Nguy hiểm", "security": "Bị xâm nhập tài khoản", "social_media": "Dọa đăng MXH",
+          "churn_risk": "Dọa bỏ đi", "refund_request": "Đòi hoàn tiền", "line_mismatch": "Dòng hàng sai (SL × đơn giá)",
+          "sum_mismatch": "Cộng dòng ≠ tiền hàng", "vat_mismatch": "Tiền thuế sai", "vat_rate": "Thuế suất bất thường",
+          "total_mismatch": "Tổng ≠ tiền hàng + thuế", "wrong_buyer": "Sai MST người mua", "duplicate": "Trùng hóa đơn",
+          "email": "Email", "zalo": "Zalo", "messenger": "Messenger", "webform": "Form web"}
+    L = lambda k: vi.get(k, k or "")  # noqa: E731
     if demo == "inbox":
         ws = wb.active
         ws.title = "Tin nhắn"
@@ -967,14 +977,14 @@ def export_xlsx(demo: str) -> Path:
             if not it:
                 continue
             text = mask_pii(it["text"])[0]
-            ws.append([r["id"], it["channel"], p.get("category"), p.get("urgency"), p.get("sentiment"),
-                       ", ".join(p.get("flags") or []), p.get("order_id"), p.get("summary"), text,
-                       it["truth"]["category"], it["truth"]["urgency"]])
+            ws.append([r["id"], L(it["channel"]), L(p.get("category")), L(p.get("urgency")), L(p.get("sentiment")),
+                       ", ".join(L(f) for f in p.get("flags") or []), p.get("order_id"), p.get("summary"), text,
+                       L(it["truth"]["category"]), L(it["truth"]["urgency"])])
         for r in sorted((r for r in rows if (r.get("pred") or {}).get("urgency") in ("critical", "high")),
                         key=lambda r: (order.get(r["pred"]["urgency"], 9), r["id"])):
             it, p = idx.get(r["id"]), r["pred"]
             if it:
-                urgent.append([r["id"], p["urgency"], ", ".join(p.get("flags") or []), p.get("summary"),
+                urgent.append([r["id"], L(p["urgency"]), ", ".join(L(f) for f in p.get("flags") or []), p.get("summary"),
                                mask_pii(it["text"])[0], r.get("reply") or ""])
         for w in (ws, urgent):
             for row in w.iter_rows(min_row=2):
@@ -996,7 +1006,7 @@ def export_xlsx(demo: str) -> Path:
             it, p = idx.get(r["id"]), r["pred"]
             if not it:
                 continue
-            checks = list(r.get("checks") or []) + ([f"duplicate:{dups[r['id']]}"] if r["id"] in dups else [])
+            checks = [L(c) for c in r.get("checks") or []] + ([f"{L('duplicate')} ({dups[r['id']]})"] if r["id"] in dups else [])
             ws.append([it["file"], p["seller_name"], p["seller_tax_code"], p["series"], p["number"], p["date"],
                        p["subtotal"], p["vat_rate"], p["vat"], p["total"], "Cần kiểm tra" if checks else "Hợp lệ",
                        ", ".join(checks)])

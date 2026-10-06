@@ -30,6 +30,7 @@ CATEGORIES = ["delivery", "defect", "wrong_item", "return_refund", "billing", "w
 WEIGHTS = [20, 14, 8, 13, 9, 10, 6, 12, 5, 3]
 # Categories that never need a person to fix something.
 LOW = {"inquiry", "praise", "spam"}
+INSTALLABLE = {"tivi", "tủ lạnh", "máy giặt", "điều hòa", "máy lọc không khí", "loa"}
 
 GREET_FORMAL = ["Kính gửi Aurora Mart,", "Kính gửi bộ phận chăm sóc khách hàng,", "Chào Aurora Mart,", "Dear Aurora Mart team,"]
 GREET_CHAT = ["shop ơi", "Chào shop", "Alo shop", "Ad ơi", "Shop ơi cho em hỏi", "", "", "hi shop"]
@@ -56,7 +57,7 @@ def templates(category: str, c: dict) -> list[tuple[str, str, list[str]]]:
     """(text, kind, flags) for one category. kind is "problem" (something went
     wrong: a complaint) or "request" (asks for a service, nothing went wrong yet)."""
     p, oid, d, amt = c["product"], c["order"], c["days"], vnd(c["amount"])
-    other = c["other"]
+    other, big, wet = c["other"], c["installable"], c["wet"]
     return {
         "delivery": [
             (f"Mình đặt {p} từ {d} ngày trước, mã đơn {oid}, đến giờ vẫn chưa nhận được hàng.", "problem", []),
@@ -96,10 +97,10 @@ def templates(category: str, c: dict) -> list[tuple[str, str, list[str]]]:
         ],
         "warranty": [
             (f"{p} mua năm ngoái (đơn {oid}) giờ bị hỏng nguồn, còn bảo hành không?", "problem", []),
-            (f"Mình cần đặt lịch lắp đặt {p} tại {c['address']}, cuối tuần này được không? Đơn {oid}.", "request", []),
+            (f"Mình cần đặt lịch lắp đặt {big} tại {c['address']}, cuối tuần này được không? Đơn {oid}.", "request", []),
             (f"Kỹ thuật viên hẹn đến bảo hành {p} 2 lần mà không đến.", "problem", []),
             (f"Trung tâm bảo hành giữ {p} của mình {d} ngày rồi chưa trả.", "problem", []),
-            (f"Lắp {p} xong thì nước chảy ra sàn, nhờ kỹ thuật qua kiểm tra lại. Đơn {oid}.", "problem", []),
+            (f"Lắp {wet} xong thì nước chảy ra sàn, nhờ kỹ thuật qua kiểm tra lại. Đơn {oid}.", "problem", []),
         ],
         "account": [
             ("Mình không nhận được mã OTP nên không đăng nhập được tài khoản Aurora Mart.", "problem", []),
@@ -118,7 +119,7 @@ def templates(category: str, c: dict) -> list[tuple[str, str, list[str]]]:
         ],
         "praise": [
             (f"Nhận được {p} rồi, đóng gói rất cẩn thận, giao nhanh hơn dự kiến.", "praise", []),
-            (f"Cảm ơn bạn kỹ thuật viên lắp {p} hôm nay, rất nhiệt tình và chuyên nghiệp.", "praise", []),
+            (f"Cảm ơn bạn kỹ thuật viên lắp {big} hôm nay, rất nhiệt tình và chuyên nghiệp.", "praise", []),
             (f"Lần thứ 5 mua ở Aurora Mart, lần nào cũng hài lòng. {p} dùng rất tốt.", "praise", []),
             ("Tổng đài hỗ trợ đổi hàng rất nhanh, cảm ơn team.", "praise", []),
         ],
@@ -155,6 +156,9 @@ def make(r: random.Random, n: int) -> dict:
     prod = r.choice(PRODUCTS)
     c = {"product": prod[1], "order": order_id(r), "address": address(r), "amount": prod[2],
          "days": r.randint(3, 12), "other": r.choice([p for p in PRODUCTS if p != prod])[1],
+         # only appliances that a technician installs, and ones that use water
+         "installable": prod[1] if prod[0] in INSTALLABLE else r.choice([p for p in PRODUCTS if p[0] in INSTALLABLE])[1],
+         "wet": r.choice([p for p in PRODUCTS if p[0] in ("máy giặt", "điều hòa", "tủ lạnh")])[1],
          "city": r.choice(["Hà Nội", "TP.HCM", "Đà Nẵng", "Cần Thơ", "Hải Phòng", "Nha Trang"]),
          "tax": "03" + "".join(r.choice("0123456789") for _ in range(8))}
     body, kind, flags = r.choice(templates(category, c))
