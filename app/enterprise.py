@@ -300,8 +300,17 @@ def unload_ollama() -> list[str]:
 
 
 def engine_start() -> tuple[bool, str]:
+    """Start the engine container; several jobs may ask at once, one starts it."""
     if engine_ready():
         return True, "ready"
+    import fcntl
+    DATA.mkdir(parents=True, exist_ok=True)
+    with (DATA / "engine.lock").open("w") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        return _engine_start_locked()
+
+
+def _engine_start_locked() -> tuple[bool, str]:
     state = _container_state()
     if state == "running":
         return True, "starting"
@@ -341,6 +350,8 @@ def engine_start() -> tuple[bool, str]:
            "--limit-mm-per-prompt", '{"image": 1, "video": 0}']
     p = _docker(*cmd, timeout=120)
     if p.returncode != 0:
+        if "Conflict" in (p.stderr or ""):  # another job started it a moment ago
+            return True, "starting"
         return False, (p.stderr or p.stdout).strip()[-400:]
     _write_json(DATA / "engine.json", {"started": time.time(), "util": round(util, 3)})
     return True, "starting"
