@@ -215,9 +215,17 @@ ensure_sandbox_model() {
 # Docker access. On a fresh DGX Spark the account is often not in the docker
 # group yet, and a new membership only reaches new logins: until then the
 # workshop continues inside the group with sg(1).
-docker_ok()       { docker info >/dev/null 2>&1; }
-docker_denied()   { docker info 2>&1 | grep -qi "permission denied"; }
-in_docker_group() { id -nG "$(id -un)" 2>/dev/null | tr ' ' '\n' | grep -qx docker; }
+docker_ok()       { timeout 30 docker info >/dev/null 2>&1; }
+# Docker runs but this account may not use it yet (not in the docker group).
+# No pipeline here: with pipefail, `docker info | grep` reports docker's own
+# failure even when grep finds the line, and the check was always false.
+docker_denied() {
+  local out
+  out="$(timeout 30 docker info 2>&1)" && return 1
+  case "${out,,}" in *"permission denied"*) return 0 ;; esac
+  [ -S /var/run/docker.sock ] && [ ! -w /var/run/docker.sock ]
+}
+in_docker_group() { local g; for g in $(id -nG "$(id -un)" 2>/dev/null); do [ "$g" = docker ] && return 0; done; return 1; }
 
 # ------------------------------------------------------ embedding proxy
 # The sandbox reaches the host as host.openshell.internal. Find the address it

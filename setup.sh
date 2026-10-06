@@ -225,14 +225,26 @@ if [ "$CHECK_ONLY" -eq 0 ] && ! command -v docker >/dev/null 2>&1; then
 fi
 if [ "$CHECK_ONLY" -eq 0 ] && command -v docker >/dev/null 2>&1 && ! docker_ok && ! docker_denied; then
   [ "$SUDO_OK" -eq 1 ] || need_password "Starting Docker"
-  sudo systemctl enable --now docker >> "$LOG" 2>&1 || sudo systemctl start docker >> "$LOG" 2>&1 || true
-  for _ in $(seq 1 30); do { docker_ok || docker_denied; } && break; sleep 2; done
+  info "Starting Docker… / Đang khởi động Docker…"
+  sudo systemctl enable --now containerd >> "$LOG" 2>&1 || true
+  sudo systemctl enable --now docker.socket docker >> "$LOG" 2>&1 || sudo systemctl start docker >> "$LOG" 2>&1 || true
+  # The first start on a fresh machine can take a while.
+  for _ in $(seq 1 60); do { docker_ok || docker_denied; } && break; sleep 3; done
+  if ! docker_ok && ! docker_denied; then
+    sudo systemctl restart docker >> "$LOG" 2>&1 || true
+    for _ in $(seq 1 30); do { docker_ok || docker_denied; } && break; sleep 3; done
+  fi
+  # Root reaching the daemon while this account cannot: a permissions problem.
+  if ! docker_ok && ! docker_denied && sudo -n timeout 30 docker info >/dev/null 2>&1; then
+    DOCKER_NEEDS_GROUP=1
+  fi
+  { sudo systemctl --no-pager status docker 2>&1 | tail -n 15; } >> "$LOG" 2>&1 || true
 fi
 
 if ! command -v docker >/dev/null 2>&1; then
   bad "Docker is not installed" "Chưa cài Docker"; CORE_OK=0
 elif ! docker_ok; then
-  if docker_denied; then
+  if docker_denied || [ "${DOCKER_NEEDS_GROUP:-0}" -eq 1 ]; then
     if [ "$CHECK_ONLY" -eq 0 ] && [ -z "${WORKSHOP_DOCKER_GROUP:-}" ] && command -v sg >/dev/null 2>&1; then
       if ! in_docker_group; then
         [ "$SUDO_OK" -eq 1 ] || need_password "Giving this account access to Docker"
