@@ -45,6 +45,11 @@ SANDBOX="$(env_get SANDBOX dgx-workshop)"
 export NEMOCLAW_GATEWAY_PORT="$(env_get NEMOCLAW_GATEWAY_PORT 8990)"
 AGENT="$(env_get AGENT_ID analyst)"
 REASONING="$(env_get AGENT_REASONING none)"
+# Sampling temperature for the agent's model. Without one, Ollama uses the
+# model's own default (1.0 for nemotron-3.5-lightning), which through the
+# gateway gave looping tool calls, answers in the wrong language and misspelt
+# place names. The direct route already uses 0.2.
+TEMPERATURE="$(env_get AGENT_TEMPERATURE 0.2)"
 DEFAULT_GATEWAY="$(env_get GATEWAY_URL http://127.0.0.1:18789)"
 SKIP_SKILL=0
 CHECK_ONLY=0
@@ -147,9 +152,9 @@ sbx download /sandbox/.openclaw/openclaw.json "$TMP/openclaw.json" >/dev/null 2>
   || die "could not download openclaw.json from the sandbox"
 cp "$TMP/openclaw.json" "$RUN/openclaw.json.before-lab3"
 
-python3 - "$TMP/openclaw.json" "$AGENT" "$WS" "$REASONING" <<'PY' > "$TMP/changes.txt"
+python3 - "$TMP/openclaw.json" "$AGENT" "$WS" "$REASONING" "$TEMPERATURE" <<'PY' > "$TMP/changes.txt"
 import json, sys
-path, agent, ws, reasoning = sys.argv[1:5]
+path, agent, ws, reasoning, temperature = sys.argv[1:6]
 raw = open(path, encoding="utf-8").read()
 d = json.loads(raw[: raw.rfind("}") + 1])
 changes = []
@@ -184,6 +189,15 @@ else:
             cur[k] = v
             changes.append(f"agents.list[{agent}].{k} updated")
 
+# NemoClaw's default "progressive" tool disclosure hides tools behind a
+# tool_search tool the model must call first. qwen3.6:35b managed the extra
+# step; nemotron-3.5-lightning answered with made-up search results instead of
+# calling anything. The analyst has four tools: list them directly.
+tools = d.get("tools")
+if isinstance(tools, dict) and "toolSearch" in tools:
+    del tools["toolSearch"]
+    changes.append("tools.toolSearch removed (tools are offered directly)")
+
 model = agents.get("defaults", {}).get("model")
 primary = model.get("primary") if isinstance(model, dict) else model
 if primary and reasoning and reasoning != "default":
@@ -192,6 +206,12 @@ if primary and reasoning and reasoning != "default":
     if extra.get("reasoning_effort") != reasoning:
         extra["reasoning_effort"] = reasoning
         changes.append(f"agents.defaults.models[{primary}].params.extra_body.reasoning_effort = {reasoning}")
+if primary and temperature and temperature != "default":
+    entry = agents.setdefault("defaults", {}).setdefault("models", {}).setdefault(primary, {})
+    extra = entry.setdefault("params", {}).setdefault("extra_body", {})
+    if extra.get("temperature") != float(temperature):
+        extra["temperature"] = float(temperature)
+        changes.append(f"agents.defaults.models[{primary}].params.extra_body.temperature = {temperature}")
 
 open(path, "w", encoding="utf-8").write(json.dumps(d, indent=2, ensure_ascii=False) + "\n")
 print("\n".join(changes) if changes else "no changes")

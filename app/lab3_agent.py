@@ -22,6 +22,7 @@ import json
 import re
 import threading
 import time
+import unicodedata
 import urllib.error
 import urllib.request
 import uuid
@@ -474,7 +475,9 @@ MAX_NUDGES = 3
 _TOOL_NAME = re.compile(r"\b(?:get_dataset_info|analyze_sales|create_chart|export_excel_report)\b")
 
 
-def _not_finished(text: str, done: set[str], evidence: set[str]) -> tuple[str, list[str]] | None:
+def _not_finished(text: str, done: set[str], evidence: set[str],
+                  rows: dict[str, set[str]] | None = None, lang: str = "vi",
+                  names: list[str] | None = None) -> tuple[str, list[str]] | None:
     """Why the agent should continue instead of answering, or None."""
     analysed = "analyze_sales" in done
     if not analysed and _TOOL_NAME.search(text or ""):
@@ -484,7 +487,14 @@ def _not_finished(text: str, done: set[str], evidence: set[str]) -> tuple[str, l
         return ("figures" if analysed else "no_analysis", bad)
     if analysed:
         missing = [n for n in AFTER_ANALYSIS if n not in done]
-        return ("missing", missing) if missing else None
+        if missing:
+            return ("missing", missing)
+    answer = _fix_names(_clean_answer(text), names or [])
+    wrong = _misattributed(answer, rows or {})
+    if wrong:
+        return ("mismatch", wrong)
+    if analysed and _wrong_language(answer, lang, names or []):
+        return ("language", [])
     return None
 
 
@@ -499,6 +509,11 @@ def _nudge_text(reason: str, items: list[str], lang: str) -> str:
     elif reason == "described":
         msg = ("You described the next tool call but did not make it. Make the call now, "
                "one tool at a time, then continue the workflow.")
+    elif reason == "mismatch":
+        msg = (f"Check your answer against the analysis table: {'; '.join(items[:4])}. "
+               "Write the answer again, giving each region or product its own figures.")
+    elif reason == "language":
+        msg = "Write the whole answer again in the required language; keep names as in the data."
     elif reason == "no_analysis":
         msg = (f"Your answer contains figures no tool returned ({', '.join(items[:6])}). Every "
                "number must come from a tool: call analyze_sales first, then continue the workflow.")
@@ -508,12 +523,157 @@ def _nudge_text(reason: str, items: list[str], lang: str) -> str:
     return f"{msg} {LANGUAGE_RULE.get(lang, LANGUAGE_RULE['en'])}"
 
 
+# --------------------------------------------------------------------------
+# Names and languages. nemotron-3.5-lightning, through the gateway, misspelt
+# place names ("Đà Năng", "Đà Nỗng"), once headlined the wrong region ("TP. Hồ
+# Chí Minh … +64,5%", Đà Nẵng's figure) and answered English questions in
+# Vietnamese. These checks use the workbook itself as the reference.
+# --------------------------------------------------------------------------
+_NAMES: dict[str, list[str]] = {}
+
+
+def _known_names(st, data: Path) -> list[str]:
+    """The workbook's category values (regions, products, channels), longest first."""
+    key = f"{data}:{data.stat().st_mtime if data.exists() else 0}"
+    if key not in _NAMES:
+        names: set[str] = set()
+        try:
+            df = st.load_dataset(data)[0]
+            for col in df.columns:
+                if df[col].dtype == object:
+                    vals = [str(v).strip() for v in df[col].dropna().unique()]
+                    if 1 < len(vals) <= 60:
+                        names.update(v for v in vals if 2 <= len(v) <= 60 and re.search(r"[^\W\d_]", v))
+        except Exception:  # noqa: BLE001 - names are a nicety, never a failure
+            pass
+        _NAMES[key] = sorted(names, key=len, reverse=True)
+    return _NAMES[key]
+
+
+def _fold(text: str) -> str:
+    """Lower case without accents: "Đà Nẵng" -> "da nang"."""
+    t = unicodedata.normalize("NFD", text.replace("đ", "d").replace("Đ", "D"))
+    return "".join(c for c in t if unicodedata.category(c) != "Mn").lower()
+
+
+def _one_edit(a: str, b: str) -> bool:
+    if abs(len(a) - len(b)) > 1:
+        return False
+    if len(a) == len(b):
+        return sum(x != y for x, y in zip(a, b)) <= 1
+    if len(a) > len(b):
+        a, b = b, a
+    i = 0
+    while i < len(a) and a[i] == b[i]:
+        i += 1
+    return a[i:] == b[i + 1:]
+
+
+def _fix_names(text: str, names: list[str]) -> str:
+    """Put the workbook's spelling back on near-miss names ("Đà Năng" -> "Đà Nẵng").
+
+    A run of words is replaced only when it equals a name once accents are
+    ignored, or, for names without digits, is one letter away from one and
+    from no other name: "AX-400" is never turned into "AX-600".
+    """
+    if not text or not names:
+        return text
+    words = list(re.finditer(r"\w+", text))
+    table = [(n, _fold(n), len(re.findall(r"\w+", n))) for n in names]
+    folded = {f for _, f, _ in table}
+    out, pos, i = [], 0, 0
+    while i < len(words):
+        step = 1
+        for name, fname, k in table:
+            if i + k > len(words):
+                continue
+            start, end = words[i].start(), words[i + k - 1].end()
+            cand = text[start:end]
+            if cand == name:
+                step = k
+                break
+            fc = _fold(cand)
+            if fc == fname or (not re.search(r"\d", name) and len(fname) >= 6
+                                and fc not in folded and _one_edit(fc, fname)):
+                out.append(text[pos:start])
+                out.append(name)
+                pos, step = end, k
+                break
+        i += step
+    out.append(text[pos:])
+    return "".join(out)
+
+
+def _table_figures(model_out: dict) -> dict[str, set[str]]:
+    """{row name: figures in its row} from an analyze_sales result."""
+    rows: dict[str, set[str]] = {}
+    for row in model_out.get("table") or []:
+        if isinstance(row, dict) and row:
+            name = str(next(iter(row.values())))
+            rows.setdefault(name, set()).update(_figures(" ".join(map(str, list(row.values())[1:]))))
+    return rows
+
+
+def _misattributed(text: str, rows: dict[str, set[str]]) -> list[str]:
+    """Sentences that name one row but quote another row's figure."""
+    if not rows:
+        return []
+    shielded = re.sub(r"\b(TP|Tp)\.", "\\1\u2024", text)
+    problems = []
+    for m in re.finditer(r"[^.!?\n]+(?:[.!?]+|\n|$)", shielded):
+        sentence = text[m.start():m.end()]
+        named = [n for n in rows if n in sentence]
+        if len(named) != 1:
+            continue
+        own = rows[named[0]]
+        for digits, raw in _figures(sentence.replace(named[0], " ")).items():
+            other = next((n for n, figs in rows.items() if n != named[0] and digits in figs), None)
+            if other and digits not in own:
+                problems.append(f"{raw} belongs to {other}, not {named[0]}")
+    return problems
+
+
+_VI_LETTERS = set("ăâđêôơưáàảãạắằẳẵặấầẩẫậéèẻẽẹếềểễệíìỉĩịóòỏõọốồổỗộớờởỡợúùủũụứừửữựýỳỷỹỵ")
+
+
+def _wrong_language(text: str, lang: str, names: list[str]) -> bool:
+    """An answer mostly in the other language (names from the data excluded)."""
+    for n in names:
+        text = text.replace(n, " ")
+    letters = [c for c in text.lower() if c.isalpha()]
+    if len(letters) < 80:
+        return False
+    share = sum(c in _VI_LETTERS for c in letters) / len(letters)
+    return share > 0.06 if lang == "en" else share < 0.04
+
+
 def _next_step(done: set[str]) -> str:
     """The workflow's next step, for an agent that keeps repeating a call."""
     for name in ("analyze_sales", "create_chart", "export_excel_report"):
         if name not in done:
             return f"Next: call {name}."
     return "Next: write the answer."
+
+
+def _semantic_key(st, ctx, name: str, args: dict) -> str | None:
+    """What a call means (grouping, metric, filters), so that a repeat in other
+    words is recognised: through the gateway the model re-drew the same chart
+    and re-exported the same report up to four times."""
+    if name not in ("analyze_sales", "create_chart", "export_excel_report"):
+        return None
+    try:
+        a = st._coerce_args(dict(args))
+        if name != "analyze_sales":
+            st._default_to_last_analysis(a, ctx)
+    except Exception:  # noqa: BLE001 - bad arguments: let the tool report them
+        return None
+    parts = {"g": str(a.get("group_by") or ""), "m": str(a.get("metric") or ""),
+             "f": a.get("filters") or None}
+    if not parts["g"] or not parts["m"]:
+        return None
+    if name == "create_chart":
+        parts["t"] = str(a.get("chart_type") or "bar")
+    return name + json.dumps(parts, sort_keys=True, ensure_ascii=False, default=str)
 
 
 def _check_report(args: dict, analysed_before: bool, evidence: set[str]) -> dict | None:
@@ -592,6 +752,9 @@ def _run(question: str, lang: str, data_name: str | None, route_pref: str, emit)
           "model": CHAT_MODEL, "data": data.name})
 
     seen: dict[str, dict] = {}
+    seen_meaning: dict[str, dict] = {}
+    names = _known_names(st, data)  # the workbook's regions, products, channels
+    rows: dict[str, set[str]] = {}  # analysis table: row name -> its figures
     done: set[str] = set()  # tools that succeeded at least once
     evidence = set(_figures(question))  # figures the agent has been given
     analysed_before = False  # an analysis result came back in an earlier turn
@@ -620,7 +783,7 @@ def _run(question: str, lang: str, data_name: str | None, route_pref: str, emit)
                 send({"event": "error", "message": f"model call failed: {exc}"})
                 return
         why = (None if reply["tool_calls"] or nudges >= MAX_NUDGES
-               else _not_finished(reply["content"], done, evidence))
+               else _not_finished(reply["content"], done, evidence, rows, lang, names))
         send({"event": "llm_done", "step": step, "seconds": round(time.time() - t_llm, 1),
               "tool_calls": len(reply["tool_calls"]), "usage": reply.get("usage"),
               **({"nudge": why[0]} if why else {})})
@@ -639,7 +802,7 @@ def _run(question: str, lang: str, data_name: str | None, route_pref: str, emit)
                          "tool_calls": reply["tool_calls"]})
         if analysed_before and reply["content"]:
             drafts.append(reply["content"])  # often the real answer, written beside the last calls
-        thought = _visible_thought(reply["content"], evidence) if analysed_before else ""
+        thought = _fix_names(_visible_thought(reply["content"], evidence), names) if analysed_before else ""
         if thought:
             send({"event": "thought", "step": step, "text": thought})
         analysed_now = False
@@ -650,13 +813,25 @@ def _run(question: str, lang: str, data_name: str | None, route_pref: str, emit)
                 args = json.loads(raw_args) if raw_args else {}
             except json.JSONDecodeError:
                 args = {"_raw": raw_args}
+            if name == "export_excel_report":  # the report carries the model's words
+                for k in ("title", "insights"):
+                    if isinstance(args.get(k), str):
+                        args[k] = _fix_names(args[k], names)
+                    elif isinstance(args.get(k), list):
+                        args[k] = [_fix_names(str(x), names) for x in args[k]]
             send({"event": "tool_call", "id": call["id"], "name": name, "args": args})
             key = name + json.dumps(args, sort_keys=True, ensure_ascii=False)
+            meaning = _semantic_key(st, ctx, name, args)
             t_tool = time.time()
             refused = (_check_report(args, analysed_before, evidence)
                        if name == "export_excel_report" else None)
             if refused:
                 model_out, ui_out, ok = refused, refused, False
+            elif meaning and meaning in seen_meaning:
+                prev = seen_meaning[meaning]
+                model_out, ui_out, ok = prev["model"], prev["ui"], True
+                model_out = {**model_out, "note": f"Already done in this conversation; do not repeat it. "
+                                                  f"{_next_step(done)}"}
             elif key in seen and name != "export_excel_report":
                 # Replay an identical call, keeping whether it succeeded: a
                 # repeated failure must stay a failure (it once crashed here).
@@ -672,6 +847,10 @@ def _run(question: str, lang: str, data_name: str | None, route_pref: str, emit)
                 done.add(name)
                 evidence |= set(_figures(json.dumps(model_out, ensure_ascii=False)))
                 analysed_now = analysed_now or name == "analyze_sales"
+                if meaning:
+                    seen_meaning.setdefault(meaning, {"model": model_out, "ui": ui_out})
+                if name == "analyze_sales":
+                    rows.update(_table_figures(model_out))
             ev = {"event": "tool_result", "id": call["id"], "name": name, "ok": ok,
                   "seconds": round(time.time() - t_tool, 2), "ui": ui_out}
             if ok and name == "create_chart" and ui_out.get("image"):
@@ -696,7 +875,7 @@ def _run(question: str, lang: str, data_name: str | None, route_pref: str, emit)
         best = max((_clean_answer(d) for d in drafts), key=lambda d: _grounded(d, evidence))
         if _grounded(best, evidence) > _grounded(answer, evidence):
             answer = best
-    final = answer or _tidy(final).strip()
+    final = _fix_names(answer or _tidy(final).strip(), names)
     files = [{"kind": f["kind"], "name": f["name"],
               "url": f"/api/lab3/file/{run_id}/{f['name']}"} for f in ctx.files]
     unverified = _unsupported(final, evidence)
