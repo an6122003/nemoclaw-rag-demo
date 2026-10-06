@@ -19,7 +19,7 @@ env_get() {  # env_get KEY DEFAULT — the environment wins over workshop.env
   printf '%s' "${val:-$def}"
 }
 
-CHAT_MODEL="$(env_get CHAT_MODEL qwen3.6:35b)"
+CHAT_MODEL="$(env_get CHAT_MODEL nemotron-3.5-lightning:30b-a3b)"
 EMBED_MODEL="$(env_get EMBED_MODEL qwen3-embedding:4b)"
 LAB1_BASE_HF="$(env_get LAB1_BASE_HF Qwen/Qwen2.5-1.5B-Instruct)"
 LAB1_BASE_OLLAMA="$(env_get LAB1_BASE_OLLAMA qwen2.5:1.5b-instruct)"

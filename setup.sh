@@ -105,13 +105,14 @@ if [ "$ASSUME_YES" -eq 0 ] && [ "$CHECK_ONLY" -eq 0 ] && [ -t 0 ]; then
   cat <<'NOTICE'
    This will download and install third-party software, each under its own
    license: Ollama, NVIDIA NemoClaw (with OpenShell and OpenClaw), uv, Python
-   packages, NVIDIA's PyTorch container, and open AI models (Qwen). About
-   60 GB is downloaded; it takes 45-90 minutes. Leave this window open.
+   packages, NVIDIA's PyTorch container, and open AI models (NVIDIA Nemotron,
+   Qwen). About 60 GB is downloaded; it takes 45-90 minutes. Leave this window
+   open.
 
    Chương trình sẽ tải và cài phần mềm của bên thứ ba, mỗi phần mềm theo giấy
    phép riêng: Ollama, NVIDIA NemoClaw (kèm OpenShell và OpenClaw), uv, các gói
-   Python, container PyTorch của NVIDIA và các mô hình AI mở (Qwen). Tải khoảng
-   60 GB, mất 45-90 phút. Hãy để cửa sổ này mở.
+   Python, container PyTorch của NVIDIA và các mô hình AI mở (NVIDIA Nemotron,
+   Qwen). Tải khoảng 60 GB, mất 45-90 phút. Hãy để cửa sổ này mở.
 
 NOTICE
   printf '   Press Enter to continue, or Ctrl-C to cancel.\n'

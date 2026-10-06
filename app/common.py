@@ -47,7 +47,7 @@ def setting(key: str, default: str = "") -> str:
 
 
 OLLAMA = setting("OLLAMA_URL", "http://127.0.0.1:11434").rstrip("/")
-CHAT_MODEL = setting("CHAT_MODEL", "qwen3.6:35b")
+CHAT_MODEL = setting("CHAT_MODEL", "nemotron-3.5-lightning:30b-a3b")
 EMBED_MODEL = setting("EMBED_MODEL", "qwen3-embedding:4b")
 SANDBOX = setting("SANDBOX", "dgx-workshop")
 

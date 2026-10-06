@@ -7,7 +7,7 @@ chunks come over slow connections and can sit there for hours. Cancelling and
 pulling again resumes from the bytes already on disk, and the rest usually
 arrives at full speed. This does that automatically, so nobody has to notice.
 
-    python3 scripts/pull-model.py qwen3.6:35b
+    python3 scripts/pull-model.py nemotron-3.5-lightning:30b-a3b
 
 Standard library only: setup.sh runs it before the workshop's Python
 environment exists. Exit code 0 when the model is ready.

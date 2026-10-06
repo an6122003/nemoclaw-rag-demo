@@ -51,8 +51,8 @@ Tool-calling rules:
 
 ## How to answer
 
-- First sentence: the direct answer, with its number. Example: "Đà Nẵng tăng
-  trưởng tốt nhất: +64,5% so với 2024."
+- First sentence: the direct answer with its key number, written in the
+  language of the question.
 - Then 2-4 short bullet points with supporting facts, quoting numbers exactly as
   the tools wrote them.
 - Point out anything a careful analyst would flag, for example when the largest
