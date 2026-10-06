@@ -20,6 +20,7 @@ env_get() {  # env_get KEY DEFAULT — the environment wins over workshop.env
 }
 
 CHAT_MODEL="$(env_get CHAT_MODEL nemotron-3.5-lightning:30b-a3b)"
+EXTRA_CHAT_MODEL="$(env_get EXTRA_CHAT_MODEL "")"
 EMBED_MODEL="$(env_get EMBED_MODEL qwen3-embedding:4b)"
 LAB1_BASE_HF="$(env_get LAB1_BASE_HF Qwen/Qwen2.5-1.5B-Instruct)"
 LAB1_BASE_OLLAMA="$(env_get LAB1_BASE_OLLAMA qwen2.5:1.5b-instruct)"
@@ -31,16 +32,18 @@ AGENT_ID="$(env_get AGENT_ID analyst)"
 OLLAMA_URL="$(env_get OLLAMA_URL http://127.0.0.1:11434)"
 HUB_PORT="$(env_get HUB_PORT 8090)"
 OLLAMA_CONTEXT_LENGTH="$(env_get OLLAMA_CONTEXT_LENGTH 32768)"
-# Context window of the chat model itself, for OpenClaw's own agent (see
+# Context window of the chat models themselves, for OpenClaw's own agent (see
 # scripts/ollama-context.py). Also what NemoClaw bakes into the sandbox.
-CHAT_CONTEXT="$(env_get CHAT_CONTEXT 65536)"
+CHAT_CONTEXT="$(env_get CHAT_CONTEXT 262144)"
+CHAT_MAX_TOKENS="$(env_get CHAT_MAX_TOKENS 16384)"
 # Every nemoclaw command must target the workshop's own gateway.
 NEMOCLAW_GATEWAY_PORT="$(env_get NEMOCLAW_GATEWAY_PORT 8990)"
 # The NemoClaw release the labs were verified with; a fresh install gets this
 # one rather than whatever NVIDIA's installer currently calls last-known-good.
 NEMOCLAW_VERSION="$(env_get NEMOCLAW_VERSION v0.0.124)"
 export CHAT_MODEL EMBED_MODEL LAB1_BASE_HF LAB1_BASE_OLLAMA LAB1_TUNED_MODEL LAB1_IMAGE \
-       SANDBOX AGENT_ID OLLAMA_URL HUB_PORT NEMOCLAW_GATEWAY_PORT CHAT_CONTEXT
+       SANDBOX AGENT_ID OLLAMA_URL HUB_PORT NEMOCLAW_GATEWAY_PORT CHAT_CONTEXT CHAT_MAX_TOKENS \
+       EXTRA_CHAT_MODEL
 
 # The one command participants run (install and update), and how to start the
 # workshop afterwards. Messages repeat them so they can be copied from screen.
@@ -115,8 +118,12 @@ sys.exit(0 if want in names or (":" not in want and want + ":latest" in names) e
 # OpenClaw's own agent overflows Ollama's usual 16k context; give the chat
 # model its own larger one. Local only (no download), safe on every start.
 ensure_chat_context() {
-  ollama_has "$CHAT_MODEL" || return 0
-  python3 "$ROOT/scripts/ollama-context.py" "$CHAT_MODEL" "$CHAT_CONTEXT" >> "$LOG" 2>&1
+  local m rc=0
+  for m in "$CHAT_MODEL" $EXTRA_CHAT_MODEL; do
+    ollama_has "$m" || continue
+    python3 "$ROOT/scripts/ollama-context.py" "$m" "$CHAT_CONTEXT" >> "$LOG" 2>&1 || rc=1
+  done
+  return $rc
 }
 
 sandbox_ok() {  # the NemoClaw sandbox answers and is Ready (status also succeeds for "Phase: Error")
@@ -151,6 +158,15 @@ sandbox_container_start() {
   docker start $ids >/dev/null 2>&1 || true
 }
 
+wait_sandbox_ready() {  # wait_sandbox_ready SECONDS — Ready after a container start
+  local end=$((SECONDS + ${1:-120}))
+  while [ "$SECONDS" -lt "$end" ]; do
+    sandbox_ok 20 && return 0
+    sleep 5
+  done
+  return 1
+}
+
 hub_up() { curl -fsS -m 3 "http://127.0.0.1:$HUB_PORT/api/health" >/dev/null 2>&1; }
 
 # NemoClaw onboarding with the workshop's settings. For a new machine it
@@ -170,6 +186,7 @@ nemoclaw_onboard() {
   ollama_unload_all   # and picks a smaller model when memory looks busy
   env NEMOCLAW_NON_INTERACTIVE=1 NEMOCLAW_ACCEPT_THIRD_PARTY_SOFTWARE=1 NEMOCLAW_YES=1 \
       NEMOCLAW_RECREATE_WITHOUT_BACKUP=1 NEMOCLAW_CONTEXT_WINDOW="$CHAT_CONTEXT" \
+      NEMOCLAW_MAX_TOKENS="$CHAT_MAX_TOKENS" \
       NEMOCLAW_AGENT=openclaw NEMOCLAW_PROVIDER=ollama NEMOCLAW_MODEL="$CHAT_MODEL" \
       NEMOCLAW_SANDBOX_NAME="$SANDBOX" NEMOCLAW_POLICY_TIER=balanced \
     timeout "${ONBOARD_TIMEOUT:-3600}" nemoclaw onboard --name "$SANDBOX" --non-interactive --yes \
@@ -187,7 +204,7 @@ ensure_sandbox_model() {
     return 0
   fi
   if run_long "Switching the sandbox to $CHAT_MODEL… / Đang chuyển sandbox sang $CHAT_MODEL…" \
-       env NEMOCLAW_CONTEXT_WINDOW="$CHAT_CONTEXT" \
+       env NEMOCLAW_CONTEXT_WINDOW="$CHAT_CONTEXT" NEMOCLAW_MAX_TOKENS="$CHAT_MAX_TOKENS" \
        timeout 600 nemoclaw "$SANDBOX" inference set --provider ollama-local --model "$CHAT_MODEL"; then
     ok "Sandbox model: $CHAT_MODEL (NemoClaw had chosen $current)" "Mô hình của sandbox: $CHAT_MODEL"
   else
@@ -238,11 +255,18 @@ embed_proxy_stop() {
 embed_proxy_start() {  # embed_proxy_start [bind-ip]
   local bind="${1:-$(cat "$RUN/embed-proxy.bind" 2>/dev/null || true)}"
   [ -n "$bind" ] || return 1
-  embed_proxy_running && return 0
+  local sig="$EMBED_MODEL|$EXTRA_CHAT_MODEL"
+  if embed_proxy_running; then
+    [ "$(cat "$RUN/embed-proxy.models" 2>/dev/null)" = "$sig" ] && return 0
+    embed_proxy_stop  # started before the allowed models changed
+  fi
+  printf '%s\n' "$sig" > "$RUN/embed-proxy.models"
   local py=python3
   [ -x "$ROOT/.venv/bin/python" ] && py="$ROOT/.venv/bin/python"
+  local extra=()
+  [ -n "$EXTRA_CHAT_MODEL" ] && extra=(--chat-model "$EXTRA_CHAT_MODEL")
   nohup "$py" "$ROOT/scripts/embed-proxy.py" --bind "$bind" --port 11434 \
-    --target "${OLLAMA_URL#http://}" --model "$EMBED_MODEL" \
+    --target "${OLLAMA_URL#http://}" --model "$EMBED_MODEL" "${extra[@]}" \
     >> "$RUN/embed-proxy.log" 2>&1 &
   echo $! > "$RUN/embed-proxy.pid"
   printf '%s\n' "$bind" > "$RUN/embed-proxy.bind"

@@ -1174,6 +1174,8 @@ const AGENDA = [
 
 /* The challenge page: what OpenClaw's agent can use, and starter ideas. */
 const CAPS = [
+  {icon: 'cpu', en: ['Two local models', 'Nemotron 3.5 Lightning by default; type /model qwen for Qwen 3.6, /model nemotron to go back. Context: {ctx} tokens.'],
+                vi: ['Hai mô hình cục bộ', 'Mặc định Nemotron 3.5 Lightning; gõ /model qwen để dùng Qwen 3.6, /model nemotron để quay lại. Ngữ cảnh: {ctx} token.']},
   {icon: 'term', en: ['Run commands and Python', 'It writes scripts and runs them inside the sandbox.'],
                  vi: ['Chạy lệnh và Python', 'Tự viết script và chạy ngay trong sandbox.']},
   {icon: 'file', en: ['Read and write files', 'In its workspace, /sandbox/.openclaw/workspace'],
@@ -1230,10 +1232,12 @@ const SHOWCASE = {
 const TIPS = {
   en: ['Be specific: name the input file, the steps and the format you want back.',
        'Type /new for a fresh chat when you switch ideas.',
+       'Answers too weak for your idea? Type /model qwen to try Qwen 3.6, /model nemotron to switch back.',
        'If it stops halfway, reply “continue”.',
        'Ask “which files did you create?” to find its output.'],
   vi: ['Viết cụ thể: tên file đầu vào, các bước và định dạng kết quả mong muốn.',
        'Gõ /new để mở cuộc chat mới khi đổi ý tưởng.',
+       'Câu trả lời chưa tốt? Gõ /model qwen để thử Qwen 3.6, /model nemotron để quay lại.',
        'Nếu agent dừng giữa chừng, trả lời “tiếp tục”.',
        'Hỏi “bạn đã tạo những file nào?” để tìm kết quả.']
 };
@@ -1393,7 +1397,7 @@ async function health(){
       .filter(Boolean).join(' · ');
   }
   if (h.doc_count) L2.docCount = h.doc_count;
-  renderHomeStatus(); ocStatus();
+  renderHomeStatus(); ocCaps(); ocStatus();
 }
 function renderHomeStatus(){
   const h = HEALTH || {};
@@ -1929,11 +1933,17 @@ function promptBox(kind, text){
     `<div class="pt">${esc(text)}</div></div>`;
 }
 
-function ocRender(){
-  $('#oc-caps').innerHTML = CAPS.map(c => {
+function ocCaps(){  // depends on health: refreshed with it
+  const h = HEALTH || {};
+  const ctx = num(h.context || 262144, 0);
+  $('#oc-caps').innerHTML = CAPS.filter(c => c.icon !== 'cpu' || !HEALTH || (h.extra_model && h.extra_model.ready)).map(c => {
     const [title, sub] = c[LANG] || c.en;
-    return `<li><span class="ci">${ic(c.icon)}</span><div><b>${esc(title)}</b><span>${esc(sub)}</span></div></li>`;
+    return `<li><span class="ci">${ic(c.icon)}</span><div><b>${esc(title)}</b><span>${esc(sub.split('{ctx}').join(ctx))}</span></div></li>`;
   }).join('');
+}
+
+function ocRender(){  // static content: rendered on load and on a language change
+  ocCaps();
   $('#oc-ideas').innerHTML = IDEAS.map(idea => {
     const x = idea[LANG] || idea.en;
     return `<article class="idea glass"><div class="ih"><span class="ii">${ic(idea.icon)}</span><div><h3>${esc(x.title)}</h3>` +
@@ -1949,8 +1959,9 @@ function ocStatus(){
   const sb = (h.sandbox && h.sandbox.name) || 'dgx-workshop';
   const ready = h.gateway && h.gateway.ready;
   const model = h.chat_model ? h.chat_model.name : '';
+  const extra = h.extra_model && h.extra_model.ready ? ' · ' + h.extra_model.name : '';
   $('#oc-status').innerHTML = (ready ? stateHtml('ok', t('oc_ready')) : stateHtml('warn', t('oc_off'))) +
-    (ready && model ? `<span class="model">${esc(t('oc_model', {model}))}</span>` : '');
+    (ready && model ? `<span class="model">${esc(t('oc_model', {model: model + extra}))}</span>` : '');
   const addr = location.host + '/openclaw';
   $('#oc-addr').innerHTML = esc(t('oc_addr', {addr: '\u0000'})).replace('\u0000', `<code>${esc(addr)}</code>`);
   $('#oc-remote').style.display = HEALTH && !h.local ? 'flex' : 'none';

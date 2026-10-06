@@ -299,6 +299,10 @@ def health(include_token: bool = False) -> dict:
         "gpu": _gpu_name(),
         "chat_model": {"name": common.CHAT_MODEL, "ready": ollama and common.has_model(common.CHAT_MODEL)},
         "embed_model": {"name": common.EMBED_MODEL, "ready": ollama and common.has_model(common.EMBED_MODEL)},
+        "extra_model": ({"name": common.EXTRA_CHAT_MODEL,
+                         "ready": ollama and common.has_model(common.EXTRA_CHAT_MODEL)}
+                        if common.EXTRA_CHAT_MODEL else None),
+        "context": common.CHAT_CONTEXT,
         "sandbox": {"name": common.SANDBOX, "checked": lab2.SANDBOX_STATUS["checked"],
                     "ok": lab2.SANDBOX_STATUS["ok"]},
         "gateway": {"url": common.gateway_url(), "ready": lab3.gateway_ready()[0]},

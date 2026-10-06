@@ -49,6 +49,9 @@ def setting(key: str, default: str = "") -> str:
 OLLAMA = setting("OLLAMA_URL", "http://127.0.0.1:11434").rstrip("/")
 CHAT_MODEL = setting("CHAT_MODEL", "nemotron-3.5-lightning:30b-a3b")
 EMBED_MODEL = setting("EMBED_MODEL", "qwen3-embedding:4b")
+# A second model participants can pick in OpenClaw's own chat (/model qwen).
+EXTRA_CHAT_MODEL = setting("EXTRA_CHAT_MODEL", "")
+CHAT_CONTEXT = int(setting("CHAT_CONTEXT", "262144") or 262144)
 SANDBOX = setting("SANDBOX", "dgx-workshop")
 
 

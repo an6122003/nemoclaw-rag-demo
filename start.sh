@@ -84,8 +84,17 @@ if command -v nemoclaw >/dev/null 2>&1; then
     # onboarding, which reuses the sandbox (about 30 seconds on the Spark).
     info "Starting NemoClaw — after the computer restarts this takes 1-5 minutes…" \
          "Đang khởi động NemoClaw — sau khi máy khởi động lại, mất 1-5 phút…"
-    timeout 180 nemoclaw "$SANDBOX" start >> "$LOG" 2>&1 || true
+    # The gateway first, as NemoClaw launched it (recorded on an earlier start;
+    # no internet needed), then the sandbox container and its host forwards.
+    if python3 "$ROOT/scripts/nemoclaw-gateway.py" start >> "$LOG" 2>&1; then
+      sandbox_container_start
+      timeout 180 nemoclaw "$SANDBOX" start >> "$LOG" 2>&1 || true
+      wait_sandbox_ready 180 || true
+    else
+      timeout 180 nemoclaw "$SANDBOX" start >> "$LOG" 2>&1 || true
+    fi
     if ! sandbox_ok 45; then
+      # Onboarding starts the gateway too, but its preflight needs DNS.
       sandbox_container_start
       ONBOARD_TIMEOUT=900 run_long "Starting the sandbox… / Đang khởi động sandbox…" nemoclaw_onboard || true
     fi
@@ -93,9 +102,12 @@ if command -v nemoclaw >/dev/null 2>&1; then
   fi
   if sandbox_ok 45; then
     ok "NemoClaw sandbox '$SANDBOX' is running" "Sandbox NemoClaw đang chạy"
+    # Remember how the gateway runs, for the next restart without internet.
+    python3 "$ROOT/scripts/nemoclaw-gateway.py" record >> "$LOG" 2>&1 || true
     ensure_sandbox_model
     # The embedding door for Hands-on 2 (only exists on native Linux Docker).
-    if [ -f "$RUN/embed-proxy.bind" ] && ! embed_proxy_running; then
+    # (also restarts it when the models it lets through have changed)
+    if [ -f "$RUN/embed-proxy.bind" ]; then
       embed_proxy_start && ok "Embedding door open for the sandbox" "Đã mở cổng mô hình tìm kiếm cho sandbox" \
         || warn "Embedding door did not open — Hands-on 2 will use the local index"
     fi
@@ -104,7 +116,7 @@ if command -v nemoclaw >/dev/null 2>&1; then
     # minutes, Hands-on 3 about 1 minute).
     if ! lab2_search_ok; then
       note_log "the sandbox memory search returned nothing"
-      embed_proxy_running || embed_proxy_start >> "$LOG" 2>&1 || true
+      embed_proxy_start >> "$LOG" 2>&1 || true
       run_long "Loading the documents into NemoClaw again (about 5 minutes)… / Đang nạp lại tài liệu (khoảng 5 phút)…" \
           bash "$ROOT/scripts/lab2-sandbox-setup.sh" --sandbox "$SANDBOX" \
         && ok "Documents indexed inside the sandbox" "Đã lập chỉ mục tài liệu trong sandbox" \

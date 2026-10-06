@@ -64,6 +64,10 @@ def main() -> int:
         return 2
     model, want = sys.argv[1], int(sys.argv[2])
     try:
+        info = call("/api/show", {"model": model}, timeout=60).get("model_info") or {}
+        native = [int(v) for k, v in info.items() if k.endswith(".context_length") and isinstance(v, (int, float))]
+        if native and min(native) < want:
+            want = min(native)  # never above what the model was trained for
         before = parameters(model)
     except urllib.error.HTTPError as exc:
         print(f"{model}: not available in Ollama ({exc.code})", file=sys.stderr)

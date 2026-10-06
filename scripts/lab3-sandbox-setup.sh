@@ -20,8 +20,10 @@
 #      rebuilt sandbox gets them back without internet. If the sandbox policy
 #      does not already allow PyPI, access is opened for the download and
 #      closed again afterwards.
-#   6. Sets the model's context window in OpenClaw to CHAT_CONTEXT: OpenClaw's
-#      own agent overflows the 16k NemoClaw takes from Ollama's default.
+#   6. Sets the model's context window in OpenClaw to CHAT_CONTEXT (OpenClaw's
+#      own agent overflows the 16k NemoClaw takes from Ollama's default) and
+#      its reply limit to CHAT_MAX_TOKENS, and offers EXTRA_CHAT_MODEL as a
+#      second model in OpenClaw's own chat (/model qwen, /model nemotron).
 #
 # Usage
 #   scripts/lab3-sandbox-setup.sh
@@ -58,7 +60,12 @@ REASONING="$(env_get AGENT_REASONING none)"
 TEMPERATURE="$(env_get AGENT_TEMPERATURE 0.2)"
 # Context window OpenClaw may fill (Ollama gives the chat model this much; see
 # scripts/ollama-context.py).
-CONTEXT="$(env_get CHAT_CONTEXT 65536)"
+CONTEXT="$(env_get CHAT_CONTEXT 262144)"
+MAX_TOKENS="$(env_get CHAT_MAX_TOKENS 16384)"
+# Second model for OpenClaw's own chat (/model qwen), reached through the
+# workshop's Ollama door (scripts/embed-proxy.py --chat-model).
+EXTRA_MODEL="$(env_get EXTRA_CHAT_MODEL "")"
+OLLAMA_URL="$(env_get OLLAMA_URL http://127.0.0.1:11434)"
 DEFAULT_GATEWAY="$(env_get GATEWAY_URL http://127.0.0.1:18789)"
 SKIP_SKILL=0
 CHAT_ONLY=0
@@ -141,12 +148,30 @@ JSON
   printf '%s' "$out" | grep -q '"get_dataset_info"'
 }
 
-# Patch the sandbox's openclaw.json (downloaded to $TMP/openclaw.json).
-# Mode "full" sets up the analyst agent too; "context" only the context window.
-patch_config() {
-  python3 - "$TMP/openclaw.json" "$AGENT" "$WS" "$REASONING" "$TEMPERATURE" "$CONTEXT" "$1" <<'PY' > "$TMP/changes.txt"
+# The context window Ollama gives a model (set by scripts/ollama-context.py).
+model_ctx() {
+  [ -n "$1" ] || { printf '%s' "$CONTEXT"; return; }
+  curl -fsS -m 20 "$OLLAMA_URL/api/show" -d "{\"model\": \"$1\"}" 2>/dev/null | python3 -c '
 import json, sys
-path, agent, ws, reasoning, temperature, context, mode = sys.argv[1:8]
+want = int(sys.argv[1])
+try:
+    params = json.load(sys.stdin).get("parameters") or ""
+except ValueError:
+    params = ""
+ctx = [int(float(l.split()[1])) for l in params.splitlines() if l.split()[:1] == ["num_ctx"]]
+print(min(ctx[0], want) if ctx else want)' "$CONTEXT" 2>/dev/null || printf '%s' "$CONTEXT"
+}
+CHAT_MODEL_NAME="$(env_get CHAT_MODEL nemotron-3.5-lightning:30b-a3b)"
+
+# Patch the sandbox's openclaw.json (downloaded to $TMP/openclaw.json).
+# Mode "full" sets up the analyst agent too; "chat" only what OpenClaw's own
+# chat needs (context window, reply length, the second model).
+patch_config() {
+  python3 - "$TMP/openclaw.json" "$AGENT" "$WS" "$REASONING" "$TEMPERATURE" "$(model_ctx "$CHAT_MODEL_NAME")" "$1" \
+      "$MAX_TOKENS" "$EXTRA_MODEL" "$(model_ctx "$EXTRA_MODEL")" <<'PY' > "$TMP/changes.txt"
+import json, re, sys
+path, agent, ws, reasoning, temperature, context, mode, max_tokens, extra, extra_ctx = sys.argv[1:11]
+context, max_tokens, extra_ctx = int(context), int(max_tokens), int(extra_ctx)
 raw = open(path, encoding="utf-8").read()
 d = json.loads(raw[: raw.rfind("}") + 1])
 changes = []
@@ -155,14 +180,62 @@ model = agents.get("defaults", {}).get("model")
 primary = model.get("primary") if isinstance(model, dict) else model
 
 # NemoClaw registers the model with the context Ollama ran at onboarding
-# (often 16384). OpenClaw's own agent needs more; Ollama now provides it.
+# (often 16384) and 4096-token replies. OpenClaw's own agent needs more room,
+# and writing a whole source file is one long reply; Ollama now provides both.
+providers = d.setdefault("models", {}).setdefault("providers", {})
 provider, _, model_id = (primary or "").partition("/")
-for entry in d.get("models", {}).get("providers", {}).get(provider, {}).get("models", []):
-    if entry.get("id") == model_id and int(entry.get("contextWindow") or 0) < int(context):
-        entry["contextWindow"] = int(context)
+for entry in providers.get(provider, {}).get("models", []):
+    if entry.get("id") != model_id:
+        continue
+    if int(entry.get("contextWindow") or 0) < context:
+        entry["contextWindow"] = context
         changes.append(f"models.providers.{provider}.models[{model_id}].contextWindow = {context}")
+    if int(entry.get("maxTokens") or 0) < max_tokens:
+        entry["maxTokens"] = max_tokens
+        changes.append(f"models.providers.{provider}.models[{model_id}].maxTokens = {max_tokens}")
 
-if mode == "context":
+# Short names for /model in OpenClaw's chat: "nemotron", "qwen".
+def alias(model):
+    m = re.match(r"[a-z]+", model.lower())
+    return m.group(0) if m else model
+catalog = agents.setdefault("defaults", {}).setdefault("models", {})
+if primary:
+    entry = catalog.setdefault(primary, {})
+    if entry.get("alias") != alias(model_id):
+        entry["alias"] = alias(model_id)
+        changes.append(f"agents.defaults.models[{primary}].alias = {alias(model_id)}")
+
+# The second model goes straight to the host's Ollama through the workshop
+# door: NemoClaw's managed route answers every request with its one model.
+EXTRA_PROVIDER = "workshop-ollama"
+if extra:
+    want_provider = {"baseUrl": "http://host.openshell.internal:11434/v1", "api": "openai-completions",
+                     "apiKey": "workshop", "timeoutSeconds": 600}
+    want_model = {"id": extra, "name": f"{extra} (workshop)", "reasoning": False, "input": ["text"],
+                  "cost": {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0},
+                  "contextWindow": extra_ctx, "maxTokens": max_tokens,
+                  "compat": {"supportsUsageInStreaming": True}}
+    prov = providers.setdefault(EXTRA_PROVIDER, {})
+    for k, v in want_provider.items():
+        if prov.get(k) != v:
+            prov[k] = v
+            changes.append(f"models.providers.{EXTRA_PROVIDER}.{k} set")
+    if prov.get("models") != [want_model]:
+        prov["models"] = [want_model]
+        changes.append(f"models.providers.{EXTRA_PROVIDER}.models = [{extra}] (context {extra_ctx})")
+    ref = f"{EXTRA_PROVIDER}/{extra}"
+    want_entry = {"alias": alias(extra), "params": {"extra_body": {"reasoning_effort": "none"}}}
+    if catalog.get(ref) != want_entry:
+        catalog[ref] = want_entry
+        changes.append(f"agents.defaults.models[{ref}] = alias {alias(extra)}")
+else:
+    if providers.pop(EXTRA_PROVIDER, None) is not None:
+        changes.append(f"models.providers.{EXTRA_PROVIDER} removed")
+    for ref in [k for k in catalog if k.startswith(EXTRA_PROVIDER + "/")]:
+        del catalog[ref]
+        changes.append(f"agents.defaults.models[{ref}] removed")
+
+if mode == "chat":
     open(path, "w", encoding="utf-8").write(json.dumps(d, indent=2, ensure_ascii=False) + "\n")
     print("\n".join(changes) if changes else "no changes")
     sys.exit(0)
@@ -232,15 +305,15 @@ upload_config() {
 ensure_context_window() {
   sbx download /sandbox/.openclaw/openclaw.json "$TMP/openclaw.json" >/dev/null 2>&1 \
     || { warn "could not read openclaw.json from the sandbox"; return 1; }
-  patch_config context || { warn "could not read openclaw.json"; return 1; }
+  patch_config chat || { warn "could not read openclaw.json"; return 1; }
   if grep -q "^no changes$" "$TMP/changes.txt"; then
-    ok "context window: $CONTEXT tokens"
+    ok "models, context window ($CONTEXT tokens) and reply length already set"
     return 0
   fi
   sed 's/^/  - /' "$TMP/changes.txt"
   upload_config || { warn "could not upload openclaw.json"; return 1; }
   sbx gateway restart --quiet >/dev/null 2>&1 || warn "gateway restart reported a problem"
-  ok "context window raised to $CONTEXT tokens"
+  ok "OpenClaw chat settings updated"
 }
 
 # The sales tools as an OpenClaw skill for the default agent, plus the Python
@@ -266,21 +339,29 @@ pypi_end() {
     || warn "could not remove the pypi preset; remove it with: nemoclaw $SANDBOX policy remove pypi --yes"
 }
 
+# `nemoclaw download/upload` only reach files under /sandbox.
+SBX_WHEELS=/sandbox/.workshop-wheels
+
 install_from_wheels() {  # offline: the wheels kept on the host
   [ -s "$WHEELS" ] || return 1
-  sbx upload "$WHEELS" /tmp/workshop-wheels.tar >/dev/null 2>&1 || return 1
-  sbx exec --timeout 900 -- sh -c "rm -rf /tmp/workshop-wheels && mkdir -p /tmp/workshop-wheels \
-      && tar -xf /tmp/workshop-wheels.tar -C /tmp/workshop-wheels && rm -f /tmp/workshop-wheels.tar \
+  sbx upload "$WHEELS" "$SBX_WHEELS.tar" >/dev/null 2>&1 || return 1
+  sbx exec --timeout 900 -- sh -c "rm -rf $SBX_WHEELS && mkdir -p $SBX_WHEELS \
+      && tar -xf $SBX_WHEELS.tar -C $SBX_WHEELS && rm -f $SBX_WHEELS.tar \
       && python3 -m pip install --user --break-system-packages --disable-pip-version-check -q \
-         --no-index --find-links /tmp/workshop-wheels $SKILL_PKGS" >"$RUN/lab3-pip.log" 2>&1
+         --no-index --find-links $SBX_WHEELS $SKILL_PKGS; rc=\$?; rm -rf $SBX_WHEELS; exit \$rc" \
+      >"$RUN/lab3-pip.log" 2>&1
 }
 
 save_wheels() {  # online, once: download the wheels in the sandbox and keep a copy here
-  sbx exec --timeout 900 -- sh -c "rm -rf /tmp/workshop-wheels && python3 -m pip download \
-      --disable-pip-version-check -q -d /tmp/workshop-wheels $SKILL_PKGS \
-      && tar -cf /tmp/workshop-wheels.tar -C /tmp/workshop-wheels ." >>"$RUN/lab3-pip.log" 2>&1 || return 1
-  sbx download /tmp/workshop-wheels.tar "$WHEELS.part" >/dev/null 2>&1 && [ -s "$WHEELS.part" ] \
-    && mv "$WHEELS.part" "$WHEELS"
+  sbx exec --timeout 900 -- sh -c "rm -rf $SBX_WHEELS && python3 -m pip download \
+      --disable-pip-version-check -q -d $SBX_WHEELS $SKILL_PKGS \
+      && tar -cf $SBX_WHEELS.tar -C $SBX_WHEELS . && rm -rf $SBX_WHEELS" >>"$RUN/lab3-pip.log" 2>&1 || return 1
+  rm -rf "$TMP/wheels" && mkdir -p "$TMP/wheels"
+  sbx download "$SBX_WHEELS.tar" "$TMP/wheels/" >>"$RUN/lab3-pip.log" 2>&1
+  sbx exec -- rm -f "$SBX_WHEELS.tar" >/dev/null 2>&1 || true
+  local got
+  got="$(find "$TMP/wheels" -type f -name '*.tar' | head -1)"
+  [ -n "$got" ] && [ -s "$got" ] && tar -tf "$got" >/dev/null 2>&1 && mv "$got" "$WHEELS"
 }
 
 install_skill() {
