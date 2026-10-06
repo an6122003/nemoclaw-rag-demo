@@ -73,6 +73,8 @@ ENGINE_IMAGE = common.setting("BATCH_IMAGE", "nvcr.io/nvidia/vllm:26.05.post1-py
 ENGINE_MODEL = common.setting("BATCH_MODEL", "nvidia/Qwen3.6-35B-A3B-NVFP4")
 ENGINE_REVISION = common.setting("BATCH_MODEL_REVISION", "491c2f1ea524c639598bf8fa787a93fed5a6fbce")
 ENGINE_UTIL = float(common.setting("BATCH_GPU_MEMORY", "0.30") or 0.30)
+ENGINE_UTIL_MIN = 0.22  # the NVFP4 model (20 GB) plus a cache that still fits dozens of requests
+ASR_HEADROOM_GB = 8.0   # left free for speech-to-text, which runs next to the engine
 HF_HOME = Path(common.setting("BATCH_HF_HOME", str(Path.home() / ".cache" / "huggingface")))
 # The same model family through Ollama, one request at a time.
 OLLAMA_MODEL = common.setting("BATCH_OLLAMA_MODEL", common.EXTRA_CHAT_MODEL or "qwen3.6:35b")
@@ -311,13 +313,17 @@ def engine_start() -> tuple[bool, str]:
     if state:
         _docker("rm", "-f", ENGINE_NAME, timeout=60)
     unload_ollama()
-    need = ENGINE_UTIL * mem_total_gb() + 4
+    total = mem_total_gb() or 120.0
+    need = ENGINE_UTIL * total + ASR_HEADROOM_GB
     for _ in range(10):  # Ollama takes a few seconds to hand memory back
         if mem_available_gb() >= need:
             break
         time.sleep(1.5)
-    if mem_available_gb() < need:
-        return False, f"low_memory:{mem_available_gb():.0f}:{need:.0f}"
+    # Take the configured share, or less when memory is busy: keep room for
+    # speech-to-text, and never go below what the model plus a cache needs.
+    util = min(ENGINE_UTIL, (mem_available_gb() - ASR_HEADROOM_GB) / total)
+    if util < ENGINE_UTIL_MIN:
+        return False, f"low_memory:{mem_available_gb():.0f}:{ENGINE_UTIL_MIN * total + ASR_HEADROOM_GB:.0f}"
     cmd = ["run", "-d", "--name", ENGINE_NAME, "--gpus", "all", "--ipc=host",
            "--label", "workshop=batch-engine",
            "-v", f"{HF_HOME}:/root/.cache/huggingface:ro",
@@ -328,7 +334,7 @@ def engine_start() -> tuple[bool, str]:
            "-p", f"127.0.0.1:{ENGINE_PORT}:8000", "--entrypoint", "vllm", ENGINE_IMAGE,
            "serve", ENGINE_MODEL, "--revision", ENGINE_REVISION, "--served-model-name", "batch",
            "--host", "0.0.0.0", "--port", "8000", "--max-model-len", "16384",
-           "--gpu-memory-utilization", f"{ENGINE_UTIL:.2f}", "--quantization", "modelopt",
+           "--gpu-memory-utilization", f"{util:.3f}", "--quantization", "modelopt",
            "--kv-cache-dtype", "fp8", "--attention-backend", "flashinfer", "--moe-backend", "marlin",
            "--max-num-seqs", "64", "--max-num-batched-tokens", "16384", "--enable-chunked-prefill",
            "--enable-prefix-caching", "--async-scheduling", "--reasoning-parser", "qwen3",
@@ -336,7 +342,7 @@ def engine_start() -> tuple[bool, str]:
     p = _docker(*cmd, timeout=120)
     if p.returncode != 0:
         return False, (p.stderr or p.stdout).strip()[-400:]
-    _write_json(DATA / "engine.json", {"started": time.time()})
+    _write_json(DATA / "engine.json", {"started": time.time(), "util": round(util, 3)})
     return True, "starting"
 
 
@@ -696,9 +702,21 @@ def transcript_text(segments: list[dict]) -> str:
                      for sg in segments)
 
 
+def asr_failure(jd: Path) -> str:
+    """The last meaningful line the transcriber printed (for the page)."""
+    try:
+        lines = [ln.strip() for ln in (jd / "asr.log").read_text(errors="ignore").splitlines() if ln.strip()]
+    except OSError:
+        return "no log"
+    for ln in reversed(lines):
+        if "Error" in ln or "error" in ln:
+            return ln[-200:]
+    return lines[-1][-200:] if lines else "no output"
+
+
 def process_call(engine: str, it: dict, asr: dict | None = None) -> dict:
-    if asr is None:
-        raise RuntimeError("no transcript")
+    if not asr or "segments" not in asr:
+        raise RuntimeError((asr or {}).get("error") or "no transcript")
     text, usage = ask(engine, CALL_SYSTEM, transcript_text(asr["segments"]), CALL_SCHEMA, 500)
     pred = _json_from(text)
     pred["violations"] = sorted({v for v in pred.get("violations") or [] if v in VIOLATIONS})
@@ -888,8 +906,9 @@ def worker(demo: str, limit: int, engine: str) -> int:
                     continue
                 pending.remove(it)
             if pending and exited and not ready:
+                why = "speech-to-text stopped: " + asr_failure(jd)
                 for it in pending:  # the transcriber stopped early: report these, do not hang
-                    work.put((it, None))
+                    work.put((it, {"error": why}))
                 pending = []
             time.sleep(0.5)
         if stop["flag"]:

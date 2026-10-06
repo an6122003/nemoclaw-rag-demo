@@ -70,7 +70,7 @@ def main() -> int:
     ap.add_argument("--todo", required=True, help="lines of '<id> <file>'")
     ap.add_argument("--out", required=True)
     ap.add_argument("--model", required=True)
-    ap.add_argument("--batch", type=int, default=24)
+    ap.add_argument("--batch", type=int, default=16)
     ap.add_argument("--chunk", type=int, default=4, help="calls transcribed together")
     args = ap.parse_args()
     out = Path(args.out)
