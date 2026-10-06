@@ -20,7 +20,7 @@
 #    --yes            do not pause for the third-party software notice
 #    --skip-finetune  skip Hands-on 1 (the 20 GB training container)
 #    --skip-sandbox   skip NemoClaw (labs 2 and 3 then run in direct mode)
-#    --skip-enterprise  skip the enterprise batch demos (about 35 GB)
+#    --skip-enterprise  skip the enterprise batch demos (about 38 GB)
 #    --retrain        re-run the Hands-on 1 fine-tune even if it already exists
 #    --no-start       do not open the workshop app at the end
 #    --force          run on a machine that is not Linux (not supported)
@@ -631,10 +631,31 @@ else
 fi
 
 # ======================================================= step: enterprise ===
-step "Enterprise demos: batch engine and sample data (about 35 GB)" "Demo doanh nghiệp: máy chủ xử lý hàng loạt và dữ liệu mẫu (khoảng 35 GB)"
+step "Enterprise demos: batch engine and sample data (about 38 GB)" "Demo doanh nghiệp: máy chủ xử lý hàng loạt và dữ liệu mẫu (khoảng 38 GB)"
 
 ent_model_ready() {
   "$PY" -c "import sys; sys.path.insert(0, '$ROOT/app'); import enterprise as e; sys.exit(0 if e.model_ready() else 1)" >/dev/null 2>&1
+}
+ent_asr_ready() {
+  "$PY" -c "import sys; sys.path.insert(0, '$ROOT/app'); import enterprise as e; sys.exit(0 if e.asr_ready() else 1)" >/dev/null 2>&1
+}
+ent_download_asr() {  # PhoWhisper, the same way as the model above
+  docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp -e HF_HOME=/hf \
+    -e HF_HUB_DISABLE_TELEMETRY=1 -e HF_HUB_DISABLE_PROGRESS_BARS=1 \
+    -v "$BATCH_HF_HOME:/hf" --entrypoint python3 "$BATCH_IMAGE" -c \
+    "from huggingface_hub import snapshot_download; print(snapshot_download('$ASR_MODEL', revision='$ASR_MODEL_REVISION'))"
+}
+ent_install_tts() {  # Piper in its own environment: it never touches the workshop's .venv
+  local venv="$RUN/tts-venv"
+  rm -rf "$venv" && python3 -m venv "$venv" && "$venv/bin/pip" install -q "piper-tts==$PIPER_VERSION"
+}
+ent_download_voice() {
+  local base="https://huggingface.co/rhasspy/piper-voices/resolve/$VOICE_REVISION/vi/vi_VN/vais1000/medium"
+  local dir="$RUN/enterprise/voices" f
+  mkdir -p "$dir"
+  for f in vi_VN-vais1000-medium.onnx vi_VN-vais1000-medium.onnx.json MODEL_CARD; do
+    curl -fsSL --retry 3 --retry-delay 5 -o "$dir/$f.part" "$base/$f" && mv "$dir/$f.part" "$dir/$f" || return 1
+  done
 }
 ent_download_model() {
   # Inside the vLLM container (it has huggingface_hub), as this user, so the
@@ -644,7 +665,7 @@ ent_download_model() {
     -v "$BATCH_HF_HOME:/hf" --entrypoint python3 "$BATCH_IMAGE" -c \
     "from huggingface_hub import snapshot_download; print(snapshot_download('$BATCH_MODEL', revision='$BATCH_MODEL_REVISION'))"
 }
-ENT_STAMP="$BATCH_IMAGE $BATCH_MODEL@$BATCH_MODEL_REVISION"
+ENT_STAMP="$BATCH_IMAGE $BATCH_MODEL@$BATCH_MODEL_REVISION $ASR_MODEL@$ASR_MODEL_REVISION calls"
 
 if [ "$SKIP_ENT" -eq 1 ]; then
   ENT_NOTE="--skip-enterprise"
@@ -695,8 +716,51 @@ else
     ok "Batch model ready ($BATCH_MODEL)" "Mô hình đã có sẵn"
   fi
 
-  # Start the engine once, process a few messages and invoices, stop it. This
-  # proves it on this machine and caches the GPU compile for later starts.
+  # The call-centre demo: speech-to-text model, a voice, and 300 recorded calls.
+  if [ "$ENT" = "ready" ]; then
+    if ent_asr_ready; then
+      ok "Speech-to-text model ready ($ASR_MODEL)" "Mô hình chuyển giọng nói đã có sẵn"
+    else
+      for attempt in 1 2 3; do
+        note_log "download $ASR_MODEL@$ASR_MODEL_REVISION (attempt $attempt)"
+        run_long "Downloading the speech-to-text model (3 GB)… / Đang tải mô hình chuyển giọng nói (3 GB)…" ent_download_asr
+        ent_asr_ready && break
+        sleep 10
+      done
+      ent_asr_ready && ok "Speech-to-text model downloaded" "Đã tải mô hình chuyển giọng nói" \
+        || { ENT="failed"; ENT_NOTE="could not download $ASR_MODEL"; bad "Could not download $ASR_MODEL"; }
+    fi
+  fi
+  if [ "$ENT" = "ready" ]; then
+    if "$RUN/tts-venv/bin/python" -c "import piper, onnxruntime" >/dev/null 2>&1; then
+      ok "Text-to-speech ready (Piper)" "Bộ đọc văn bản đã sẵn sàng"
+    else
+      run_long "Installing the text-to-speech engine (Piper)… / Đang cài bộ đọc văn bản (Piper)…" ent_install_tts \
+        || run_long "Installing the text-to-speech engine (retry)…" ent_install_tts
+      "$RUN/tts-venv/bin/python" -c "import piper, onnxruntime" >/dev/null 2>&1 \
+        && ok "Text-to-speech installed (Piper $PIPER_VERSION)" "Đã cài bộ đọc văn bản" \
+        || { ENT="failed"; ENT_NOTE="could not install piper-tts"; bad "Could not install piper-tts"; show_log_tail; }
+    fi
+  fi
+  if [ "$ENT" = "ready" ]; then
+    if [ -f "$RUN/enterprise/voices/vi_VN-vais1000-medium.onnx.json" ] && [ -f "$RUN/enterprise/voices/vi_VN-vais1000-medium.onnx" ]; then
+      ok "Vietnamese voice ready" "Giọng đọc tiếng Việt đã có sẵn"
+    else
+      run_long "Downloading the Vietnamese voice (60 MB)… / Đang tải giọng đọc tiếng Việt…" ent_download_voice \
+        && ok "Vietnamese voice downloaded" "Đã tải giọng đọc tiếng Việt" \
+        || { ENT="failed"; ENT_NOTE="could not download the voice"; bad "Could not download the Piper voice"; }
+    fi
+  fi
+  if [ "$ENT" = "ready" ]; then
+    run_long "Recording 300 sample calls (1-3 minutes)… / Đang tạo 300 cuộc gọi mẫu (1-3 phút)…" \
+      "$PY" "$ROOT/app/enterprise.py" prepare \
+      && [ -f "$RUN/enterprise/calls/truth.json" ] \
+      && ok "Sample calls ready: 300 recordings" "Đã có 300 cuộc gọi mẫu" \
+      || { ENT="failed"; ENT_NOTE="sample calls could not be created"; bad "Could not create the sample calls"; show_log_tail; }
+  fi
+
+  # Start the engine once, process a few messages, invoices and calls, stop it.
+  # This proves it on this machine and caches the GPU compile for later starts.
   if [ "$ENT" = "ready" ]; then
     if [ "$(cat "$RUN/enterprise-check" 2>/dev/null)" = "$ENT_STAMP" ]; then
       ok "Batch engine already checked on this machine" "Máy chủ đã được kiểm tra trên máy này"
@@ -705,7 +769,7 @@ else
         "$PY" "$ROOT/app/enterprise.py" smoke
       if [ $? -eq 0 ]; then
         printf '%s\n' "$ENT_STAMP" > "$RUN/enterprise-check"
-        ok "Batch engine works: messages and invoices processed" "Máy chủ hoạt động: đã xử lý thử tin nhắn và hóa đơn"
+        ok "Batch engine works: messages, invoices and calls processed" "Máy chủ hoạt động: đã xử lý thử tin nhắn, hóa đơn và cuộc gọi"
       else
         ENT="failed"; ENT_NOTE="engine test failed (details in setup-log.txt)"
         bad "The batch engine did not pass its test" "Máy chủ chưa chạy được"; show_log_tail 20

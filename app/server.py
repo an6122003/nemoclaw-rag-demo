@@ -212,6 +212,13 @@ class Handler(BaseHTTPRequestHandler):
         if m:
             f = ent.invoice_image(m.group(1))
             return self._file(f) if f else self._json(404, {"error": "not found"})
+        m = re.fullmatch(r"/api/ent/call/([\w.\-]+)", path)
+        if m:
+            f = ent.call_audio(m.group(1))
+            return self._ranged(f, "audio/wav") if f else self._json(404, {"error": "not found"})
+        if path == "/api/ent/item" and demo in ent.DEMOS:
+            d = ent.item_detail(demo, (qs.get("id") or [""])[0])
+            return self._json(200, d) if d else self._json(404, {"error": "not found"})
         if path == "/api/ent/export" and demo in ent.DEMOS:
             if not ent.results(demo):
                 return self._json(409, {"error": "nothing processed yet"})
@@ -233,6 +240,24 @@ class Handler(BaseHTTPRequestHandler):
             from urllib.parse import quote
             extra["Content-Disposition"] = f"attachment; filename*=UTF-8''{quote(f.name)}"
         return self._send(200, f.read_bytes(), ctype, extra)
+
+    def _ranged(self, f: Path, ctype: str) -> None:
+        """Serve a media file with HTTP ranges, so the audio player can seek (Safari needs it)."""
+        size = f.stat().st_size
+        rng = re.fullmatch(r"bytes=(\d*)-(\d*)", (self.headers.get("Range") or "").strip())
+        if not rng or (not rng.group(1) and not rng.group(2)):
+            return self._send(200, f.read_bytes(), ctype, {"Accept-Ranges": "bytes"})
+        if rng.group(1):
+            start = int(rng.group(1))
+            end = min(int(rng.group(2)) if rng.group(2) else size - 1, size - 1)
+        else:  # the last N bytes
+            start, end = max(0, size - int(rng.group(2))), size - 1
+        if start > end or start >= size:
+            return self._send(416, b"", ctype, {"Content-Range": f"bytes */{size}"})
+        with f.open("rb") as fh:
+            fh.seek(start)
+            body = fh.read(end - start + 1)
+        return self._send(206, body, ctype, {"Accept-Ranges": "bytes", "Content-Range": f"bytes {start}-{end}/{size}"})
 
     # -- POST -----------------------------------------------------------------
     def do_POST(self):  # noqa: N802

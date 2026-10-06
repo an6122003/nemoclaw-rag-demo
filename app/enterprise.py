@@ -9,6 +9,8 @@ real batches over realistic volumes of invented data:
             order number, plus a draft reply for the critical ones
   invoices  1,000 scanned supplier invoices read into Excel, with the
             arithmetic checked and duplicates caught
+  calls     300 call-centre recordings transcribed (PhoWhisper, on the GPU)
+            and scored against the QA team's checklist
 
 Batches run on vLLM (NVIDIA's container, nvidia/Qwen3.6-35B-A3B-NVFP4),
 which works on dozens of items at once. Ollama, which answers one request
@@ -42,6 +44,7 @@ import urllib.error
 import urllib.request
 from collections import Counter
 from pathlib import Path
+from queue import Queue
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import common  # noqa: E402
@@ -53,6 +56,14 @@ JOBS = DATA / "jobs"
 EXPORTS = DATA / "exports"
 INBOX_FILE = DATA / "inbox" / "messages.jsonl"
 INVOICE_DIR = DATA / "invoices"
+CALL_DIR = DATA / "calls"
+# Speech for the sample calls: Piper in its own environment, and a Vietnamese voice.
+TTS_PY = common.RUN_DIR / "tts-venv" / "bin" / "python"
+VOICE = DATA / "voices" / "vi_VN-vais1000-medium.onnx"
+# Speech-to-text: VinAI's PhoWhisper, run in the vLLM container (enterprise_asr.py).
+ASR_MODEL = common.setting("ASR_MODEL", "vinai/PhoWhisper-medium")
+ASR_REVISION = common.setting("ASR_MODEL_REVISION", "55a7e3eb6c906de891f8f06a107754427dd3be79")
+ASR_NAME = "workshop-asr"
 COMPANY_TAX = "0319482765"  # Aurora Mart, the fictional buyer (enterprise/generate/common.py)
 
 # --- the batch engine ----------------------------------------------------------
@@ -66,16 +77,22 @@ HF_HOME = Path(common.setting("BATCH_HF_HOME", str(Path.home() / ".cache" / "hug
 # The same model family through Ollama, one request at a time.
 OLLAMA_MODEL = common.setting("BATCH_OLLAMA_MODEL", common.EXTRA_CHAT_MODEL or "qwen3.6:35b")
 ENGINE_URL = f"http://127.0.0.1:{ENGINE_PORT}"
-CONCURRENCY = {"inbox": 48, "invoices": 24}
+CONCURRENCY = {"inbox": 48, "invoices": 24, "calls": 16}
 
-DEMOS = ("inbox", "invoices")
+DEMOS = ("inbox", "invoices", "calls")
 
 
 # ============================================================ sample data ===
 def dataset_ready(demo: str) -> bool:
     if demo == "inbox":
         return INBOX_FILE.exists() and INBOX_FILE.stat().st_size > 0
+    if demo == "calls":
+        return (CALL_DIR / "truth.json").exists()
     return (INVOICE_DIR / "truth.json").exists()
+
+
+def tts_ready() -> bool:
+    return TTS_PY.exists() and VOICE.exists() and VOICE.with_suffix(".onnx.json").exists()
 
 
 def prepare(force: bool = False, log=print) -> bool:
@@ -90,6 +107,12 @@ def prepare(force: bool = False, log=print) -> bool:
         p = subprocess.run([py, str(GEN / "invoices.py"), "--out", str(INVOICE_DIR)], capture_output=True, text=True)
         out = (p.stdout or "").strip().splitlines()
         log(out[-1] if out else (p.stderr or "invoices: failed").strip()[-300:])
+        ok &= p.returncode == 0
+    if (force or not dataset_ready("calls")) and tts_ready():
+        p = subprocess.run([str(TTS_PY), str(GEN / "calls.py"), "--out", str(CALL_DIR), "--voice", str(VOICE)],
+                           capture_output=True, text=True)
+        out = (p.stdout or "").strip().splitlines()
+        log(out[-1] if out else (p.stderr or "calls: failed").strip()[-300:])
         ok &= p.returncode == 0
     _cache.clear()
     return ok
@@ -116,6 +139,8 @@ def _cached(key: str, path: Path, loader):
 def items(demo: str) -> list[dict]:
     if demo == "inbox":
         rows = _cached("inbox", INBOX_FILE, lambda p: [json.loads(x) for x in p.read_text(encoding="utf-8").splitlines() if x.strip()])
+    elif demo == "calls":
+        rows = _cached("calls", CALL_DIR / "truth.json", lambda p: json.loads(p.read_text(encoding="utf-8")))
     else:
         rows = _cached("invoices", INVOICE_DIR / "truth.json", lambda p: json.loads(p.read_text(encoding="utf-8")))
     return rows or []
@@ -159,13 +184,22 @@ def image_ready() -> bool:
         return False
 
 
+def asr_model_dir() -> Path:
+    return HF_HOME / "hub" / f"models--{ASR_MODEL.replace('/', '--')}" / "snapshots" / ASR_REVISION
+
+
+def asr_ready() -> bool:
+    d = asr_model_dir()
+    return (d / "config.json").exists() and any((d / f).exists() for f in ("pytorch_model.bin", "model.safetensors"))
+
+
 def installed(max_age: float = 30) -> dict:
     hit = _cache.get("installed")
     if hit and time.time() - hit[0] < max_age:
         return hit[1]
     docker_ok = shutil.which("docker") is not None
     out = {"docker": docker_ok, "image": docker_ok and image_ready(), "model": model_ready(),
-           "image_name": ENGINE_IMAGE, "model_name": ENGINE_MODEL}
+           "asr": asr_ready(), "image_name": ENGINE_IMAGE, "model_name": ENGINE_MODEL, "asr_name": ASR_MODEL}
     _cache["installed"] = (time.time(), out)
     return out
 
@@ -585,7 +619,134 @@ def score_invoice(res: dict, truth: dict) -> dict:
             "lines": len(p.get("items") or []) == len(truth["items"])}
 
 
-PROCESS = {"inbox": process_inbox, "invoices": process_invoice}
+
+# ================================================================= calls ===
+TOPICS = ["delivery", "defect", "refund", "install", "double_charge", "product_question"]
+CALL_CHECKS = ["greeting", "disclosure", "verification", "empathy", "closing"]
+VIOLATIONS = ["unauthorized_promise", "rude"]
+
+CALL_SCHEMA = {
+    "type": "object",
+    "properties": {
+        **{c: {"type": "boolean"} for c in CALL_CHECKS},
+        "resolution": {"type": "string", "enum": ["resolved", "follow_up", "unresolved"]},
+        "violations": {"type": "array", "items": {"type": "string", "enum": VIOLATIONS}},
+        "customer_end": {"type": "string", "enum": ["satisfied", "neutral", "dissatisfied"]},
+        "topic": {"type": "string", "enum": TOPICS},
+        "summary": {"type": "string"},
+        "coaching": {"type": "string"},
+    },
+    "required": CALL_CHECKS + ["resolution", "violations", "customer_end", "topic", "summary", "coaching"],
+}
+
+CALL_SYSTEM = """Bạn là chuyên viên kiểm soát chất lượng (QA) của tổng đài Aurora Mart (chuỗi bán lẻ điện máy). Bạn đọc bản chép lời tự động của một cuộc gọi đã ghi âm và chấm theo checklist của công ty, trả về JSON.
+Bản chép lời do máy tạo từ âm thanh điện thoại: không có dấu câu, có thể sai vài chữ. Tên công ty được đọc là "Ô Rô Ra Mát" và hay bị chép sai thành các âm gần giống (ví dụ "ô tô gia mắc", "ô rô ra mắt").
+
+- greeting: true nếu câu mở đầu của nhân viên có lời chào kèm tên công ty VÀ tên của nhân viên ("em là...", "em tên là..."). Chỉ "alô", "tổng đài nghe", "vâng alô" là false.
+- disclosure: true nếu nhân viên thông báo cuộc gọi được ghi âm.
+- verification: true nếu nhân viên hỏi mã đơn hàng hoặc số điện thoại để xác minh.
+- empathy: true nếu nhân viên xin lỗi, nói hiểu cảm giác của khách, hoặc cảm ơn khách đã quan tâm. Chỉ "rồi", "vâng", "ừ để xem" là false.
+- resolution: "resolved" nếu nhân viên đưa giải pháp cụ thể đã thực hiện và có thời gian (đã tạo yêu cầu, đã đặt lịch, chiều mai, trong ba ngày); "follow_up" nếu hứa kiểm tra thêm và gọi lại vào thời điểm cụ thể; "unresolved" nếu không giải quyết (không biết, chịu, bảo khách gọi lại sau mà không hẹn).
+- closing: true nếu cuối cuộc gọi nhân viên hỏi khách cần hỗ trợ thêm gì không, hoặc cảm ơn và chào lịch sự. Kết thúc cụt ("rồi chào", "ok", "thế thôi nhé") là false.
+- violations (có thể rỗng): "unauthorized_promise" nếu nhân viên tự hứa quyền lợi ngoài quy định (hoàn tiền gấp đôi, tặng máy mới, giảm năm mươi phần trăm); "rude" nếu nhân viên thiếu tôn trọng (chê khách nói nhiều, đổ lỗi cho khách, bảo khách tự đọc hướng dẫn).
+- customer_end: thái độ của khách ở cuối cuộc gọi: "satisfied" (cảm ơn, hài lòng), "dissatisfied" (dọa khiếu nại, chán nản), "neutral" (chấp nhận chờ).
+- topic: delivery (giao hàng), defect (hàng lỗi), refund (hoàn tiền), install (lắp đặt), double_charge (bị trừ tiền hai lần), product_question (hỏi sản phẩm).
+- summary: một câu tiếng Việt tóm tắt cuộc gọi.
+- coaching: một câu góp ý cụ thể cho nhân viên (hoặc lời khen nếu làm tốt)."""
+
+
+def call_score(x: dict) -> int:
+    """The QA team's checklist, out of 100 (the same rule as the answer key)."""
+    s = 10 * bool(x.get("greeting")) + 10 * bool(x.get("disclosure")) + 15 * bool(x.get("verification")) \
+        + 15 * bool(x.get("empathy")) + 10 * bool(x.get("closing"))
+    s += {"resolved": 30, "follow_up": 15}.get(x.get("resolution"), 0)
+    s += 10 if not x.get("violations") else 0
+    return s
+
+
+def _words(text: str) -> list[str]:
+    return re.sub(r"[^\w\s]", " ", text.lower()).split()
+
+
+def _edits(ref: list[str], hyp: list[str]) -> int:
+    d = list(range(len(hyp) + 1))
+    for i in range(1, len(ref) + 1):
+        prev, d[0] = d[0], i
+        for j in range(1, len(hyp) + 1):
+            cur = d[j]
+            d[j] = min(d[j] + 1, d[j - 1] + 1, prev + (ref[i - 1] != hyp[j - 1]))
+            prev = cur
+    return d[len(hyp)]
+
+
+def word_error_rate(turns: list[dict], segments: list[dict]) -> float:
+    """How far the transcript is from what was said, per speaker channel."""
+    errors = words = 0
+    for who in ("agent", "customer"):
+        ref = _words(" ".join(t["text"] for t in turns if t["speaker"] == who))
+        hyp = _words(" ".join(s["text"] for s in segments if s["speaker"] == who))
+        errors += _edits(ref, hyp)
+        words += len(ref)
+    return round(errors / max(1, words), 4)
+
+
+def transcript_text(segments: list[dict]) -> str:
+    who = {"agent": "Nhân viên", "customer": "Khách hàng"}
+    return "\n".join(f"[{int(sg['start'] // 60):02d}:{int(sg['start'] % 60):02d}] {who[sg['speaker']]}: {sg['text']}"
+                     for sg in segments)
+
+
+def process_call(engine: str, it: dict, asr: dict | None = None) -> dict:
+    if asr is None:
+        raise RuntimeError("no transcript")
+    text, usage = ask(engine, CALL_SYSTEM, transcript_text(asr["segments"]), CALL_SCHEMA, 500)
+    pred = _json_from(text)
+    pred["violations"] = sorted({v for v in pred.get("violations") or [] if v in VIOLATIONS})
+    pred["score"] = call_score(pred)
+    pred["passed"] = pred["score"] >= 70 and not pred["violations"]
+    return {"pred": pred, "transcript": asr["segments"], "audio_s": asr.get("seconds"),
+            "asr_s": asr.get("asr_seconds"), "wer": word_error_rate(it["turns"], asr["segments"]),
+            "tokens_in": usage["in"], "tokens_out": usage["out"]}
+
+
+def score_call(res: dict, truth: dict) -> dict:
+    p = res.get("pred") or {}
+    out = {c: bool(p.get(c)) == bool(truth[c]) for c in CALL_CHECKS}
+    out["resolution"] = p.get("resolution") == truth["resolution"]
+    out["violations"] = sorted(p.get("violations") or []) == sorted(truth["violations"])
+    out["customer_end"] = p.get("customer_end") == truth["customer_end"]
+    out["passed"] = bool(p.get("passed")) == bool(truth["passed"])
+    return out
+
+
+def asr_start(jd: Path, todo: list[dict]) -> subprocess.Popen:
+    """Transcribe the calls in order, in the vLLM container on the GPU, one JSON per call."""
+    (jd / "asr").mkdir(parents=True, exist_ok=True)
+    (jd / "asr-todo.txt").write_text("".join(f"{it['id']} {it['file']}\n" for it in todo))
+    try:
+        _docker("rm", "-f", ASR_NAME, timeout=60)
+    except Exception:
+        pass
+    model = f"/hf/hub/models--{ASR_MODEL.replace('/', '--')}/snapshots/{ASR_REVISION}"
+    cmd = ["docker", "run", "--rm", "--name", ASR_NAME, "--gpus", "all", "--label", "workshop=batch-asr",
+           "--user", f"{os.getuid()}:{os.getgid()}", "-e", "HOME=/tmp", "-e", "USER=workshop",
+           "-e", "HF_HOME=/hf", "-e", "HF_HUB_OFFLINE=1", "-e", "TRANSFORMERS_OFFLINE=1",
+           "-v", f"{HF_HOME}:/hf:ro", "-v", f"{CALL_DIR}:/calls:ro", "-v", f"{jd}:/job",
+           "-v", f"{Path(__file__).resolve().parent}:/app:ro", "--entrypoint", "python3", ENGINE_IMAGE,
+           "/app/enterprise_asr.py", "--calls", "/calls", "--todo", "/job/asr-todo.txt", "--out", "/job/asr",
+           "--model", model]
+    log = (jd / "asr.log").open("a")
+    return subprocess.Popen(cmd, stdout=log, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL)
+
+
+def asr_stop() -> None:
+    try:
+        _docker("rm", "-f", ASR_NAME, timeout=60)
+    except Exception:
+        pass
+
+
+PROCESS = {"inbox": process_inbox, "invoices": process_invoice, "calls": process_call}
 
 
 # =============================================================== the job ===
@@ -702,22 +863,66 @@ def worker(demo: str, limit: int, engine: str) -> int:
     save("running")
 
     out = (jd / "results.jsonl").open("a", encoding="utf-8")
-    queue = list(reversed(todo))
     stop = {"flag": False}
     signal.signal(signal.SIGTERM, lambda *_: stop.update(flag=True))
+    work: Queue = Queue()
+    n_threads = run["concurrency"]
 
-    def loop() -> None:
-        while not stop["flag"]:
+    def feed_calls() -> None:
+        """Hand each call to the scorers as soon as its transcript is written."""
+        asr_dir = jd / "asr"
+        asr_dir.mkdir(parents=True, exist_ok=True)
+        need = [it for it in todo if not (asr_dir / f"{it['id']}.json").exists()]
+        proc = asr_start(jd, need) if need else None
+        pending = list(todo)
+        while pending and not stop["flag"]:
             if (jd / "stop").exists():
                 stop["flag"] = True
                 break
-            with lock:
-                if not queue:
-                    return
-                it = queue.pop()
+            exited = proc is None or proc.poll() is not None  # checked before the scan: no file is missed
+            ready = [it for it in pending if (asr_dir / f"{it['id']}.json").exists()]
+            for it in ready:
+                try:
+                    work.put((it, json.loads((asr_dir / f"{it['id']}.json").read_text())))
+                except (OSError, json.JSONDecodeError):
+                    continue
+                pending.remove(it)
+            if pending and exited and not ready:
+                for it in pending:  # the transcriber stopped early: report these, do not hang
+                    work.put((it, None))
+                pending = []
+            time.sleep(0.5)
+        if stop["flag"]:
+            (jd / "stop").touch()
+            asr_stop()
+        elif proc is not None:
+            try:
+                proc.wait(timeout=60)
+            except subprocess.TimeoutExpired:
+                asr_stop()
+        for _ in range(n_threads):
+            work.put(None)
+
+    if demo == "calls":
+        threading.Thread(target=feed_calls, daemon=True).start()
+    else:
+        for it in todo:
+            work.put((it, None))
+        for _ in range(n_threads):
+            work.put(None)
+
+    def loop() -> None:
+        while True:
+            job = work.get()
+            if job is None:
+                return
+            if stop["flag"] or (jd / "stop").exists():
+                stop["flag"] = True
+                continue
+            it, extra = job
             t0 = time.time()
             try:
-                res = PROCESS[demo](engine, it)
+                res = PROCESS[demo](engine, it, extra) if demo == "calls" else PROCESS[demo](engine, it)
             except Exception as exc:  # noqa: BLE001 - one bad item must not stop the night shift
                 res = {"error": f"{exc.__class__.__name__}: {exc}"[:300]}
             res.update(id=it["id"], seconds=round(time.time() - t0, 2), at=round(time.time(), 2), engine=engine)
@@ -729,15 +934,20 @@ def worker(demo: str, limit: int, engine: str) -> int:
                 totals["items"] += 1
                 totals["tokens_in"] += res.get("tokens_in", 0)
                 totals["tokens_out"] += res.get("tokens_out", 0)
+                totals["audio_s"] = round(totals.get("audio_s", 0) + (res.get("audio_s") or 0), 1)
 
-    threads = [threading.Thread(target=loop, daemon=True) for _ in range(run["concurrency"])]
+    threads = [threading.Thread(target=loop, daemon=True) for _ in range(n_threads)]
     for t in threads:
         t.start()
     while any(t.is_alive() for t in threads):
+        if (jd / "stop").exists():
+            stop["flag"] = True
         save("stopping" if stop["flag"] else "running")
         time.sleep(1)
     out.close()
     meter.stop()
+    if demo == "calls" and stop["flag"]:
+        asr_stop()
     run["ended"] = time.time()
     save("idle", "stopped" if stop["flag"] else "finished")
     return 0
@@ -773,6 +983,8 @@ def start_job(demo: str, limit: int, engine: str) -> tuple[bool, str]:
         return False, "already_running"
     if engine == "vllm" and not (installed(max_age=0)["image"] and model_ready()):
         return False, "engine_not_installed"
+    if demo == "calls" and not (dataset_ready("calls") and asr_ready()):
+        return False, "calls_not_installed"
     jd = job_dir(demo)
     jd.mkdir(parents=True, exist_ok=True)
     log = (jd / "worker.log").open("a")
@@ -795,8 +1007,9 @@ def stop_job(demo: str) -> bool:
 def reset_job(demo: str) -> tuple[bool, str]:
     if job_state(demo).get("status") in ("running", "stopping", "engine", "preparing"):
         return False, "running"
-    for name in ("results.jsonl", "state.json", "stop", "worker.log"):
+    for name in ("results.jsonl", "state.json", "stop", "worker.log", "asr.log", "asr-todo.txt"):
         (job_dir(demo) / name).unlink(missing_ok=True)
+    shutil.rmtree(job_dir(demo) / "asr", ignore_errors=True)
     _cache.pop(f"res:{demo}", None)
     return True, "reset"
 
@@ -853,6 +1066,29 @@ def summary(demo: str) -> dict:
         out["by_category"] = dict(Counter(r["pred"].get("category") for r in good))
         out["confusions"] = [{"truth": a, "pred": b, "n": c} for (a, b), c in conf.most_common(4)]
         out["pii"] = sum(mask_pii(idx[r["id"]]["text"])[1] for r in good[-400:]) if good else 0
+    elif demo == "calls":
+        fields = Counter()
+        viol_true = viol_hit = viol_false = 0
+        for r in good:
+            truth = idx[r["id"]]["truth"]
+            fields.update(k for k, v in score_call(r, truth).items() if v)
+            pv = bool(r["pred"].get("violations"))
+            if truth["violations"]:
+                viol_true += 1
+                viol_hit += pv
+            elif pv:
+                viol_false += 1
+        n = len(good) or 1
+        acc = {k: round(fields[k] / n * 100, 1) for k in CALL_CHECKS + ["resolution", "violations", "customer_end", "passed"]}
+        acc["asr"] = round((1 - sum(r.get("wer", 0) for r in good) / n) * 100, 1) if good else 0
+        acc["checklist"] = round(sum(acc[k] for k in CALL_CHECKS + ["resolution", "violations"]) / 7, 1)
+        out["accuracy"] = acc
+        out["violations"] = {"found": viol_hit, "of": viol_true, "false_alarms": viol_false}
+        out["avg_score"] = round(sum(r["pred"].get("score", 0) for r in good) / n, 1) if good else None
+        out["failed"] = sum(1 for r in good if not r["pred"].get("passed"))
+        out["audio_min"] = round(sum(r.get("audio_s") or 0 for r in good) / 60, 1)
+        out["total_audio_min"] = round(sum(c.get("seconds", 0) for c in idx.values()) / 60, 1)
+        out["installed"] = asr_ready() and tts_ready()
     else:
         dups = _duplicates(good)
         fields = Counter()
@@ -903,6 +1139,15 @@ def feed(demo: str, limit: int = 40, only: str = "all") -> list[dict]:
             sc = score_inbox(r, it["truth"]) if p else {}
             out.append({"id": r["id"], "channel": it["channel"], "text": text, "pred": p, "truth": it["truth"],
                         "ok": sc, "reply": r.get("reply"), "error": r.get("error"), "seconds": r.get("seconds")})
+        elif demo == "calls":
+            p = r.get("pred") or {}
+            if only == "review" and p.get("passed", True):
+                continue
+            out.append({"id": r["id"], "file": it["file"], "audio_s": it.get("seconds"), "pred": p,
+                        "truth": {"score": it["truth"]["score"], "passed": it["truth"]["passed"],
+                                  "violations": it["truth"]["violations"]},
+                        "ok": score_call(r, it["truth"]) if p else {}, "wer": r.get("wer"),
+                        "error": r.get("error"), "seconds": r.get("seconds")})
         else:
             p = r.get("pred") or {}
             checks = list(r.get("checks") or []) + (["duplicate"] if r["id"] in dups else [])
@@ -922,7 +1167,30 @@ def sample_items(demo: str, n: int = 6) -> list[dict]:
     rows = items(demo)[:n]
     if demo == "inbox":
         return [{"id": r["id"], "channel": r["channel"], "text": mask_pii(r["text"])[0]} for r in rows]
+    if demo == "calls":
+        return [{"id": r["id"], "file": r["file"], "seconds": r.get("seconds")} for r in rows]
     return [{"id": r["id"], "file": r["file"], "seller": r["seller_name"]} for r in rows]
+
+
+def item_detail(demo: str, item_id: str) -> dict | None:
+    """Everything about one processed call: transcript, the AI's scorecard and the answer key."""
+    it = item_index(demo).get(item_id)
+    if not it:
+        return None
+    res = next((r for r in reversed(results(demo)) if r["id"] == item_id), None)
+    out = {"id": item_id, "file": it.get("file"), "seconds": it.get("seconds"), "agent": it.get("agent"),
+           "scenario": it.get("scenario"), "truth": it.get("truth"), "turns": it.get("turns")}
+    if res:
+        out.update(pred=res.get("pred"), transcript=res.get("transcript"), wer=res.get("wer"),
+                   ok=score_call(res, it["truth"]) if res.get("pred") else {}, error=res.get("error"))
+    return out
+
+
+def call_audio(name: str) -> Path | None:
+    if not re.fullmatch(r"call-\d{4,6}\.wav", name or ""):
+        return None
+    f = CALL_DIR / name
+    return f if f.is_file() else None
 
 
 def invoice_image(name: str) -> Path | None:
@@ -990,6 +1258,41 @@ def export_xlsx(demo: str) -> Path:
             for row in w.iter_rows(min_row=2):
                 for c in row:
                     c.alignment = Alignment(wrap_text=True, vertical="top")
+    elif demo == "calls":
+        res_vi = {"resolved": "Đã giải quyết", "follow_up": "Hẹn gọi lại", "unresolved": "Chưa giải quyết",
+                  "satisfied": "Hài lòng", "neutral": "Bình thường", "dissatisfied": "Không hài lòng",
+                  "unauthorized_promise": "Hứa ngoài quy định", "rude": "Thiếu tôn trọng", "delivery": "Giao hàng",
+                  "defect": "Hàng lỗi", "refund": "Hoàn tiền", "install": "Lắp đặt", "double_charge": "Trừ tiền 2 lần",
+                  "product_question": "Hỏi sản phẩm"}
+        V = lambda k: res_vi.get(k, k or "")  # noqa: E731
+        yes = lambda b: "Có" if b else "Không"  # noqa: E731
+        ws = wb.active
+        ws.title = "Cuộc gọi"
+        sheet(ws, ["Cuộc gọi", "Nhân viên", "Thời lượng (giây)", "Chủ đề", "Điểm", "Đạt", "Chào hỏi", "Báo ghi âm",
+                   "Xác minh", "Đồng cảm", "Kết quả", "Kết thúc", "Vi phạm", "Khách cuối cuộc", "Tóm tắt", "Góp ý",
+                   "Đáp án: điểm"], [12, 14, 10, 15, 8, 8, 10, 10, 10, 10, 16, 10, 22, 14, 50, 50, 10])
+        coach = wb.create_sheet("Cần huấn luyện")
+        sheet(coach, ["Cuộc gọi", "Nhân viên", "Điểm", "Vi phạm", "Góp ý"], [12, 14, 8, 24, 70])
+        tr = wb.create_sheet("Bản chép lời")
+        sheet(tr, ["Cuộc gọi", "Thời điểm", "Người nói", "Nội dung"], [12, 10, 12, 90])
+        for r in sorted((r for r in rows if r.get("pred")), key=lambda r: r["id"]):
+            it, p = idx.get(r["id"]), r["pred"]
+            if not it:
+                continue
+            viol = ", ".join(V(v) for v in p.get("violations") or [])
+            ws.append([r["id"], it.get("agent"), it.get("seconds"), V(p.get("topic")), p.get("score"), yes(p.get("passed")),
+                       yes(p.get("greeting")), yes(p.get("disclosure")), yes(p.get("verification")), yes(p.get("empathy")),
+                       V(p.get("resolution")), yes(p.get("closing")), viol, V(p.get("customer_end")),
+                       p.get("summary"), p.get("coaching"), it["truth"]["score"]])
+            if not p.get("passed"):
+                coach.append([r["id"], it.get("agent"), p.get("score"), viol, p.get("coaching")])
+            for sg in r.get("transcript") or []:
+                tr.append([r["id"], f"{int(sg['start'] // 60):02d}:{int(sg['start'] % 60):02d}",
+                           "Nhân viên" if sg["speaker"] == "agent" else "Khách hàng", sg["text"]])
+        for w in (ws, coach):
+            for row in w.iter_rows(min_row=2):
+                for c in row:
+                    c.alignment = Alignment(wrap_text=True, vertical="top")
     else:
         dups = _duplicates([r for r in rows if r.get("pred")])
         ws = wb.active
@@ -1019,7 +1322,8 @@ def export_xlsx(demo: str) -> Path:
                 for c in cols:
                     row[c - 1].number_format = money
     EXPORTS.mkdir(parents=True, exist_ok=True)
-    name = {"inbox": "Aurora-Mart_hop-thu-da-phan-loai", "invoices": "Aurora-Mart_hoa-don"}[demo]
+    name = {"inbox": "Aurora-Mart_hop-thu-da-phan-loai", "invoices": "Aurora-Mart_hoa-don",
+            "calls": "Aurora-Mart_cham-diem-cuoc-goi"}[demo]
     path = EXPORTS / f"{name}_{time.strftime('%Y%m%d-%H%M')}.xlsx"
     wb.save(path)
     return path
@@ -1072,6 +1376,33 @@ def smoke(log=print) -> bool:
             except Exception as exc:  # noqa: BLE001
                 log(f"  {demo} {it['id']}: FAILED {exc}")
                 good = False
+    if dataset_ready("calls") and asr_ready():
+        jd = DATA / "smoke"
+        shutil.rmtree(jd, ignore_errors=True)
+        jd.mkdir(parents=True)
+        rows = items("calls")[:2]
+        p = asr_start(jd, rows)
+        try:
+            p.wait(timeout=600)
+        except subprocess.TimeoutExpired:
+            asr_stop()
+        for it in rows:
+            f = jd / "asr" / f"{it['id']}.json"
+            if not f.exists():
+                log(f"  calls {it['id']}: FAILED (no transcript)\n" + (jd / "asr.log").read_text()[-1500:])
+                good = False
+                continue
+            try:
+                res = process_call("vllm", it, json.loads(f.read_text()))
+                sc = score_call(res, it["truth"])
+                log(f"  calls {it['id']}: {sum(sc.values())}/{len(sc)} checks right, "
+                    f"transcript {100 - res['wer'] * 100:.0f}% word-accurate")
+            except Exception as exc:  # noqa: BLE001
+                log(f"  calls {it['id']}: FAILED {exc}")
+                good = False
+        shutil.rmtree(jd, ignore_errors=True)
+    else:
+        log("  calls: not installed (no voice or speech-to-text model) — skipped")
     log(f"checked in {time.time() - t0:.0f} s")
     engine_stop()
     return good

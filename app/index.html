@@ -544,7 +544,7 @@
   .seg{display:inline-flex;border:1px solid var(--line-2);border-radius:var(--r-sm);padding:2px;max-width:100%}
   .seg button{border:0;background:transparent;color:var(--text-3);font:600 12.5px/1.2 var(--font);padding:7px 11px;border-radius:var(--r-xs);cursor:pointer;text-align:left}
   .seg button.on{background:var(--text);color:#06102c}
-  .ent-demos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-bottom:18px}
+  .ent-demos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-bottom:18px}
   button.ent-demo{display:block;width:100%;text-align:left;padding:20px 22px;color:var(--text);border:0;font:inherit;cursor:pointer}
   .ent-demo .dn{font:700 12.5px/1 var(--display);color:var(--text-4);letter-spacing:.1em}
   .ent-demo h3{font-size:20px;margin:8px 0 4px}
@@ -595,8 +595,17 @@
   .ent-2col{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:start}
   .ent-2col img{width:100%;border:1px solid var(--line);background:#fff}
   .ent-sub{font:600 11.5px/1.2 var(--display);letter-spacing:.14em;text-transform:uppercase;color:var(--text-3);margin:16px 0 8px}
+  .ent-detail audio{width:100%;margin:0 0 14px;display:block}
+  .tscript{border:1px solid var(--line);border-radius:var(--r-sm);max-height:460px;overflow:auto}
+  .tscript div{display:grid;grid-template-columns:44px 92px minmax(0,1fr);gap:8px;padding:7px 10px;font-size:13.5px;line-height:1.5;border-top:1px solid var(--line)}
+  .tscript div:first-child{border-top:0}
+  .tscript .tt{color:var(--text-4);font-variant-numeric:tabular-nums}
+  .tscript .ag{color:var(--blue-2);font-weight:600} .tscript .cu{color:var(--amber);font-weight:600}
+  .scorebig{display:flex;align-items:baseline;gap:10px;margin-bottom:6px}
+  .scorebig b{font:700 34px/1 var(--display);color:#fff}
+  .scorebig span{color:var(--text-3);font-size:13px}
   @media (max-width:920px){
-    .ent-engine,.ent-cost,.ent-2col,.ent-head{grid-template-columns:minmax(0,1fr)}
+    .ent-engine,.ent-cost,.ent-2col,.ent-head,.ent-demos{grid-template-columns:minmax(0,1fr)}
     .ent-engine>div+div{border-left:0;border-top:1px solid var(--line)}
     .kpis{grid-template-columns:repeat(3,minmax(0,1fr))}
     .accgrid{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -681,6 +690,7 @@
   <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3.5l1.9 5.1 5.1 1.9-5.1 1.9L12 17.5l-1.9-5.1L5 10.5l5.1-1.9L12 3.5z"/><path d="M18.5 16.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8.8-2z"/></symbol>
   <symbol id="i-db" viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="7" ry="2.5"/><path d="M5 6v12c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5V6M5 12c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5"/></symbol>
   <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><path d="M6.6 3.5h3l1.5 4.2-2 1.4a11 11 0 0 0 5.8 5.8l1.4-2 4.2 1.5v3a1.6 1.6 0 0 1-1.7 1.6A16.5 16.5 0 0 1 5 5.2a1.6 1.6 0 0 1 1.6-1.7z"/></symbol>
   <symbol id="i-present" viewBox="0 0 24 24"><path d="M3 4.5h18M5 4.5v10.5h14V4.5M12 15v4.5M8.5 20.5h7"/></symbol>
   <symbol id="i-github" viewBox="0 0 16 16"><path fill="currentColor" stroke="none" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></symbol>
 </svg>
@@ -1297,7 +1307,7 @@ const I18N = {
     tab_ent: "Enterprise",
     ent_kicker: "Enterprise · Batch AI on one machine",
     ent_h: "AI on the night shift: real batch jobs, on this machine",
-    ent_p: "Thousands of customer messages and supplier invoices, processed by an open model on the DGX Spark. The data never leaves the company, there is no per-item fee, and every result is checked against an answer key, so the accuracy below is measured, not promised. All data here is invented, for the fictional retailer Aurora Mart.",
+    ent_p: "Thousands of customer messages, supplier invoices and call recordings, processed by open models on the DGX Spark. The data never leaves the company, there is no per-item fee, and every result is checked against an answer key, so the accuracy below is measured, not promised. All data here is invented, for the fictional retailer Aurora Mart.",
     ent_engine: "Batch engine",
     ent_loading: "Checking…",
     ent_gpu_now: "GPU power now",
@@ -1433,7 +1443,44 @@ const I18N = {
     ent_c_payback: "Pays for itself in",
     ent_c_months_n: "{n} months",
     ent_c_never: "At this volume the API is cheaper for this one job; the same machine also runs the other jobs, the labs and your private data.",
-    ent_c_free: "And the data stays in the company, with no rate limits."
+    ent_c_free: "And the data stays in the company, with no rate limits.",
+    ent_calls_k: "Call centre",
+    ent_calls_n: "Call quality scoring",
+    ent_calls_d: "300 recorded phone calls, about 4 hours of audio",
+    ent_calls_long: "Every recording is transcribed on the GPU (PhoWhisper, Vietnamese speech-to-text), then scored against the QA team’s checklist: greeting, the “this call is recorded” notice, identity check, empathy, the outcome, the closing, and violations such as unauthorised promises. Today a QA team listens to 2–5% of calls; this checks every one.",
+    ent_calls_in: "Stereo call recordings (agent | customer)",
+    ent_calls_out: "Scorecards, coaching notes + Excel",
+    ent_asr: "PhoWhisper: speech to text",
+    ent_calls_missing: "The call demo is not installed yet: run the install command again (speech-to-text model, voice and sample calls).",
+    ent_k_acc_calls: "checklist items correct",
+    ent_k_audio: "minutes of audio processed",
+    ent_hl_calls: "Found {f} of {o} calls with a violation · average score {a}/100 · {n} calls flagged for coaching · {m} minutes of recordings checked.",
+    ent_th_call: "Call",
+    ent_th_len: "Length",
+    ent_th_topic: "Topic",
+    ent_th_score: "Score",
+    ent_th_result: "Result",
+    ent_pass: "Passed",
+    ent_fail_qa: "Needs coaching",
+    ent_yes: "Yes",
+    ent_no: "No",
+    ent_agent: "Agent",
+    ent_customer: "Customer",
+    ent_transcript: "Transcript (speech-to-text)",
+    ent_wer: "{p}% of words right",
+    ent_no_transcript: "No transcript.",
+    ent_score_of: "out of 100 · answer key: {s}",
+    ent_coaching: "Coaching note",
+    ent_f_greeting: "Greeting with names",
+    ent_f_disclosure: "Recording notice",
+    ent_f_verification: "Identity check",
+    ent_f_empathy: "Empathy",
+    ent_f_closing: "Proper closing",
+    ent_f_resolution: "Outcome",
+    ent_f_violations: "Violations",
+    ent_f_customer_end: "Customer at the end",
+    ent_f_asr: "Speech-to-text",
+    ent_c_asr: "Cloud speech-to-text (USD per minute)"
   },
   vi: {
     tab_home: 'Tổng quan', tab_sp: 'Diễn giả', tab_lab1: 'Tinh chỉnh', tab_lab2: 'RAG', tab_lab3: 'Agent', tab_oc: 'OpenClaw · Thử thách',
@@ -1594,7 +1641,7 @@ const I18N = {
     tab_ent: "Doanh nghiệp",
     ent_kicker: "Doanh nghiệp · AI xử lý hàng loạt trên một máy",
     ent_h: "AI làm ca đêm: xử lý hàng loạt ngay trên máy này",
-    ent_p: "Hàng nghìn tin nhắn khách hàng và hóa đơn nhà cung cấp được một mô hình mở xử lý ngay trên DGX Spark. Dữ liệu không rời khỏi công ty, không tốn phí theo từng lượt, và mỗi kết quả được so với đáp án, nên độ chính xác bên dưới là số đo thật chứ không phải lời hứa. Toàn bộ dữ liệu là giả lập, cho chuỗi bán lẻ hư cấu Aurora Mart.",
+    ent_p: "Hàng nghìn tin nhắn khách hàng, hóa đơn nhà cung cấp và cuộc gọi ghi âm được các mô hình mở xử lý ngay trên DGX Spark. Dữ liệu không rời khỏi công ty, không tốn phí theo từng lượt, và mỗi kết quả được so với đáp án, nên độ chính xác bên dưới là số đo thật chứ không phải lời hứa. Toàn bộ dữ liệu là giả lập, cho chuỗi bán lẻ hư cấu Aurora Mart.",
     ent_engine: "Máy chủ xử lý hàng loạt",
     ent_loading: "Đang kiểm tra…",
     ent_gpu_now: "Công suất GPU",
@@ -1730,7 +1777,44 @@ const I18N = {
     ent_c_payback: "Hoàn vốn sau",
     ent_c_months_n: "{n} tháng",
     ent_c_never: "Ở khối lượng này, riêng việc này thì API rẻ hơn; nhưng cùng một máy còn chạy các việc khác, các bài lab và dữ liệu nội bộ.",
-    ent_c_free: "Và dữ liệu không rời công ty, không bị giới hạn lượt gọi."
+    ent_c_free: "Và dữ liệu không rời công ty, không bị giới hạn lượt gọi.",
+    ent_calls_k: "Tổng đài",
+    ent_calls_n: "Chấm điểm chất lượng cuộc gọi",
+    ent_calls_d: "300 cuộc gọi ghi âm, khoảng 4 giờ âm thanh",
+    ent_calls_long: "Mỗi bản ghi âm được chuyển thành văn bản ngay trên GPU (PhoWhisper, nhận dạng giọng nói tiếng Việt), rồi chấm theo checklist của bộ phận QA: chào hỏi, thông báo ghi âm, xác minh khách hàng, đồng cảm, kết quả xử lý, lời kết, và các vi phạm như hứa hẹn ngoài quy định. Hiện nay đội QA thường chỉ nghe được 2–5% số cuộc gọi; ở đây mọi cuộc gọi đều được kiểm tra.",
+    ent_calls_in: "Ghi âm cuộc gọi 2 kênh (nhân viên | khách)",
+    ent_calls_out: "Phiếu chấm, góp ý huấn luyện + Excel",
+    ent_asr: "PhoWhisper: giọng nói thành văn bản",
+    ent_calls_missing: "Demo tổng đài chưa được cài: hãy chạy lại lệnh cài đặt (mô hình nhận dạng giọng nói, giọng đọc và cuộc gọi mẫu).",
+    ent_k_acc_calls: "tiêu chí chấm đúng",
+    ent_k_audio: "phút ghi âm đã xử lý",
+    ent_hl_calls: "Phát hiện {f}/{o} cuộc gọi có vi phạm · điểm trung bình {a}/100 · {n} cuộc gọi cần huấn luyện lại · đã kiểm tra {m} phút ghi âm.",
+    ent_th_call: "Cuộc gọi",
+    ent_th_len: "Thời lượng",
+    ent_th_topic: "Chủ đề",
+    ent_th_score: "Điểm",
+    ent_th_result: "Kết quả",
+    ent_pass: "Đạt",
+    ent_fail_qa: "Cần huấn luyện",
+    ent_yes: "Có",
+    ent_no: "Không",
+    ent_agent: "Nhân viên",
+    ent_customer: "Khách hàng",
+    ent_transcript: "Bản chép lời (giọng nói thành văn bản)",
+    ent_wer: "đúng {p}% số từ",
+    ent_no_transcript: "Không có bản chép lời.",
+    ent_score_of: "trên 100 · đáp án: {s}",
+    ent_coaching: "Góp ý huấn luyện",
+    ent_f_greeting: "Chào hỏi kèm tên",
+    ent_f_disclosure: "Thông báo ghi âm",
+    ent_f_verification: "Xác minh khách hàng",
+    ent_f_empathy: "Đồng cảm",
+    ent_f_closing: "Lời kết đúng chuẩn",
+    ent_f_resolution: "Kết quả xử lý",
+    ent_f_violations: "Vi phạm",
+    ent_f_customer_end: "Khách cuối cuộc gọi",
+    ent_f_asr: "Chép lời",
+    ent_c_asr: "Chuyển giọng nói trên đám mây (USD/phút)"
   }
 };
 
@@ -2043,7 +2127,7 @@ function openModal(title, sub, html){
   $('#m-title').textContent = title; $('#m-sub').textContent = sub || '';
   $('#m-body').innerHTML = html; $('#modal').classList.add('on');
 }
-function closeModal(){ $('#modal').classList.remove('on'); }
+function closeModal(){ $$('#modal audio').forEach(a => a.pause()); $('#modal').classList.remove('on'); }
 $('#m-close').addEventListener('click', closeModal);
 $('#modal').addEventListener('click', e => { if (e.target.id === 'modal') closeModal(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
@@ -2766,13 +2850,15 @@ document.addEventListener('click', async e => {
    polls a summary; the jobs themselves run in background processes. */
 const ENT = {demo: 'inbox', engine: 'vllm', data: null, rows: [], samples: {}, only: 'all', built: '', costBuilt: ''};
 try { ENT.demo = localStorage.getItem('ent-demo') || 'inbox'; ENT.engine = localStorage.getItem('ent-engine') || 'vllm'; } catch (e) {}
-if (!['inbox', 'invoices'].includes(ENT.demo)) ENT.demo = 'inbox';
+const ENT_DEMOS = ['inbox', 'invoices', 'calls'];
+if (!ENT_DEMOS.includes(ENT.demo)) ENT.demo = 'inbox';
 const ENT_ACTIVE = ['running', 'stopping', 'engine', 'preparing'];
 const ENT_TIERS = {frontier: [3, 15], mid: [1.25, 10], mini: [0.25, 2]};
-const ENT_COST = {inbox_month: 60000, invoices_month: 10000, tier: 'mid', usd: 26000, kwh: 3000, watts: 240, box: 100000000, months: 36};
+const ENT_COST = {inbox_month: 60000, invoices_month: 10000, calls_month: 20000, asr_min: 0.006, tier: 'mid', usd: 26000, kwh: 3000, watts: 240, box: 100000000, months: 36};
 try { Object.assign(ENT_COST, JSON.parse(localStorage.getItem('ent-cost') || '{}')); } catch (e) {}
 const ENT_FIELDS = {inbox: ['category', 'urgency', 'sentiment', 'order'],
-                    invoices: ['tax_code', 'series', 'number', 'date', 'subtotal', 'vat', 'total', 'lines']};
+                    invoices: ['tax_code', 'series', 'number', 'date', 'subtotal', 'vat', 'total', 'lines'],
+                    calls: ['greeting', 'disclosure', 'verification', 'empathy', 'resolution', 'closing', 'violations', 'asr']};
 const ENT_LABELS = {
   en: {cat: {delivery: 'Delivery', defect: 'Defective item', wrong_item: 'Wrong or missing item', return_refund: 'Return & refund',
              billing: 'Payment & invoice', warranty: 'Warranty & install', account: 'Account', inquiry: 'Product question', praise: 'Praise', spam: 'Spam or scam'},
@@ -2783,7 +2869,11 @@ const ENT_LABELS = {
        chk: {line_mismatch: 'A line: quantity × price ≠ amount', sum_mismatch: 'Lines do not add up to the subtotal', vat_mismatch: 'VAT amount is wrong',
              vat_rate: 'Unusual VAT rate', total_mismatch: 'Total ≠ subtotal + VAT', wrong_buyer: 'Not Aurora Mart’s tax code',
              duplicate: 'Duplicate of an invoice already received'},
-       ch: {email: 'Email', zalo: 'Zalo', messenger: 'Messenger', webform: 'Web form'}},
+       ch: {email: 'Email', zalo: 'Zalo', messenger: 'Messenger', webform: 'Web form'},
+       res: {resolved: 'Resolved', follow_up: 'Call back promised', unresolved: 'Not resolved'},
+       cend: {satisfied: 'Satisfied', neutral: 'Neutral', dissatisfied: 'Dissatisfied'},
+       viol: {unauthorized_promise: 'Unauthorised promise', rude: 'Disrespectful'},
+       topic: {delivery: 'Delivery', defect: 'Defective item', refund: 'Refund', install: 'Installation', double_charge: 'Charged twice', product_question: 'Product question'}},
   vi: {cat: {delivery: 'Giao hàng', defect: 'Hàng lỗi', wrong_item: 'Giao sai, thiếu hàng', return_refund: 'Đổi trả, hoàn tiền',
              billing: 'Thanh toán, hóa đơn', warranty: 'Bảo hành, lắp đặt', account: 'Tài khoản', inquiry: 'Hỏi sản phẩm', praise: 'Khen ngợi', spam: 'Spam, lừa đảo'},
        urg: {critical: 'Khẩn cấp', high: 'Cao', medium: 'Trung bình', low: 'Thấp'},
@@ -2793,7 +2883,11 @@ const ENT_LABELS = {
        chk: {line_mismatch: 'Dòng hàng: số lượng × đơn giá ≠ thành tiền', sum_mismatch: 'Cộng các dòng ≠ tiền hàng', vat_mismatch: 'Tiền thuế sai',
              vat_rate: 'Thuế suất bất thường', total_mismatch: 'Tổng ≠ tiền hàng + thuế', wrong_buyer: 'Sai mã số thuế của Aurora Mart',
              duplicate: 'Trùng với hóa đơn đã nhận'},
-       ch: {email: 'Email', zalo: 'Zalo', messenger: 'Messenger', webform: 'Form web'}}
+       ch: {email: 'Email', zalo: 'Zalo', messenger: 'Messenger', webform: 'Form web'},
+       res: {resolved: 'Đã giải quyết', follow_up: 'Hẹn gọi lại', unresolved: 'Chưa giải quyết'},
+       cend: {satisfied: 'Hài lòng', neutral: 'Bình thường', dissatisfied: 'Không hài lòng'},
+       viol: {unauthorized_promise: 'Hứa ngoài quy định', rude: 'Thiếu tôn trọng'},
+       topic: {delivery: 'Giao hàng', defect: 'Hàng lỗi', refund: 'Hoàn tiền', install: 'Lắp đặt', double_charge: 'Trừ tiền 2 lần', product_question: 'Hỏi sản phẩm'}}
 };
 function EL(group, key){ const L = ENT_LABELS[LANG] || ENT_LABELS.en; return (L[group] && L[group][key]) || key || '—'; }
 function setHTML(el, html){ if (el && el.__h !== html){ el.innerHTML = html; el.__h = html; } }
@@ -2811,6 +2905,7 @@ function mark(ok, label){ return `<span class="mk ${ok ? 'y' : 'n'}" title="${es
 const entCur = () => ENT.data && ENT.data.demos && ENT.data.demos[ENT.demo];
 function entEngineOk(){
   const d = ENT.data; if (!d) return false;
+  if (ENT.demo === 'calls' && !(d.installed && d.installed.asr && d.demos && d.demos.calls && d.demos.calls.ready)) return false;
   return ENT.engine === 'ollama' ? !!d.ollama_ready : !!(d.installed && d.installed.image && d.installed.model);
 }
 
@@ -2845,7 +2940,7 @@ function entEngine(){
 
 function entDemos(){
   const d = ENT.data;
-  setHTML($('#ent-demos'), ['inbox', 'invoices'].map((k, i) => {
+  setHTML($('#ent-demos'), ENT_DEMOS.map((k, i) => {
     const s = d && d.demos && d.demos[k];
     const pct = s && s.total ? Math.floor(s.processed / s.total * 100) : 0;
     let status = '';
@@ -2865,7 +2960,8 @@ function entPanel(){
   $('#ent-panel').innerHTML =
     `<div class="ent-head"><div><div class="label" style="margin-bottom:10px">${esc(t('ent_job'))}</div>` +
     `<h2>${esc(t('ent_' + k + '_n'))}</h2><p class="muted" style="margin:0;max-width:780px">${esc(t('ent_' + k + '_long'))}</p>` +
-    `<div class="ent-io">${ic(k === 'inbox' ? 'msg' : 'file')}<span>${esc(t('ent_' + k + '_in'))}</span>${ic('arrow')}` +
+    `<div class="ent-io">${ic({inbox: 'msg', invoices: 'file', calls: 'phone'}[k])}<span>${esc(t('ent_' + k + '_in'))}</span>${ic('arrow')}` +
+    (k === 'calls' ? `${ic('cpu')}<span>${esc(t('ent_asr'))}</span>${ic('arrow')}` : '') +
     `${ic('cpu')}<span>${esc(t('ent_ai'))}</span>${ic('arrow')}${ic('download')}<span>${esc(t('ent_' + k + '_out'))}</span></div></div></div>` +
     `<div class="ent-ctl" id="ent-ctl"></div>` +
     `<div class="progress" id="ent-runbar"><i></i></div><div class="muted" id="ent-runline"></div>` +
@@ -2883,7 +2979,7 @@ function entLive(){
   const active = !!(s && ENT_ACTIVE.includes(s.status));
   const left = s ? Math.max(0, s.total - s.processed) : 0;
   const can = !!(s && !active && left > 0 && entEngineOk());
-  const n = k === 'inbox' ? 300 : 100;
+  const n = {inbox: 300, invoices: 100, calls: 30}[k];
   setHTML($('#ent-ctl'),
     `<button type="button" class="btn" data-ent="run" data-n="${n}"${can ? '' : ' disabled'}>${ic('bolt')}${esc(t('ent_run_n', {n}))}</button>` +
     `<button type="button" class="btn ghost" data-ent="run" data-n="100000"${can ? '' : ' disabled'}>${esc(t('ent_run_all', {n: num(left, 0)}))}</button>` +
@@ -2908,12 +3004,13 @@ function entLive(){
       line = t('ent_msg_' + s.message) + (run.done ? ' ' + t('ent_runline_done', {d: num(run.done, 0), r: num(s.rate_per_min || 0, 0), eng}) : '');
     } else if (s.message === 'interrupted'){ line = t('ent_msg_interrupted'); }
     else if (String(s.message || '').startsWith('engine:')){ line = t('ent_msg_error', {m: s.message.slice(7)}); }
-    if (!entEngineOk() && ENT.data) line = ENT.engine === 'ollama' ? t('ent_no_ollama', {m: ENT.data.ollama_model}) : t('ent_eng_missing_d');
+    if (!entEngineOk() && ENT.data) line = k === 'calls' && !(ENT.data.installed && ENT.data.installed.asr && s.ready) ? t('ent_calls_missing')
+      : ENT.engine === 'ollama' ? t('ent_no_ollama', {m: ENT.data.ollama_model}) : t('ent_eng_missing_d');
   }
   setHTML($('#ent-runline'), esc(line));
   // headline numbers
   const tot = (s && s.totals) || {}, acc = (s && s.accuracy) || {};
-  const accMain = k === 'inbox' ? acc.category : acc.total;
+  const accMain = {inbox: acc.category, invoices: acc.total, calls: acc.checklist}[k];
   const cell = (v, l) => `<div class="kpi"><b>${esc(v)}</b><span>${esc(l)}</span></div>`;
   setHTML($('#ent-kpis'),
     cell(s ? `${num(s.processed, 0)} / ${num(s.total, 0)}` : '—', t('ent_k_done')) +
@@ -2921,7 +3018,8 @@ function entLive(){
     (active ? cell(s.eta_s != null ? entDur(s.eta_s) : '—', t('ent_k_eta')) : cell(tot.busy_s ? entDur(tot.busy_s) : '—', t('ent_k_busy'))) +
     cell(s && s.processed && accMain != null ? num(accMain, 1) + '%' : '—', t('ent_k_acc_' + k)) +
     cell(tot.wh ? num(tot.wh, 1) + ' Wh' : '—', t('ent_k_wh')) +
-    cell(tot.tokens_in ? num((tot.tokens_in + tot.tokens_out) / 1e6, 2) + ' M' : '—', t('ent_k_tokens')));
+    (k === 'calls' ? cell(s && s.audio_min ? num(s.audio_min, 0) : '—', t('ent_k_audio'))
+                   : cell(tot.tokens_in ? num((tot.tokens_in + tot.tokens_out) / 1e6, 2) + ' M' : '—', t('ent_k_tokens'))));
   setHTML($('#ent-acc'), ENT_FIELDS[k].map(f => {
     const v = acc[f];
     return `<div class="acc"><div class="ah"><span>${esc(t('ent_f_' + f))}</span><b>${s && s.processed && v != null ? num(v, 1) + '%' : '—'}</b></div>` +
@@ -2932,6 +3030,8 @@ function entLive(){
     if (k === 'inbox' && s.critical) hl = t('ent_hl_inbox', {f: num(s.critical.found, 0), o: num(s.critical.of, 0)});
     if (k === 'invoices' && s.problems) hl = t('ent_hl_invoices', {c: num(s.problems.caught, 0), p: num(s.problems.planted, 0),
       d: num(s.problems.duplicates, 0), fa: num(s.problems.false_alarms, 0), v: num(s.value || 0, 0)});
+    if (k === 'calls' && s.violations) hl = t('ent_hl_calls', {f: num(s.violations.found, 0), o: num(s.violations.of, 0),
+      a: num(s.avg_score || 0, 0), n: num(s.failed || 0, 0), m: num(s.audio_min || 0, 0)});
   }
   setHTML($('#ent-hl'), hl ? `<div class="ent-hl">${ic('shield')}<span>${esc(hl)}</span></div>` : `<p class="muted" style="margin:12px 0 0">${esc(t('ent_hl_none'))}</p>`);
 }
@@ -2958,12 +3058,28 @@ function entFeedRender(){
     setHTML(tb, k === 'inbox'
       ? `<tr><th>${esc(t('ent_th_id'))}</th><th>${esc(t('ent_th_channel'))}</th><th>${esc(t('ent_th_msg'))}</th></tr>` +
         smp.map(r => `<tr><td>${esc(r.id)}</td><td>${esc(EL('ch', r.channel))}</td><td class="wrap">${esc(r.text)}</td></tr>`).join('')
+      : k === 'calls'
+      ? `<tr><th>${esc(t('ent_th_call'))}</th><th>${esc(t('ent_th_len'))}</th></tr>` +
+        smp.map(r => `<tr class="click" data-audio="${esc(r.file)}"><td>${esc(r.id)}</td><td>${esc(entDur(r.seconds))}</td></tr>`).join('')
       : `<tr><th>${esc(t('ent_th_file'))}</th><th>${esc(t('ent_f_seller'))}</th></tr>` +
         smp.map(r => `<tr class="click" data-img="${esc(r.file)}"><td>${esc(r.file)}</td><td>${esc(r.seller)}</td></tr>`).join(''));
     setHTML($('#ent-feednote'), esc(smp.length ? t('ent_samples_note') : ''));
     return;
   }
-  if (k === 'inbox'){
+  if (k === 'calls'){
+    setHTML(tb, `<tr><th>${esc(t('ent_th_call'))}</th><th>${esc(t('ent_th_len'))}</th><th>${esc(t('ent_th_topic'))}</th>` +
+      `<th>${esc(t('ent_th_score'))}</th><th>${esc(t('ent_th_result'))}</th><th>${esc(t('ent_th_check'))}</th></tr>` +
+      rows.map(r => {
+        const p = r.pred || {}, ok = r.ok || {};
+        const right = Object.values(ok).filter(Boolean).length, all = Object.keys(ok).length;
+        const res = p.passed ? `<span class="chk-ok">${esc(t('ent_pass'))}</span>`
+          : `<span class="chk-bad">${esc(t('ent_fail_qa'))}${(p.violations || []).length ? ' · ' + esc(p.violations.map(v => EL('viol', v)).join(', ')) : ''}</span>`;
+        return `<tr class="click" data-id="${esc(r.id)}"><td>${esc(r.id)}</td><td>${esc(entDur(r.audio_s))}</td>` +
+          (r.error ? `<td colspan="4" class="chk-bad">${esc(r.error)}</td>` :
+          `<td>${esc(EL('topic', p.topic))}</td><td class="num">${esc(p.score)}</td><td class="wrap" style="min-width:150px">${res}</td>` +
+          `<td>${mark(right === all, `${right}/${all}`)}</td>`) + '</tr>';
+      }).join(''));
+  } else if (k === 'inbox'){
     setHTML(tb, `<tr><th>${esc(t('ent_th_id'))}</th><th>${esc(t('ent_th_channel'))}</th><th>${esc(t('ent_th_msg'))}</th>` +
       `<th>${esc(t('ent_f_category'))}</th><th>${esc(t('ent_f_urgency'))}</th><th>${esc(t('ent_th_check'))}</th></tr>` +
       rows.map(r => {
@@ -2992,7 +3108,32 @@ function entFeedRender(){
   setHTML($('#ent-feednote'), esc(t('ent_feed_note')));
 }
 
+async function entCallDetail(id){
+  let d;
+  try { d = await (await fetch(`/api/ent/item?demo=calls&id=${encodeURIComponent(id)}`)).json(); } catch (e) { return; }
+  const p = d.pred || {}, tr = d.truth || {}, ok = d.ok || {};
+  const yes = v => v ? t('ent_yes') : t('ent_no');
+  const row = (label, a, b, good) => `<tr><td>${esc(label)}</td><td class="wrap" style="min-width:90px">${esc(a)}</td><td class="wrap" style="min-width:90px">${esc(b)}</td><td>${good == null ? '' : mark(good)}</td></tr>`;
+  const lines = (d.transcript || []).map(sg => `<div><span class="tt">${String(Math.floor(sg.start / 60)).padStart(2, '0')}:${String(Math.floor(sg.start % 60)).padStart(2, '0')}</span>` +
+    `<span class="${sg.speaker === 'agent' ? 'ag' : 'cu'}">${esc(t(sg.speaker === 'agent' ? 'ent_agent' : 'ent_customer'))}</span><span>${esc(sg.text)}</span></div>`).join('');
+  const viol = v => (v || []).map(x => EL('viol', x)).join(', ') || '—';
+  const html = `<div class="ent-detail"><audio controls preload="metadata" src="/api/ent/call/${esc(d.file)}"></audio><div class="ent-2col"><div>` +
+    `<div class="ent-sub" style="margin-top:0">${esc(t('ent_transcript'))}${d.wer != null ? ' · ' + esc(t('ent_wer', {p: num(100 - d.wer * 100, 0)})) : ''}</div>` +
+    `<div class="tscript">${lines || esc(t('ent_no_transcript'))}</div></div><div>` +
+    `<div class="scorebig"><b>${esc(p.score != null ? p.score : '—')}</b><span>${esc(t('ent_score_of', {s: tr.score}))}</span></div>` +
+    (p.summary ? `<p style="margin:0 0 10px">${esc(p.summary)}</p>` : '') +
+    `<div class="tablewrap" style="max-height:none"><table class="data"><tr><th></th><th>AI</th><th>${esc(t('ent_truth'))}</th><th></th></tr>` +
+    ['greeting', 'disclosure', 'verification', 'empathy', 'closing'].map(c => row(t('ent_f_' + c), yes(p[c]), yes(tr[c]), ok[c])).join('') +
+    row(t('ent_f_resolution'), EL('res', p.resolution), EL('res', tr.resolution), ok.resolution) +
+    row(t('ent_f_violations'), viol(p.violations), viol(tr.violations), ok.violations) +
+    row(t('ent_f_customer_end'), EL('cend', p.customer_end), EL('cend', tr.customer_end), ok.customer_end) +
+    `</table></div>` + (p.coaching ? `<div class="ent-sub">${esc(t('ent_coaching'))}</div><p style="margin:0">${esc(p.coaching)}</p>` : '') +
+    `</div></div></div>`;
+  openModal(d.id, `${d.agent || ''} · ${EL('topic', p.topic || d.scenario)} · ${entDur(d.seconds)}`, html);
+}
+
 function entDetail(id){
+  if (ENT.demo === 'calls'){ entCallDetail(id); return; }
   const r = (ENT.rows || []).find(x => x.id === id); if (!r) return;
   const p = r.pred || {};
   const tr3 = (label, a, b, ok) => `<tr><td>${esc(label)}</td><td class="wrap">${esc(a)}</td><td class="wrap">${esc(b)}</td><td>${ok == null ? '' : mark(ok)}</td></tr>`;
@@ -3046,6 +3187,7 @@ function entCostForm(){
   $('#ent-cost').innerHTML = `<div>` + fld(k + '_month', t('ent_c_month'), 1000) +
     `<label class="fld"><span>${esc(t('ent_c_tier'))}</span><select data-cost="tier">` +
     Object.keys(ENT_TIERS).map(x => `<option value="${x}"${c.tier === x ? ' selected' : ''}>${esc(t('ent_tier_' + x))}</option>`).join('') + `</select></label>` +
+    (k === 'calls' ? fld('asr_min', t('ent_c_asr'), 0.001) : '') +
     fld('usd', t('ent_c_usd'), 100) + fld('kwh', t('ent_c_kwh'), 100) + fld('watts', t('ent_c_watts'), 10) +
     fld('box', t('ent_c_box'), 1000000) + fld('months', t('ent_c_months'), 1) +
     `<p class="muted" style="margin:12px 0 0">${esc(t('ent_c_note'))}</p></div><div id="ent-costout"></div>`;
@@ -3057,7 +3199,8 @@ function entCostCalc(){
   const n = tot.items || 0;
   if (!n || !tot.busy_s || !tot.tokens_in){ setHTML(out, `<p class="muted" style="margin:0">${esc(t('ent_c_wait'))}</p>`); return; }
   const [pin, pout] = ENT_TIERS[c.tier] || ENT_TIERS.mid;
-  const perItemUsd = (tot.tokens_in / n * pin + tot.tokens_out / n * pout) / 1e6;
+  const perItemUsd = (tot.tokens_in / n * pin + tot.tokens_out / n * pout) / 1e6 +
+    (k === 'calls' ? (tot.audio_s || 0) / n / 60 * (c.asr_min || 0) : 0);
   const secPer = tot.busy_s / n;
   const toVnd = u => u * (c.usd || 0);
   const batchCloud = perItemUsd * n;
@@ -3121,6 +3264,8 @@ $('#tab-ent').addEventListener('click', async e => {
   }
   const only = e.target.closest('[data-ent-only]');
   if (only){ ENT.only = only.dataset.entOnly; ENT.built = ''; ENT.rows = []; entPanel(); entLive(); entFeed(); return; }
+  const aud = e.target.closest('tr[data-audio]');
+  if (aud){ openModal(aud.dataset.audio, '', `<div class="ent-detail"><audio controls autoplay preload="metadata" src="/api/ent/call/${esc(aud.dataset.audio)}"></audio></div>`); return; }
   const img = e.target.closest('tr[data-img]');
   if (img){ openModal(img.dataset.img, '', `<div class="ent-detail"><img src="/api/ent/invoice/${esc(img.dataset.img)}" alt=""></div>`); return; }
   const row = e.target.closest('tr[data-id]');
