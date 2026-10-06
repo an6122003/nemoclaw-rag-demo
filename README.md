@@ -31,6 +31,7 @@ Equivalent by hand: `git clone https://github.com/an6122003/nemoclaw-rag-demo.gi
 | 2 | **Build RAG with NemoClaw** | [hands-on-2-rag/](hands-on-2-rag/) | 28 technical manuals, retrieval by OpenClaw memory search inside the NemoClaw sandbox, answers with their source passages, traps for confusable products and superseded safety advice |
 | 3 | **Build an Agentic Workflow** | [hands-on-3-agent/](hands-on-3-agent/) | "Phân tích doanh số theo vùng…" → the NemoClaw agent reads the Excel file and calls Python tools (pandas, matplotlib, openpyxl) → chart + insight + Excel report, every step shown live |
 | 4 | **Challenge: OpenClaw** | the app's OpenClaw tab | teams open OpenClaw's own chat UI on the Spark (`/openclaw` hands the browser the gateway token) and build their own workflow: shell and Python in the sandbox, the 28 manuals through memory search, the sales skill, files; starter ideas, a showcase checklist, and a second model (`/model qwen`) |
+| 5 | **Enterprise: batch jobs** | [enterprise/](enterprise/), [app/enterprise.py](app/enterprise.py) | for the afternoon business session: 2,400 customer messages triaged (topic, urgency, red flags, order number, draft replies for critical ones) and 1,000 scanned VAT invoices read into Excel with arithmetic checks and duplicate detection, as background batches on vLLM (NVIDIA's container, `nvidia/Qwen3.6-35B-A3B-NVFP4`, dozens of items at once; Ollama one at a time for comparison); accuracy against an answer key, GPU energy, and cost vs cloud API prices |
 
 Labs 1-3 each put the same question side by side: before/after fine-tuning,
 without/with RAG (the same chat model with no documents), and the model alone
@@ -99,14 +100,16 @@ Why these choices:
 | 6 | Lab 2 | starts the embedding proxy, uploads the corpus, configures memory search, builds the index (`scripts/lab2-sandbox-setup.sh`) |
 | 7 | Lab 3 + OpenClaw | creates the `analyst` agent, enables the endpoint, proves a tool call round-trips, installs the skill and keeps its Python wheels on the host; for OpenClaw's own chat: 262144-token context, 16384-token replies, Qwen as a second model, heartbeats off (`scripts/lab3-sandbox-setup.sh`) |
 | 8 | Lab 1 | pulls `nvcr.io/nvidia/pytorch:25.11-py3`, builds `workshop-finetune`, caches the base model, trains once |
-| 9 | Final check | `app/selftest.py` runs every lab end to end with the real models; summary; desktop shortcut |
+| 9 | Enterprise | generates the sample data (`app/enterprise.py prepare`), pulls `nvcr.io/nvidia/vllm:26.05.post1-py3`, downloads `nvidia/Qwen3.6-35B-A3B-NVFP4` at a pinned revision into `~/.cache/huggingface`, then starts the engine once, processes a few messages and invoices, and stops it |
+| 10 | Final check | `app/selftest.py` runs every lab end to end with the real models; summary; desktop shortcut |
 
 Safe to re-run: every step checks the real state first. Everything is logged to
 `setup-log.txt`. Useful flags: `--check-only`, `--skip-finetune`,
-`--skip-sandbox`, `--retrain`, `--no-start`, `--yes`.
+`--skip-sandbox`, `--skip-enterprise`, `--retrain`, `--no-start`, `--yes`.
 
-About 85 GB is downloaded (models ~50 GB, PyTorch container ~20 GB, sandbox
-image ~3 GB, base model 3 GB). Expect 1-2 hours on a good connection.
+About 120 GB is downloaded (Ollama models ~50 GB, PyTorch container ~20 GB,
+vLLM container ~12 GB and its model 22 GB, sandbox image ~3 GB, base model
+3 GB). Expect 1.5-2.5 hours on a good connection.
 
 ## Without internet
 

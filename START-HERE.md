@@ -39,7 +39,7 @@ without and with RAG, the model alone and the agent with its tools.
 |---|---|
 | ✅ | Máy **DGX Spark** đã bật, có **internet** (chỉ cần khi cài đặt; sau đó chạy không cần internet, kể cả khi khởi động lại) · The **DGX Spark**, on, with **internet** (for setup only; afterwards it runs offline, restarts included) |
 | ✅ | Màn hình, bàn phím, chuột · A screen, keyboard and mouse |
-| ✅ | Khoảng **100 GB** trống và **1-2 giờ** · About **100 GB** free and **1-2 hours** |
+| ✅ | Khoảng **150 GB** trống và **2 giờ** · About **150 GB** free and **2 hours** |
 | ✅ | **Mật khẩu đăng nhập** của máy · The machine's **login password** |
 
 ---
@@ -136,9 +136,33 @@ minute** (at most 5) while NemoClaw starts — just wait. **No internet needed.*
 ## Kịch bản trình diễn · Demo script (≈ 15 phút · minutes)
 
 Góc trên bên phải có nút **VI / EN** để đổi ngôn ngữ. Các tab ở đầu trang: **Tổng quan,
-01 Tinh chỉnh, 02 RAG, 03 Agent, 04 OpenClaw · Thử thách**.
+01 Tinh chỉnh, 02 RAG, 03 Agent, 04 OpenClaw · Thử thách, 05 Doanh nghiệp**.
 The **VI / EN** buttons top right switch language. Tabs along the top: **Overview,
-01 Fine-tuning, 02 RAG, 03 Agent, 04 OpenClaw · Challenge**.
+01 Fine-tuning, 02 RAG, 03 Agent, 04 OpenClaw · Challenge, 05 Enterprise**.
+
+### Buổi chiều · Doanh nghiệp (tab 05) · Afternoon business session
+
+1. Mở tab **05 Doanh nghiệp**. Chọn **Phân loại hộp thư khách hàng** (2.400 tin nhắn).
+   Open tab **05 Enterprise**, pick **Customer inbox triage** (2,400 messages).
+2. Bấm **Chạy 300 mục**. Lần đầu máy chủ xử lý hàng loạt tự khởi động (2–4 phút) — hãy
+   bấm trước khi khán giả vào. Sau đó khoảng **200 tin nhắn mỗi phút**.
+   Press **Run 300 items**. The first time, the batch engine starts by itself (2–4 minutes):
+   press it before the audience arrives. Then about **200 messages a minute**.
+3. Chỉ vào **độ chính xác so với đáp án**, dòng **Bắt được …/… tin khẩn cấp**, và bấm một
+   dòng để xem tin nhắn, kết quả của AI, đáp án và bản nháp trả lời. Bấm **Tải Excel**.
+   Point at the accuracy, the critical messages caught, click a row, press **Download Excel**.
+4. Chọn **Hóa đơn đầu vào sang Excel** (1.000 hóa đơn scan), bấm **Chạy 100 mục**: khoảng
+   **35 hóa đơn mỗi phút**, lỗi cộng sai và hóa đơn trùng được đánh dấu **Cần kiểm tra**.
+   Pick **Supplier invoices into Excel**, press **Run 100 items**: about 35 a minute.
+5. Kéo xuống **Chi phí**: nhập khối lượng mỗi tháng của khách và so sánh với API đám mây.
+   Scroll to **What it costs** and type in the customer's monthly volume.
+6. So sánh: chọn **Ollama · từng mục** rồi chạy 20 mục — chậm hơn nhiều lần. Đây là lý do
+   doanh nghiệp dùng máy chủ theo lô (vLLM) cho công việc hàng loạt.
+   Compare: switch to **Ollama · one at a time** and run 20 items: several times slower.
+
+Máy chủ tự tắt sau 30 phút không dùng để trả bộ nhớ cho các bài lab. **Làm lại từ đầu**
+xóa kết quả để trình diễn lại. The engine switches itself off after 30 idle minutes;
+**Start over** clears the results for another demo.
 
 ### Bài 1 · Tinh chỉnh (5 phút)
 
