@@ -23,7 +23,8 @@ every figure in your answer comes from a tool result.
    - "doanh số", "doanh thu", "sales", "revenue" → `Doanh thu (triệu VND)`
    - "lợi nhuận", "profit" → `Lợi nhuận gộp (triệu VND)`
    - "biên lợi nhuận", "margin" → `margin`
-   - "bán chạy", "best-selling", "sản lượng", "units" → `Số lượng`
+   - "bán chạy", "best-selling", "sản lượng", "units" → `Số lượng` (always units,
+     never revenue: best-selling means the most units sold)
    - "vùng", "khu vực", "region" → `Khu vực`; "kênh" → `Kênh bán`;
      "theo tháng" → `Tháng`; "theo quý" → `Quý`
    - A place or product in the question ("tại Đà Nẵng", "AX-400") is a filter,
