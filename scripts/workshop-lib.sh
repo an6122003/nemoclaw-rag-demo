@@ -31,13 +31,16 @@ AGENT_ID="$(env_get AGENT_ID analyst)"
 OLLAMA_URL="$(env_get OLLAMA_URL http://127.0.0.1:11434)"
 HUB_PORT="$(env_get HUB_PORT 8090)"
 OLLAMA_CONTEXT_LENGTH="$(env_get OLLAMA_CONTEXT_LENGTH 32768)"
+# Context window of the chat model itself, for OpenClaw's own agent (see
+# scripts/ollama-context.py). Also what NemoClaw bakes into the sandbox.
+CHAT_CONTEXT="$(env_get CHAT_CONTEXT 65536)"
 # Every nemoclaw command must target the workshop's own gateway.
 NEMOCLAW_GATEWAY_PORT="$(env_get NEMOCLAW_GATEWAY_PORT 8990)"
 # The NemoClaw release the labs were verified with; a fresh install gets this
 # one rather than whatever NVIDIA's installer currently calls last-known-good.
 NEMOCLAW_VERSION="$(env_get NEMOCLAW_VERSION v0.0.124)"
 export CHAT_MODEL EMBED_MODEL LAB1_BASE_HF LAB1_BASE_OLLAMA LAB1_TUNED_MODEL LAB1_IMAGE \
-       SANDBOX AGENT_ID OLLAMA_URL HUB_PORT NEMOCLAW_GATEWAY_PORT
+       SANDBOX AGENT_ID OLLAMA_URL HUB_PORT NEMOCLAW_GATEWAY_PORT CHAT_CONTEXT
 
 # The one command participants run (install and update), and how to start the
 # workshop afterwards. Messages repeat them so they can be copied from screen.
@@ -109,6 +112,13 @@ sys.exit(0 if want in names or (":" not in want and want + ":latest" in names) e
 ' "$want"
 }
 
+# OpenClaw's own agent overflows Ollama's usual 16k context; give the chat
+# model its own larger one. Local only (no download), safe on every start.
+ensure_chat_context() {
+  ollama_has "$CHAT_MODEL" || return 0
+  python3 "$ROOT/scripts/ollama-context.py" "$CHAT_MODEL" "$CHAT_CONTEXT" >> "$LOG" 2>&1
+}
+
 sandbox_ok() {  # the NemoClaw sandbox answers and is Ready (status also succeeds for "Phase: Error")
   command -v nemoclaw >/dev/null 2>&1 || return 1
   timeout "${1:-60}" nemoclaw "$SANDBOX" status 2>/dev/null | grep -q "Phase: Ready"
@@ -159,7 +169,7 @@ nemoclaw_onboard() {
   embed_proxy_stop    # NemoClaw checks that only loopback listens on Ollama's port
   ollama_unload_all   # and picks a smaller model when memory looks busy
   env NEMOCLAW_NON_INTERACTIVE=1 NEMOCLAW_ACCEPT_THIRD_PARTY_SOFTWARE=1 NEMOCLAW_YES=1 \
-      NEMOCLAW_RECREATE_WITHOUT_BACKUP=1 \
+      NEMOCLAW_RECREATE_WITHOUT_BACKUP=1 NEMOCLAW_CONTEXT_WINDOW="$CHAT_CONTEXT" \
       NEMOCLAW_AGENT=openclaw NEMOCLAW_PROVIDER=ollama NEMOCLAW_MODEL="$CHAT_MODEL" \
       NEMOCLAW_SANDBOX_NAME="$SANDBOX" NEMOCLAW_POLICY_TIER=balanced \
     timeout "${ONBOARD_TIMEOUT:-3600}" nemoclaw onboard --name "$SANDBOX" --non-interactive --yes \
@@ -177,6 +187,7 @@ ensure_sandbox_model() {
     return 0
   fi
   if run_long "Switching the sandbox to $CHAT_MODEL… / Đang chuyển sandbox sang $CHAT_MODEL…" \
+       env NEMOCLAW_CONTEXT_WINDOW="$CHAT_CONTEXT" \
        timeout 600 nemoclaw "$SANDBOX" inference set --provider ollama-local --model "$CHAT_MODEL"; then
     ok "Sandbox model: $CHAT_MODEL (NemoClaw had chosen $current)" "Mô hình của sandbox: $CHAT_MODEL"
   else

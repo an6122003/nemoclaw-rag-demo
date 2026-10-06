@@ -15,13 +15,19 @@
 #   4. Records the gateway URL and token for the app, and proves a real tool
 #      call round-trips through the agent.
 #   5. Optionally installs the same tools as an OpenClaw skill INSIDE the
-#      sandbox, so the agent can also run them from OpenClaw's own chat UI.
-#      PyPI access is opened for the install and closed again afterwards.
+#      sandbox, so the agent can also run them from OpenClaw's own chat UI
+#      (the workshop challenge). The Python wheels are kept on the host, so a
+#      rebuilt sandbox gets them back without internet. If the sandbox policy
+#      does not already allow PyPI, access is opened for the download and
+#      closed again afterwards.
+#   6. Sets the model's context window in OpenClaw to CHAT_CONTEXT: OpenClaw's
+#      own agent overflows the 16k NemoClaw takes from Ollama's default.
 #
 # Usage
 #   scripts/lab3-sandbox-setup.sh
 #   scripts/lab3-sandbox-setup.sh --sandbox my-lab --agent analyst
 #   scripts/lab3-sandbox-setup.sh --skip-skill      # client tools only
+#   scripts/lab3-sandbox-setup.sh --openclaw-chat   # only steps 5-6 (start.sh, every start)
 #   scripts/lab3-sandbox-setup.sh --check           # verify, change nothing
 
 set -euo pipefail
@@ -50,8 +56,12 @@ REASONING="$(env_get AGENT_REASONING none)"
 # gateway gave looping tool calls, answers in the wrong language and misspelt
 # place names. The direct route already uses 0.2.
 TEMPERATURE="$(env_get AGENT_TEMPERATURE 0.2)"
+# Context window OpenClaw may fill (Ollama gives the chat model this much; see
+# scripts/ollama-context.py).
+CONTEXT="$(env_get CHAT_CONTEXT 65536)"
 DEFAULT_GATEWAY="$(env_get GATEWAY_URL http://127.0.0.1:18789)"
 SKIP_SKILL=0
+CHAT_ONLY=0
 CHECK_ONLY=0
 SKILL_PKGS="pandas==3.0.6 matplotlib==3.11.2 openpyxl==3.1.5"
 
@@ -66,8 +76,9 @@ while [ $# -gt 0 ]; do
     --sandbox)    SANDBOX="$2"; shift 2 ;;
     --agent)      AGENT="$2"; shift 2 ;;
     --skip-skill) SKIP_SKILL=1; shift ;;
+    --openclaw-chat|--skill-only) CHAT_ONLY=1; shift ;;
     --check)      CHECK_ONLY=1; shift ;;
-    -h|--help)    sed -n '2,27p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help)    sed -n '2,33p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) die "unknown argument: $1" ;;
   esac
 done
@@ -130,34 +141,31 @@ JSON
   printf '%s' "$out" | grep -q '"get_dataset_info"'
 }
 
-if [ "$CHECK_ONLY" -eq 1 ]; then
-  record_gateway
-  [ -n "$TOKEN" ] || die "no gateway token (sandbox not onboarded?)"
-  wait_for_agent && ok "gateway $GATEWAY serves openclaw/$AGENT" || die "agent '$AGENT' not served at $GATEWAY"
-  smoke_test && ok "tool call round trip works" || die "tool call smoke test failed (see .run/lab3-smoke.json)"
-  exit 0
-fi
-
-# --------------------------------------------------------------------------
-step "Sandbox '$SANDBOX'"
-# --------------------------------------------------------------------------
-timeout 90 nemoclaw "$SANDBOX" status >/dev/null 2>&1 \
-  || die "sandbox '$SANDBOX' not reachable. Run ./setup.sh first."
-ok "sandbox reachable"
-
-# --------------------------------------------------------------------------
-step "Analyst agent + chat completions endpoint"
-# --------------------------------------------------------------------------
-sbx download /sandbox/.openclaw/openclaw.json "$TMP/openclaw.json" >/dev/null 2>&1 \
-  || die "could not download openclaw.json from the sandbox"
-cp "$TMP/openclaw.json" "$RUN/openclaw.json.before-lab3"
-
-python3 - "$TMP/openclaw.json" "$AGENT" "$WS" "$REASONING" "$TEMPERATURE" <<'PY' > "$TMP/changes.txt"
+# Patch the sandbox's openclaw.json (downloaded to $TMP/openclaw.json).
+# Mode "full" sets up the analyst agent too; "context" only the context window.
+patch_config() {
+  python3 - "$TMP/openclaw.json" "$AGENT" "$WS" "$REASONING" "$TEMPERATURE" "$CONTEXT" "$1" <<'PY' > "$TMP/changes.txt"
 import json, sys
-path, agent, ws, reasoning, temperature = sys.argv[1:6]
+path, agent, ws, reasoning, temperature, context, mode = sys.argv[1:8]
 raw = open(path, encoding="utf-8").read()
 d = json.loads(raw[: raw.rfind("}") + 1])
 changes = []
+agents = d.setdefault("agents", {})
+model = agents.get("defaults", {}).get("model")
+primary = model.get("primary") if isinstance(model, dict) else model
+
+# NemoClaw registers the model with the context Ollama ran at onboarding
+# (often 16384). OpenClaw's own agent needs more; Ollama now provides it.
+provider, _, model_id = (primary or "").partition("/")
+for entry in d.get("models", {}).get("providers", {}).get(provider, {}).get("models", []):
+    if entry.get("id") == model_id and int(entry.get("contextWindow") or 0) < int(context):
+        entry["contextWindow"] = int(context)
+        changes.append(f"models.providers.{provider}.models[{model_id}].contextWindow = {context}")
+
+if mode == "context":
+    open(path, "w", encoding="utf-8").write(json.dumps(d, indent=2, ensure_ascii=False) + "\n")
+    print("\n".join(changes) if changes else "no changes")
+    sys.exit(0)
 
 gw = d.setdefault("gateway", {})
 ep = gw.setdefault("http", {}).setdefault("endpoints", {}).setdefault("chatCompletions", {})
@@ -165,7 +173,6 @@ if ep.get("enabled") is not True:
     ep["enabled"] = True
     changes.append("gateway.http.endpoints.chatCompletions.enabled = true")
 
-agents = d.setdefault("agents", {})
 lst = agents.setdefault("list", [])
 if not any(a.get("id") == "main" for a in lst):
     lst.insert(0, {"id": "main", "default": True})
@@ -198,8 +205,6 @@ if isinstance(tools, dict) and "toolSearch" in tools:
     del tools["toolSearch"]
     changes.append("tools.toolSearch removed (tools are offered directly)")
 
-model = agents.get("defaults", {}).get("model")
-primary = model.get("primary") if isinstance(model, dict) else model
 if primary and reasoning and reasoning != "default":
     entry = agents.setdefault("defaults", {}).setdefault("models", {}).setdefault(primary, {})
     extra = entry.setdefault("params", {}).setdefault("extra_body", {})
@@ -216,13 +221,148 @@ if primary and temperature and temperature != "default":
 open(path, "w", encoding="utf-8").write(json.dumps(d, indent=2, ensure_ascii=False) + "\n")
 print("\n".join(changes) if changes else "no changes")
 PY
+}
+
+upload_config() {
+  sbx upload "$TMP/openclaw.json" /sandbox/.openclaw/openclaw.json >/dev/null 2>&1 || return 1
+  # Keep NemoClaw's integrity hash in step, as its own config writer does.
+  sbx exec -- sh -c 'cd /sandbox/.openclaw && sha256sum openclaw.json > .config-hash' >/dev/null 2>&1 || true
+}
+
+ensure_context_window() {
+  sbx download /sandbox/.openclaw/openclaw.json "$TMP/openclaw.json" >/dev/null 2>&1 \
+    || { warn "could not read openclaw.json from the sandbox"; return 1; }
+  patch_config context || { warn "could not read openclaw.json"; return 1; }
+  if grep -q "^no changes$" "$TMP/changes.txt"; then
+    ok "context window: $CONTEXT tokens"
+    return 0
+  fi
+  sed 's/^/  - /' "$TMP/changes.txt"
+  upload_config || { warn "could not upload openclaw.json"; return 1; }
+  sbx gateway restart --quiet >/dev/null 2>&1 || warn "gateway restart reported a problem"
+  ok "context window raised to $CONTEXT tokens"
+}
+
+# The sales tools as an OpenClaw skill for the default agent, plus the Python
+# packages they need inside the sandbox. A recreated sandbox keeps its
+# workspace but loses those packages, so start.sh runs this on every start;
+# it only installs what is missing or changed.
+pypi_active() { sbx policy list 2>/dev/null | grep -Eq '^[[:space:]]*●[[:space:]]+pypi([[:space:]]|$)'; }
+pkgs_ok() { sbx exec -- python3 -c "import pandas, matplotlib, openpyxl" >/dev/null 2>&1; }
+WHEELS="$RUN/sandbox-wheels.tar"  # stays on the host when the sandbox is rebuilt
+
+PYPI_OPENED=0
+pypi_begin() {  # open PyPI for the sandbox, unless its policy already allows it
+  PYPI_OPENED=0
+  if ! pypi_active; then
+    printf '  ..   opening PyPI for the sandbox\n'
+    sbx policy add pypi --yes >/dev/null 2>&1 && PYPI_OPENED=1 || warn "could not apply the pypi preset"
+  fi
+}
+pypi_end() {
+  [ "$PYPI_OPENED" -eq 1 ] || return 0
+  PYPI_OPENED=0
+  sbx policy remove pypi --yes >/dev/null 2>&1 && ok "PyPI access closed again" \
+    || warn "could not remove the pypi preset; remove it with: nemoclaw $SANDBOX policy remove pypi --yes"
+}
+
+install_from_wheels() {  # offline: the wheels kept on the host
+  [ -s "$WHEELS" ] || return 1
+  sbx upload "$WHEELS" /tmp/workshop-wheels.tar >/dev/null 2>&1 || return 1
+  sbx exec --timeout 900 -- sh -c "rm -rf /tmp/workshop-wheels && mkdir -p /tmp/workshop-wheels \
+      && tar -xf /tmp/workshop-wheels.tar -C /tmp/workshop-wheels && rm -f /tmp/workshop-wheels.tar \
+      && python3 -m pip install --user --break-system-packages --disable-pip-version-check -q \
+         --no-index --find-links /tmp/workshop-wheels $SKILL_PKGS" >"$RUN/lab3-pip.log" 2>&1
+}
+
+save_wheels() {  # online, once: download the wheels in the sandbox and keep a copy here
+  sbx exec --timeout 900 -- sh -c "rm -rf /tmp/workshop-wheels && python3 -m pip download \
+      --disable-pip-version-check -q -d /tmp/workshop-wheels $SKILL_PKGS \
+      && tar -cf /tmp/workshop-wheels.tar -C /tmp/workshop-wheels ." >>"$RUN/lab3-pip.log" 2>&1 || return 1
+  sbx download /tmp/workshop-wheels.tar "$WHEELS.part" >/dev/null 2>&1 && [ -s "$WHEELS.part" ] \
+    && mv "$WHEELS.part" "$WHEELS"
+}
+
+install_skill() {
+  local want have stage
+  if pkgs_ok; then
+    ok "pandas / matplotlib / openpyxl already in the sandbox"
+  elif install_from_wheels && pkgs_ok; then
+    ok "installed $SKILL_PKGS from the wheels kept on this machine (no internet needed)"
+  else
+    pypi_begin
+    # shellcheck disable=SC2086  # SKILL_PKGS is a deliberate word list
+    if sbx exec --timeout 900 -- python3 -m pip install --user --break-system-packages \
+         --disable-pip-version-check -q $SKILL_PKGS >"$RUN/lab3-pip.log" 2>&1; then
+      ok "installed $SKILL_PKGS"
+    else
+      warn "pip install failed inside the sandbox (see .run/lab3-pip.log)"
+      pypi_end
+      return 1
+    fi
+    pypi_end
+  fi
+  if [ ! -s "$WHEELS" ]; then
+    pypi_begin
+    save_wheels && ok "kept the Python wheels on this machine for offline reinstalls ($(du -h "$WHEELS" | cut -f1))" \
+      || warn "could not keep the wheels; a rebuilt sandbox will need PyPI again"
+    pypi_end
+  fi
+  want="$(cat "$LAB/skills/sales-analyst/SKILL.md" "$LAB/tools/sales_tools.py" | sha256sum | cut -c1-16)"
+  have="$(sbx exec -- sh -c 'cd /sandbox/.openclaw/workspace/skills/sales-analyst 2>/dev/null && cat SKILL.md scripts/sales_tools.py | sha256sum' 2>/dev/null | grep -Eo '^[0-9a-f]{16}' | head -1 || true)"
+  if [ -n "$have" ] && [ "$have" = "$want" ] \
+       && sbx exec -- test -f /sandbox/.openclaw/workspace/skills/sales-analyst/data/aurora_sales_2024_2025.xlsx >/dev/null 2>&1; then
+    ok "skill 'sales-analyst' is up to date"
+    return 0
+  fi
+  stage="$TMP/sales-analyst"
+  mkdir -p "$stage/scripts" "$stage/data"
+  cp "$LAB/skills/sales-analyst/SKILL.md" "$stage/SKILL.md"
+  cp "$LAB/tools/sales_tools.py" "$stage/scripts/sales_tools.py"
+  cp "$LAB/data/aurora_sales_2024_2025.xlsx" "$stage/data/"
+  if sbx skill install "$stage" >"$RUN/lab3-skill.log" 2>&1; then
+    ok "skill 'sales-analyst' installed for the default agent"
+  else
+    warn "skill install failed (see .run/lab3-skill.log); the workshop app does not need it"
+    return 1
+  fi
+}
+
+if [ "$CHAT_ONLY" -eq 1 ]; then
+  step "OpenClaw's own chat (the challenge)"
+  rc=0
+  ensure_context_window || rc=1
+  install_skill || rc=1
+  exit $rc
+fi
+
+if [ "$CHECK_ONLY" -eq 1 ]; then
+  record_gateway
+  [ -n "$TOKEN" ] || die "no gateway token (sandbox not onboarded?)"
+  wait_for_agent && ok "gateway $GATEWAY serves openclaw/$AGENT" || die "agent '$AGENT' not served at $GATEWAY"
+  smoke_test && ok "tool call round trip works" || die "tool call smoke test failed (see .run/lab3-smoke.json)"
+  exit 0
+fi
+
+# --------------------------------------------------------------------------
+step "Sandbox '$SANDBOX'"
+# --------------------------------------------------------------------------
+timeout 90 nemoclaw "$SANDBOX" status >/dev/null 2>&1 \
+  || die "sandbox '$SANDBOX' not reachable. Run ./setup.sh first."
+ok "sandbox reachable"
+
+# --------------------------------------------------------------------------
+step "Analyst agent + chat completions endpoint"
+# --------------------------------------------------------------------------
+sbx download /sandbox/.openclaw/openclaw.json "$TMP/openclaw.json" >/dev/null 2>&1 \
+  || die "could not download openclaw.json from the sandbox"
+cp "$TMP/openclaw.json" "$RUN/openclaw.json.before-lab3"
+
+patch_config full
 sed 's/^/  - /' "$TMP/changes.txt"
 
 if ! grep -q "^no changes$" "$TMP/changes.txt"; then
-  sbx upload "$TMP/openclaw.json" /sandbox/.openclaw/openclaw.json >/dev/null 2>&1 \
-    || die "could not upload openclaw.json"
-  # Keep NemoClaw's integrity hash in step, as its own config writer does.
-  sbx exec -- sh -c 'cd /sandbox/.openclaw && sha256sum openclaw.json > .config-hash' >/dev/null 2>&1 || true
+  upload_config || die "could not upload openclaw.json"
   ok "openclaw.json updated"
 else
   ok "openclaw.json already configured"
@@ -280,35 +420,7 @@ step "Skill for OpenClaw's own chat (optional)"
 if [ "$SKIP_SKILL" -eq 1 ]; then
   warn "skipped (--skip-skill)"
 else
-  skill_ok=1
-  if sbx exec -- python3 -c "import pandas, matplotlib, openpyxl" >/dev/null 2>&1; then
-    ok "pandas / matplotlib / openpyxl already in the sandbox"
-  else
-    printf '  ..   opening PyPI for the sandbox, installing, then closing it again\n'
-    sbx policy add pypi --yes >/dev/null 2>&1 || warn "could not apply the pypi preset"
-    # shellcheck disable=SC2086  # SKILL_PKGS is a deliberate word list
-    if sbx exec --timeout 900 -- python3 -m pip install --user --break-system-packages \
-         --disable-pip-version-check -q $SKILL_PKGS >"$RUN/lab3-pip.log" 2>&1; then
-      ok "installed $SKILL_PKGS"
-    else
-      warn "pip install failed inside the sandbox (see .run/lab3-pip.log)"
-      skill_ok=0
-    fi
-    sbx policy remove pypi --yes >/dev/null 2>&1 && ok "PyPI access closed again" \
-      || warn "could not remove the pypi preset; remove it with: nemoclaw $SANDBOX policy remove pypi --yes"
-  fi
-  if [ "$skill_ok" -eq 1 ]; then
-    STAGE="$TMP/sales-analyst"
-    mkdir -p "$STAGE/scripts" "$STAGE/data"
-    cp "$LAB/skills/sales-analyst/SKILL.md" "$STAGE/SKILL.md"
-    cp "$LAB/tools/sales_tools.py" "$STAGE/scripts/sales_tools.py"
-    cp "$LAB/data/aurora_sales_2024_2025.xlsx" "$STAGE/data/"
-    if sbx skill install "$STAGE" >"$RUN/lab3-skill.log" 2>&1; then
-      ok "skill 'sales-analyst' installed for the default agent"
-    else
-      warn "skill install failed (see .run/lab3-skill.log); the workshop app does not need it"
-    fi
-  fi
+  install_skill || true
 fi
 
 cat <<EOF

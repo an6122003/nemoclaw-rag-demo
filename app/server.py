@@ -38,6 +38,10 @@ import lab3_agent as lab3  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
 INDEX_HTML = HERE / "index.html"
+# Logos and fonts, served from disk so the page works without internet.
+STATIC = HERE / "static"
+STATIC_TYPES = {".css": "text/css; charset=utf-8", ".svg": "image/svg+xml", ".woff2": "font/woff2",
+                ".png": "image/png", ".txt": "text/plain; charset=utf-8"}
 RETRIEVAL_MODE = "auto"
 MAX_UPLOAD = 25 * 1024 * 1024
 
@@ -65,6 +69,10 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header(k, v)
         self.end_headers()
         self.wfile.write(body)
+
+    def _local(self) -> bool:
+        """A browser on this machine (the gateway token is only handed to those)."""
+        return self.client_address[0] in ("127.0.0.1", "::1", "::ffff:127.0.0.1")
 
     def _json(self, code: int, obj) -> None:
         self._send(code, json.dumps(obj, ensure_ascii=False, default=str).encode("utf-8"),
@@ -133,9 +141,21 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(500, {"error": "index.html missing"})
             return self._send(200, INDEX_HTML.read_bytes(), "text/html; charset=utf-8")
 
+        if path.startswith("/static/"):
+            f = (STATIC / unquote(path[len("/static/"):])).resolve()
+            if STATIC.resolve() in f.parents and f.is_file() and f.suffix in STATIC_TYPES:
+                return self._send(200, f.read_bytes(), STATIC_TYPES[f.suffix])
+            return self._json(404, {"error": "not found"})
+
         if path == "/api/health":
-            local = self.client_address[0] in ("127.0.0.1", "::1", "::ffff:127.0.0.1")
-            return self._json(200, health(include_token=local))
+            return self._json(200, health(include_token=self._local()))
+
+        if path == "/openclaw":  # short address for OpenClaw's own UI (the challenge)
+            if not self._local():
+                return self._send(403, "Open this address on the DGX Spark itself.\n".encode(),
+                                  "text/plain; charset=utf-8")
+            return self._send(302, b"", "text/plain; charset=utf-8",
+                              {"Location": control_ui_url(include_token=True)})
 
         # ---- Hands-on 1
         if path == "/api/lab1/info":
@@ -283,6 +303,8 @@ def health(include_token: bool = False) -> dict:
                     "ok": lab2.SANDBOX_STATUS["ok"]},
         "gateway": {"url": common.gateway_url(), "ready": lab3.gateway_ready()[0]},
         "control_ui": control_ui_url(include_token),
+        "local": include_token,
+        "nemoclaw_port": common.detect_gateway_port(),
         "doc_count": len(list(lab2.CORPUS.glob("*.md"))),
     }
 

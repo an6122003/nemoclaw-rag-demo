@@ -3,279 +3,505 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>DGX Spark AI Workshop</title>
+<title>ACE 2026 Vietnam · Agentic AI Workshop</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23071230'/%3E%3Cpath d='M6 23c6-1 9-7 12-11s5-5 8-5' fill='none' stroke='%2376b900' stroke-width='3' stroke-linecap='round'/%3E%3Cpath d='M6 27c7-1 10-6 13-9s5-5 7-5' fill='none' stroke='%23a9c9ff' stroke-width='2' stroke-linecap='round' opacity='.75'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/static/fonts/fonts.css">
 <style>
   :root{
-    --ink:#0f172a; --ink-2:#334155; --ink-3:#64748b;
-    --line:#e2e8f0; --line-2:#cbd5e1; --bg:#f4f6f9; --card:#fff;
-    --nv:#76b900; --nv-d:#4e7a00; --nv-soft:#f2f8e8; --nv-line:#cfe6a8;
-    --blue:#1d4ed8; --blue-soft:#eaf0fe;
-    --amber:#b45309; --amber-soft:#fef3e2; --red:#b91c1c; --red-soft:#fdecec;
-    --radius:16px;
-    --shadow:0 1px 2px rgba(15,23,42,.06), 0 8px 24px -12px rgba(15,23,42,.18);
+    --bg:#040a1d;
+    --line:rgba(148,180,255,.14); --line-2:rgba(148,180,255,.26); --line-3:rgba(148,180,255,.42);
+    --text:#eef3ff; --text-2:#c3cee9; --text-3:#8b98be; --text-4:#66739b;
+    --blue:#5c9dff; --blue-2:#a9c9ff; --blue-soft:rgba(92,157,255,.13); --blue-line:rgba(92,157,255,.38);
+    --nv:#76b900; --nv-2:#93d600; --nv-ink:#b9ea70; --nv-soft:rgba(118,185,0,.13); --nv-line:rgba(118,185,0,.5);
+    --amber:#ffc066; --amber-soft:rgba(255,192,102,.11); --amber-line:rgba(255,192,102,.42);
+    --red:#ff8a8a; --red-soft:rgba(255,110,110,.11); --red-line:rgba(255,110,110,.42);
+    --violet:#bca6ff; --violet-soft:rgba(188,166,255,.12); --violet-line:rgba(188,166,255,.4);
+    --pink:#ff95cd; --pink-soft:rgba(255,149,205,.11); --pink-line:rgba(255,149,205,.4);
+    --radius:20px;
+    --font:"Be Vietnam Pro",system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans",sans-serif;
+    --display:"Saira","Be Vietnam Pro",system-ui,sans-serif;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,"DejaVu Sans Mono",monospace;
+    --check:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E");
   }
   *{box-sizing:border-box}
+  html{background:var(--bg)}
   html,body{margin:0;padding:0}
-  body{background:var(--bg);color:var(--ink);
-    font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,"Noto Sans",Helvetica,Arial,sans-serif;
-    -webkit-font-smoothing:antialiased}
-  .wrap{max-width:1180px;margin:0 auto;padding:0 24px}
+  body{color:var(--text);font:15.5px/1.6 var(--font);-webkit-font-smoothing:antialiased;min-height:100vh;
+    background:
+      radial-gradient(1100px 640px at 88% -6%,rgba(46,98,230,.36),transparent 62%),
+      radial-gradient(900px 560px at -8% 22%,rgba(28,62,170,.28),transparent 60%),
+      radial-gradient(1100px 700px at 50% 112%,rgba(18,50,150,.32),transparent 60%),
+      linear-gradient(180deg,#050c23 0%,#06102c 45%,#040a1d 100%);
+    background-attachment:fixed}
+  .waves{position:absolute;left:0;right:0;top:96px;height:560px;background:url(/static/brand/waves.svg) center/100% 100% no-repeat;
+    opacity:.5;pointer-events:none;z-index:0;
+    -webkit-mask-image:linear-gradient(180deg,transparent,#000 22%,#000 70%,transparent);mask-image:linear-gradient(180deg,transparent,#000 22%,#000 70%,transparent)}
+  header,main,footer{position:relative;z-index:1}
+  .wrap{max-width:1220px;margin:0 auto;padding:0 28px}
   button{font:inherit}
-  a{color:var(--blue)}
+  a{color:var(--blue-2)}
+  ::selection{background:rgba(118,185,0,.35)}
+  .sprite{position:absolute;width:0;height:0;overflow:hidden}
+  svg.i{width:1.15em;height:1.15em;flex:0 0 auto;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;vertical-align:-.2em}
 
   /* ---------------- header ---------------- */
-  header.top{background:linear-gradient(135deg,#0a0e13 0%,#141c26 60%,#1c2a12 130%);color:#fff;
-    position:sticky;top:0;z-index:30;box-shadow:0 6px 18px -12px rgba(0,0,0,.6)}
-  .toprow{display:flex;align-items:center;gap:18px;padding:14px 0 10px}
-  .brand{display:flex;align-items:center;gap:12px;flex:1;min-width:0}
-  .mark{width:38px;height:38px;border-radius:10px;background:var(--nv);display:grid;place-items:center;flex:0 0 auto;
-    box-shadow:0 4px 14px -4px rgba(118,185,0,.8)}
-  .mark svg{width:22px;height:22px}
-  .bname{font-weight:700;font-size:17px;letter-spacing:.2px}
-  .bsub{font-size:12.5px;opacity:.72}
-  .chips{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}
-  .chip{font-size:12px;padding:4px 10px;border-radius:999px;background:rgba(255,255,255,.09);
-    border:1px solid rgba(255,255,255,.14);display:flex;align-items:center;gap:6px;white-space:nowrap}
-  .dot{width:7px;height:7px;border-radius:50%;background:#94a3b8;flex:0 0 auto}
-  .dot.on{background:var(--nv);box-shadow:0 0 0 3px rgba(118,185,0,.25)}
-  .dot.warn{background:#f59e0b}
-  .lang{display:flex;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);border-radius:10px;padding:3px;flex:0 0 auto}
-  .lang button{border:0;background:transparent;color:rgba(255,255,255,.75);font-size:13px;font-weight:650;
-    padding:5px 11px;border-radius:7px;cursor:pointer}
-  .lang button.on{background:#fff;color:#111}
-  nav.tabs{display:flex;gap:4px;overflow-x:auto}
-  nav.tabs button{border:0;background:transparent;color:rgba(255,255,255,.72);font-size:14.5px;font-weight:620;
-    padding:10px 16px 12px;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap}
-  nav.tabs button:hover{color:#fff}
-  nav.tabs button.on{color:#fff;border-bottom-color:var(--nv)}
+  header.top{position:sticky;top:0;z-index:30;background:rgba(4,10,29,.74);border-bottom:1px solid var(--line);
+    -webkit-backdrop-filter:blur(18px) saturate(140%);backdrop-filter:blur(18px) saturate(140%)}
+  .toprow{display:flex;align-items:center;gap:20px;height:66px}
+  .lockup{display:flex;align-items:center;gap:15px;text-decoration:none;flex:0 0 auto}
+  .lockup img{display:block;width:auto}
+  .lockup .gb{height:14px}
+  .lockup .nv{height:23px}
+  .lockup .sep{width:1px;height:22px;background:rgba(255,255,255,.6)}
+  .event{display:flex;flex-direction:column;line-height:1.2;padding-left:20px;border-left:1px solid var(--line-2);min-width:0}
+  .event b{font:700 13px/1.2 var(--display);letter-spacing:.16em;color:#fff;white-space:nowrap}
+  .event span{font-size:12px;color:var(--text-3);white-space:nowrap}
+  .spacer{flex:1}
+  .chips{display:flex;gap:6px}
+  .chip{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:var(--text-2);padding:5px 10px;border-radius:999px;
+    border:1px solid var(--line);background:rgba(255,255,255,.03);white-space:nowrap}
+  .dot{width:7px;height:7px;border-radius:50%;background:#56628a;flex:0 0 auto}
+  .dot.on{background:var(--nv);box-shadow:0 0 0 3px rgba(118,185,0,.16),0 0 10px rgba(118,185,0,.65)}
+  .dot.warn{background:var(--amber)}
+  .lang{display:flex;border:1px solid var(--line-2);border-radius:10px;padding:3px;flex:0 0 auto}
+  .lang button{border:0;background:transparent;color:var(--text-3);font:600 12.5px/1 var(--display);letter-spacing:.08em;
+    padding:6px 10px;border-radius:7px;cursor:pointer}
+  .lang button.on{background:var(--text);color:#06102c}
+  nav.tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
+  nav.tabs::-webkit-scrollbar{display:none}
+  nav.tabs button{position:relative;border:0;background:none;color:var(--text-3);font-weight:600;font-size:14.5px;
+    padding:11px 14px 14px;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:8px}
+  nav.tabs button .n{font:600 12px var(--display);color:var(--text-4);letter-spacing:.06em}
+  nav.tabs button:hover{color:var(--text)}
+  nav.tabs button.on{color:#fff}
+  nav.tabs button.on::after{content:"";position:absolute;left:14px;right:14px;bottom:0;height:2px;border-radius:2px;
+    background:var(--nv);box-shadow:0 0 12px rgba(118,185,0,.8)}
+  nav.tabs button.on .n{color:var(--nv)}
+  nav.tabs .live{width:6px;height:6px;border-radius:50%;background:var(--nv);box-shadow:0 0 8px var(--nv)}
 
-  main{padding:26px 0 70px}
+  main{padding:8px 0 40px;min-height:60vh}
   section.tab{display:none}
-  section.tab.on{display:block;animation:fade .25s ease both}
-  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  section.tab.on{display:block;animation:fade .3s ease both}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 
-  h1{font-size:clamp(24px,3vw,32px);line-height:1.2;margin:0 0 8px;letter-spacing:-.4px}
-  h2{font-size:18px;margin:0 0 12px}
-  .lead{color:var(--ink-2);font-size:16.5px;max-width:860px;margin:0 0 18px}
-  .kicker{font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:var(--nv-d);font-weight:750;margin-bottom:6px}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);
-    padding:20px 22px;margin-bottom:18px}
+  /* ---------------- type & primitives ---------------- */
+  h1,h2,h3{font-family:var(--display);font-weight:700;margin:0;color:#fff;letter-spacing:-.005em}
+  h1{font-size:clamp(30px,3.4vw,44px);line-height:1.08;margin-bottom:14px}
+  .eyebrow{font:600 12.5px/1.2 var(--display);letter-spacing:.18em;text-transform:uppercase;color:var(--blue-2);
+    display:flex;align-items:center;gap:12px;margin-bottom:16px}
+  .eyebrow::before{content:"";width:24px;height:2px;background:var(--nv);border-radius:2px;flex:0 0 auto}
+  .pagehead{padding:40px 0 4px}
+  .lead{color:var(--text-2);font-size:17px;line-height:1.6;max-width:820px;margin:0}
+  .label{font:600 12px/1.3 var(--display);letter-spacing:.16em;text-transform:uppercase;color:var(--text-3);margin-bottom:14px;
+    display:flex;align-items:center;gap:10px}
+  .muted{color:var(--text-3);font-size:13.5px}
+  .glass,.card,details.sect{background:linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.018));border:1px solid var(--line);
+    border-radius:var(--radius);-webkit-backdrop-filter:blur(16px) saturate(130%);backdrop-filter:blur(16px) saturate(130%);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 24px 60px -36px rgba(0,0,0,.9)}
+  .card{padding:22px 24px;margin-bottom:18px}
+  .glow{border-color:rgba(130,175,255,.34);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 0 0 1px rgba(110,160,255,.12),0 0 50px -10px rgba(60,120,255,.5),0 30px 80px -40px rgba(0,0,0,.9)}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
-  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
-  .muted{color:var(--ink-3);font-size:13.5px}
-  .label{font-size:12px;text-transform:uppercase;letter-spacing:.09em;color:var(--ink-3);font-weight:680;margin-bottom:10px;
-    display:flex;align-items:center;gap:8px}
-  .pill{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;padding:4px 10px;border-radius:999px;
-    background:var(--nv-soft);color:var(--nv-d);border:1px solid var(--nv-line);font-weight:620}
-  .pill.gray{background:#f1f5f9;color:var(--ink-2);border-color:var(--line)}
-  .pill.amber{background:var(--amber-soft);color:var(--amber);border-color:#f2d6a8}
-  .btn{border:0;border-radius:12px;padding:12px 22px;font-size:15.5px;font-weight:680;cursor:pointer;
-    background:var(--nv);color:#0b1200;box-shadow:0 6px 16px -8px rgba(118,185,0,.9);transition:filter .15s}
-  .btn:hover:not(:disabled){filter:brightness(1.06)}
-  .btn:disabled{opacity:.5;cursor:not-allowed}
-  .btn.ghost{background:#fff;color:var(--ink-2);border:1px solid var(--line-2);box-shadow:none}
+  .pill{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;padding:4px 11px;border-radius:999px;
+    background:var(--nv-soft);color:var(--nv-ink);border:1px solid var(--nv-line)}
+  .pill.gray{background:rgba(255,255,255,.04);color:var(--text-2);border-color:var(--line-2)}
+  .pill.amber{background:var(--amber-soft);color:var(--amber);border-color:var(--amber-line)}
+  .state{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--text-3)}
+  .state i{width:8px;height:8px;border-radius:50%;background:#56628a}
+  .state.ok{color:var(--nv-ink)} .state.ok i{background:var(--nv);box-shadow:0 0 10px rgba(118,185,0,.7)}
+  .state.warn{color:var(--amber)} .state.warn i{background:var(--amber)}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;border:0;border-radius:12px;padding:12px 22px;
+    font:700 15px/1.2 var(--font);cursor:pointer;text-decoration:none;background:var(--nv);color:#071000;
+    box-shadow:0 10px 30px -12px rgba(118,185,0,.75),inset 0 1px 0 rgba(255,255,255,.28);transition:filter .15s,transform .15s,background .15s}
+  .btn:hover:not(:disabled){filter:brightness(1.08)}
+  .btn:active:not(:disabled){transform:translateY(1px)}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  .btn.ghost{background:rgba(255,255,255,.04);color:var(--text);border:1px solid var(--line-2);box-shadow:none}
+  .btn.ghost:hover:not(:disabled){background:rgba(255,255,255,.09);filter:none}
   .btn.small{padding:8px 14px;font-size:13.5px;border-radius:10px}
-  .btn.danger{background:#fff;color:var(--red);border:1px solid #f3c2c2;box-shadow:none}
-  input[type=text]{width:100%;font-size:17px;padding:14px 16px;border:1.5px solid var(--line-2);border-radius:12px;
-    font-family:inherit;color:var(--ink);background:#fff}
-  input[type=text]:focus{outline:none;border-color:var(--nv);box-shadow:0 0 0 4px rgba(118,185,0,.15)}
-  select{font:inherit;font-size:14px;padding:7px 10px;border:1px solid var(--line-2);border-radius:9px;background:#fff}
+  .btn.big{padding:16px 30px;font-size:17px;border-radius:14px}
+  .btn.danger{background:var(--red-soft);color:var(--red);border:1px solid var(--red-line);box-shadow:none}
+  .linkbtn{background:none;border:0;color:#fff;font-weight:600;font-size:14px;display:inline-flex;align-items:center;gap:8px;cursor:pointer;padding:0}
+  .linkbtn .i{transition:transform .15s;color:var(--nv)}
+  .linkbtn:hover .i{transform:translateX(3px)}
+  input[type=text]{width:100%;font:16.5px var(--font);padding:14px 16px;border:1px solid var(--line-2);border-radius:12px;
+    color:var(--text);background:rgba(3,8,24,.55)}
+  input[type=text]::placeholder{color:var(--text-4)}
+  input[type=text]:focus{outline:none;border-color:var(--nv);box-shadow:0 0 0 4px rgba(118,185,0,.16)}
+  select{font:14px var(--font);padding:7px 30px 7px 11px;border:1px solid var(--line-2);border-radius:9px;color:var(--text);cursor:pointer;
+    -webkit-appearance:none;appearance:none;background:rgba(3,8,24,.6) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238b98be' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 9px center/13px}
+  select option{background:#0a1638;color:var(--text)}
   .askrow{display:flex;gap:10px}
   .askrow input{flex:1;min-width:0}
   .qchips{display:flex;flex-wrap:wrap;gap:8px}
-  .qchip{font-size:14px;padding:8px 13px;border-radius:999px;border:1px solid var(--line-2);background:#fff;color:var(--ink-2);
-    cursor:pointer;text-align:left;line-height:1.35}
-  .qchip:hover{border-color:var(--nv);background:var(--nv-soft);color:var(--nv-d)}
-  .qchip.hero{border-color:#f0c894;background:var(--amber-soft);color:var(--amber)}
-  .group h3{font-size:12px;text-transform:uppercase;letter-spacing:.09em;color:var(--ink-3);margin:14px 0 8px;font-weight:680}
+  .qchip{font:14px/1.35 var(--font);padding:8px 14px;border-radius:999px;border:1px solid var(--line-2);background:rgba(255,255,255,.03);
+    color:var(--text-2);cursor:pointer;text-align:left;transition:all .15s}
+  .qchip:hover{border-color:var(--nv-line);background:var(--nv-soft);color:#dcf6b3}
+  .qchip.hero{border-color:var(--amber-line);background:var(--amber-soft);color:#ffdba6}
+  .group h3{font:600 11.5px/1.3 var(--display);letter-spacing:.16em;text-transform:uppercase;color:var(--text-3);margin:18px 0 10px}
   .group h3:first-child{margin-top:0}
-  .note{background:var(--amber-soft);border:1px solid #f2d6a8;border-left:4px solid #e0a95f;border-radius:11px;
-    padding:12px 15px;font-size:14.5px;color:#6b4408;line-height:1.55}
-  .note.green{background:var(--nv-soft);border-color:var(--nv-line);border-left-color:var(--nv);color:#34510a}
-  .err{background:var(--red-soft);border:1px solid #f3c2c2;color:var(--red);border-radius:11px;padding:11px 14px;font-size:14.5px}
-  .spin{width:15px;height:15px;border:2.5px solid #dfeec6;border-top-color:var(--nv);border-radius:50%;
+  .note{display:flex;gap:10px;align-items:flex-start;background:var(--amber-soft);border:1px solid var(--amber-line);border-radius:12px;
+    padding:12px 14px;font-size:14.5px;color:#ffe1b3;line-height:1.55}
+  .note .i{margin-top:3px;color:var(--amber)}
+  .note.green{background:var(--nv-soft);border-color:var(--nv-line);color:#dcf6b3} .note.green .i{color:var(--nv)}
+  .note.blue{background:var(--blue-soft);border-color:var(--blue-line);color:#d4e4ff} .note.blue .i{color:var(--blue-2)}
+  .err{background:var(--red-soft);border:1px solid var(--red-line);color:#ffc9c9;border-radius:12px;padding:11px 14px;font-size:14.5px}
+  .spin{width:15px;height:15px;border:2px solid rgba(118,185,0,.25);border-top-color:var(--nv);border-radius:50%;
     animation:sp .7s linear infinite;flex:0 0 auto;display:inline-block}
   @keyframes sp{to{transform:rotate(360deg)}}
-  details.sect{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:0 22px;box-shadow:var(--shadow);margin-bottom:18px}
-  details.sect>summary{cursor:pointer;padding:16px 0;font-weight:640;font-size:15px;list-style:none;display:flex;align-items:center;gap:10px}
+  details.sect{padding:0 24px;margin-bottom:18px}
+  details.sect>summary{cursor:pointer;padding:18px 0;font-weight:600;font-size:15px;list-style:none;display:flex;align-items:center;gap:10px;color:var(--text)}
   details.sect>summary::-webkit-details-marker{display:none}
-  details.sect>summary::before{content:"›";font-size:20px;color:var(--ink-3);transition:transform .18s;display:inline-block;line-height:1}
-  details.sect[open]>summary::before{transform:rotate(90deg)}
-  details.sect .body{padding:0 0 18px;font-size:14.5px;color:var(--ink-2)}
-  .count{font-size:12.5px;color:var(--ink-3);font-weight:500;margin-left:auto}
+  details>summary .chev{color:var(--text-3);transition:transform .18s}
+  details[open]>summary .chev{transform:rotate(90deg)}
+  details.sect .body{padding:0 0 22px;font-size:14.5px;color:var(--text-2)}
+  details.mini>summary{cursor:pointer;list-style:none;display:inline-flex;align-items:center;gap:6px;color:var(--text-3);font-size:13.5px}
+  details.mini>summary::-webkit-details-marker{display:none}
+  details.mini>summary:hover{color:var(--text)}
+  .count{font-size:12.5px;color:var(--text-3);font-weight:500;margin-left:auto;font-family:var(--display);letter-spacing:.04em}
+  code{font-family:var(--mono);font-size:.92em}
 
-  /* ---------------- flow strip (mirrors the slide) ---------------- */
-  .flow{display:flex;align-items:stretch;gap:0;margin:6px 0 20px}
-  .fnode{flex:1;min-width:0;background:#fff;border:2px solid var(--line-2);border-radius:18px;padding:14px 12px;text-align:center;
+  /* ---------------- flow strip (mirrors the slides) ---------------- */
+  .flow{display:flex;align-items:stretch;margin:28px 0 22px}
+  .fnode{flex:1;min-width:0;border:1px solid var(--line-2);border-radius:16px;padding:14px 16px 15px;background:rgba(255,255,255,.03);
     transition:all .25s ease;position:relative}
-  .fnode .ft{font-size:13px;font-weight:700;color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
-  .fnode .fd{font-size:15.5px;font-weight:620;color:var(--ink-2);line-height:1.3}
-  .fnode.active{border-color:var(--nv);background:var(--nv-soft);box-shadow:0 0 0 5px rgba(118,185,0,.15);transform:translateY(-2px)}
-  .fnode.active .ft{color:var(--nv-d)}
+  .fnode .ft{font:600 11.5px/1.3 var(--display);letter-spacing:.14em;text-transform:uppercase;color:var(--text-3);margin-bottom:6px;
+    display:flex;align-items:center;gap:6px}
+  .fnode .fd{font-size:15px;font-weight:600;color:var(--text);line-height:1.3}
+  .fnode.active{border-color:var(--nv);background:var(--nv-soft);transform:translateY(-2px);
+    box-shadow:0 0 0 4px rgba(118,185,0,.1),0 0 30px -6px rgba(118,185,0,.55)}
+  .fnode.active .ft{color:var(--nv-ink)}
   .fnode.done{border-color:var(--nv-line)}
-  .fnode.done .ft::after{content:" ✓";color:var(--nv-d)}
-  .flink{flex:0 0 34px;display:flex;align-items:center;justify-content:center;color:var(--line-2);font-size:20px}
+  .fnode.done .ft::after{content:"";width:12px;height:12px;background:var(--nv);-webkit-mask:var(--check) center/contain no-repeat;mask:var(--check) center/contain no-repeat}
+  .flink{flex:0 0 38px;display:flex;align-items:center;justify-content:center;color:var(--line-3)}
   .flink.live{color:var(--nv)}
-  .f-user.active{border-color:#16a34a;background:#ecfdf3}
-  .f-nc.active{border-color:#2563eb;background:#eef3ff;box-shadow:0 0 0 5px rgba(37,99,235,.14)}
-  .f-py.active{border-color:#7c3aed;background:#f5f0ff;box-shadow:0 0 0 5px rgba(124,58,237,.13)}
-  .f-out.active{border-color:#db2777;background:#fdf0f7;box-shadow:0 0 0 5px rgba(219,39,119,.12)}
+  .f-nc.active{border-color:var(--blue);background:var(--blue-soft);box-shadow:0 0 0 4px rgba(92,157,255,.1),0 0 30px -6px rgba(92,157,255,.6)}
+  .f-nc.active .ft{color:var(--blue-2)}
+  .f-py.active{border-color:var(--violet);background:var(--violet-soft);box-shadow:0 0 0 4px rgba(188,166,255,.1),0 0 30px -6px rgba(188,166,255,.55)}
+  .f-py.active .ft{color:var(--violet)}
+  .f-out.active{border-color:var(--pink);background:var(--pink-soft);box-shadow:0 0 0 4px rgba(255,149,205,.1),0 0 30px -6px rgba(255,149,205,.5)}
+  .f-out.active .ft{color:var(--pink)}
 
   /* ---------------- home ---------------- */
-  .hero{padding:10px 0 8px}
-  .labcard{display:flex;flex-direction:column;gap:10px}
-  .labcard .num{width:40px;height:40px;border-radius:12px;background:#111827;color:var(--nv);display:grid;place-items:center;
-    font-weight:800;font-size:19px}
-  .labcard h2{margin:0;font-size:18px}
-  .labcard p{margin:0;color:var(--ink-2);font-size:14.5px;flex:1}
-  .labcard .status{font-size:13px}
-  .arch{display:grid;grid-template-columns:1fr 1.25fr 1fr;gap:14px;align-items:stretch}
-  .abox{border:1.5px dashed var(--line-2);border-radius:14px;padding:14px;background:#fbfcfd}
-  .abox b{display:block;margin-bottom:6px}
-  .abox .muted{font-size:13px}
+  .hero{display:grid;grid-template-columns:1.2fr .95fr;gap:44px;align-items:center;padding:56px 0 40px}
+  .display{font:800 clamp(52px,7vw,96px)/.92 var(--display);font-stretch:108%;letter-spacing:-.005em;text-transform:uppercase;margin:0;color:#fff;
+    text-shadow:0 0 60px rgba(80,140,255,.35)}
+  .tagline{font:600 clamp(20px,2.3vw,30px)/1.2 var(--display);color:var(--blue-2);margin:16px 0 18px}
+  .hero .lead{font-size:16px;max-width:560px}
+  .when{display:flex;flex-direction:column;gap:9px;margin:24px 0 28px;color:var(--text-2);font-size:14.5px}
+  .when div{display:flex;gap:11px;align-items:flex-start}
+  .when .i{color:var(--nv);margin-top:3px}
+  .when b{font:700 15px var(--display);letter-spacing:.08em;color:#fff;text-transform:uppercase}
+  .cta{display:flex;gap:12px;flex-wrap:wrap}
+  .agenda{padding:26px 28px 20px}
+  .agenda .ah{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px}
+  .agenda .ah b{font:700 16px var(--display);letter-spacing:.24em;color:#fff}
+  .agenda .ah span{font:600 12px var(--display);letter-spacing:.12em;color:var(--text-3);text-transform:uppercase}
+  .agenda ol{list-style:none;margin:0;padding:0}
+  .agenda ol>li{display:grid;grid-template-columns:112px 1fr;gap:14px;padding:13px 0;border-top:1px solid var(--line)}
+  .agenda ol>li:first-child{border-top:0}
+  .agenda .tm{font:600 14px/1.45 var(--display);color:var(--blue-2);letter-spacing:.03em;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .agenda .tt{font-weight:600;color:#fff;font-size:14.5px;line-height:1.45;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+  .agenda .ts{font-size:13.5px;color:var(--text-2);margin-top:2px}
+  .agenda .sub{margin:6px 0 0;padding-left:17px;font-size:13px;color:var(--text-3);line-height:1.6}
+  .agenda .aglink{margin-top:8px;font-size:13px;color:var(--nv-ink)}
+  .agenda li.now .tm{color:var(--nv)}
+  .agenda .livetag{font:700 10.5px/1 var(--display);letter-spacing:.14em;text-transform:uppercase;color:#071000;background:var(--nv);
+    padding:4px 7px;border-radius:5px;box-shadow:0 0 14px rgba(118,185,0,.6)}
+  .labs{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:4px 0 18px}
+  .labcard{position:relative;display:flex;flex-direction:column;gap:9px;padding:22px 22px 18px;cursor:pointer;transition:border-color .2s,transform .2s}
+  .labcard:hover{border-color:var(--line-3);transform:translateY(-3px)}
+  .labcard .lnum{font:800 48px/1 var(--display);color:transparent;-webkit-text-stroke:1px rgba(169,201,255,.6);letter-spacing:.02em;margin-bottom:6px}
+  .labcard:hover .lnum{-webkit-text-stroke-color:var(--nv)}
+  .labcard .ltag{font:600 11.5px/1.3 var(--display);letter-spacing:.16em;text-transform:uppercase;color:var(--text-3)}
+  .labcard h3{font-size:19px;line-height:1.25}
+  .labcard p{margin:0;color:var(--text-2);font-size:14px;line-height:1.55;flex:1}
+  .labcard .lfoot{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-top:13px;border-top:1px solid var(--line);margin-top:6px}
+  .labcard.challenge{border-color:var(--nv-line);background:linear-gradient(180deg,rgba(118,185,0,.11),rgba(118,185,0,.02))}
+  .labcard.challenge .lnum{-webkit-text-stroke-color:rgba(147,214,0,.75)}
+  .labcard.challenge .ltag{color:var(--nv-ink)}
+  .arch{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .abox{border:1px solid var(--line);border-radius:14px;padding:16px;background:rgba(255,255,255,.025);display:flex;gap:13px}
+  .abox .ai{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;background:var(--blue-soft);color:var(--blue-2);
+    border:1px solid var(--blue-line);flex:0 0 auto}
+  .abox .ai .i{width:19px;height:19px}
+  .abox b{display:block;margin-bottom:4px;color:#fff;font-weight:600;font-size:14.5px}
+  .abox .muted{font-size:13px;line-height:1.55}
 
   /* ---------------- lab 1 ---------------- */
   .examples{display:flex;flex-direction:column;gap:9px}
-  .ex{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:#fbfcfd}
-  .ex .q{font-weight:640;font-size:14px;color:var(--ink-2);margin-bottom:4px}
-  .ex .a{font-size:13px;color:var(--ink-3);white-space:pre-wrap;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
-  .params{display:flex;gap:14px;flex-wrap:wrap;margin:12px 0 16px}
-  .params label{font-size:13px;color:var(--ink-3);display:flex;flex-direction:column;gap:4px}
-  .progress{height:10px;background:var(--line);border-radius:99px;overflow:hidden;margin:10px 0 6px}
-  .progress i{display:block;height:100%;width:0;background:linear-gradient(90deg,#9ad32a,var(--nv));transition:width .4s ease}
-  .stageline{display:flex;align-items:center;gap:9px;font-weight:620;color:var(--ink-2);min-height:24px}
-  .losswrap{margin-top:12px;border:1px solid var(--line);border-radius:12px;padding:10px 12px 6px;background:#fbfcfd}
+  .ex{border:1px solid var(--line);border-radius:12px;padding:11px 13px;background:rgba(255,255,255,.025)}
+  .ex .q{font-weight:600;font-size:14px;color:var(--text);margin-bottom:4px}
+  .ex .a{font-size:13px;color:var(--text-3);white-space:pre-wrap;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  .params{display:flex;gap:14px;flex-wrap:wrap;margin:14px 0 18px}
+  .params label{font-size:12.5px;color:var(--text-3);display:flex;flex-direction:column;gap:6px}
+  .progress{height:8px;background:rgba(255,255,255,.07);border-radius:99px;overflow:hidden;margin:12px 0 8px}
+  .progress i{display:block;height:100%;width:0;background:linear-gradient(90deg,#4f8a00,var(--nv-2));box-shadow:0 0 14px rgba(118,185,0,.7);transition:width .4s ease}
+  .stageline{display:flex;align-items:center;gap:9px;font-weight:600;color:var(--text);min-height:24px}
+  .stageline .i{color:var(--nv)} .stageline .i.bad{color:var(--red)}
+  .losswrap{margin-top:14px;border:1px solid var(--line);border-radius:14px;padding:12px 14px 8px;background:rgba(3,8,24,.45)}
   .losswrap svg{width:100%;height:190px;display:block}
-  .sample{margin-top:12px;background:var(--nv-soft);border:1px solid var(--nv-line);border-radius:12px;padding:10px 12px;font-size:14.5px;white-space:pre-wrap}
-  pre.log{background:#0f172a;color:#cbd5e1;border-radius:10px;padding:10px 12px;font-size:12px;max-height:220px;overflow:auto;white-space:pre-wrap;margin:8px 0 0}
-  .cmp{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:14px}
-  .side{border:1.5px solid var(--line);border-radius:14px;padding:14px 16px;min-height:170px;background:#fff}
-  .side.after{border-color:var(--nv-line);background:linear-gradient(180deg,#fbfdf6,#fff)}
-  .side .sh{display:flex;align-items:center;gap:8px;margin-bottom:8px}
-  .side .sh b{font-size:15px}
-  .side .txt{font-size:15.5px;line-height:1.6;color:var(--ink)}
+  .sample{margin-top:12px;background:var(--nv-soft);border:1px solid var(--nv-line);border-radius:12px;padding:11px 13px;font-size:14.5px;white-space:pre-wrap;color:#e3f7c4}
+  pre.log{background:rgba(2,6,18,.75);color:#aab6d6;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font:12px/1.5 var(--mono);
+    max-height:220px;overflow:auto;white-space:pre-wrap;margin:8px 0 0}
+  .cmp{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+  .side{border:1px solid var(--line-2);border-radius:16px;padding:16px 18px;min-height:170px;background:rgba(255,255,255,.025)}
+  .side.after{border-color:var(--nv-line);background:linear-gradient(180deg,rgba(118,185,0,.08),rgba(255,255,255,.015))}
+  .side .sh{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .side .sh b{font:500 13.5px var(--mono);color:var(--text-2)}
+  .side .txt{font-size:15.5px;line-height:1.65;color:var(--text)}
   .side .txt p{margin:0 0 8px} .side .txt ul{margin:0 0 8px;padding-left:20px}
-  .side .meta{font-size:12.5px;color:var(--ink-3);margin-top:8px}
+  .side .meta{font-size:12.5px;color:var(--text-3);margin-top:8px;border:0;padding:0}
 
   /* ---------------- lab 2 ---------------- */
-  .pstep{display:flex;align-items:flex-start;gap:12px;padding:9px 0;position:relative}
-  .pdot{width:26px;height:26px;border-radius:50%;flex:0 0 auto;display:grid;place-items:center;background:#fff;
-    border:2px solid var(--line-2);color:var(--ink-3);font-size:12px;font-weight:700}
-  .pstep.active .pdot{border-color:var(--nv);background:var(--nv-soft);color:var(--nv-d)}
-  .pstep.done .pdot{border-color:var(--nv);background:var(--nv);color:#0b1200}
-  .ptitle{font-size:15px;font-weight:620;color:var(--ink-2)}
-  .pstep.pending .ptitle{color:var(--ink-3)}
-  .pdetail{font-size:13px;color:var(--ink-3);margin-top:2px}
-  .atext{font-size:18px;line-height:1.62;white-space:pre-wrap}
-  .qecho{font-size:14px;color:var(--ink-3);margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--line)}
-  .meta{display:flex;gap:16px;flex-wrap:wrap;margin-top:14px;padding-top:12px;border-top:1px solid var(--line);font-size:13px;color:var(--ink-3)}
+  .pstep{display:flex;align-items:flex-start;gap:12px;padding:9px 0}
+  .pdot{width:26px;height:26px;border-radius:50%;flex:0 0 auto;display:grid;place-items:center;border:1.5px solid var(--line-2);
+    color:var(--text-3);font:600 12px var(--display)}
+  .pdot .i{width:15px;height:15px;stroke-width:2.4}
+  .pstep.active .pdot{border-color:var(--nv);background:var(--nv-soft)}
+  .pstep.done .pdot{border-color:var(--nv);background:var(--nv);color:#071000}
+  .ptitle{font-size:15px;font-weight:600;color:var(--text)}
+  .pstep.pending .ptitle{color:var(--text-3)}
+  .pdetail{font-size:13px;color:var(--text-3);margin-top:2px}
+  .atext{font-size:17.5px;line-height:1.65;white-space:pre-wrap;color:var(--text)}
+  .atext.md{white-space:normal}
+  .qecho{font-size:14px;color:var(--text-3);margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--line)}
+  .qecho b{color:var(--text-2)}
+  .meta{display:flex;gap:18px;flex-wrap:wrap;margin-top:16px;padding-top:12px;border-top:1px solid var(--line);font-size:13px;color:var(--text-3)}
   .src{border-bottom:1px solid var(--line)}
   .src:last-child{border-bottom:0}
   .srchead{display:flex;align-items:center;gap:12px;padding:12px 0;cursor:pointer}
-  .rank{width:23px;height:23px;border-radius:7px;background:var(--nv-soft);color:var(--nv-d);display:grid;place-items:center;font-size:12px;font-weight:750;flex:0 0 auto}
-  .srctitle{font-size:15px;font-weight:600;color:var(--ink-2);flex:1}
-  .sbar{width:96px;height:6px;border-radius:99px;background:var(--line);overflow:hidden;flex:0 0 auto}
-  .sbar i{display:block;height:100%;background:linear-gradient(90deg,#9ad32a,var(--nv))}
-  .spct{font-size:12.5px;color:var(--ink-3);width:40px;text-align:right;flex:0 0 auto}
-  .passage{display:none;font-size:14.5px;line-height:1.65;color:var(--ink-2);background:#f8fafc;border:1px solid var(--line);
-    border-radius:11px;padding:12px 14px;margin:0 0 12px;white-space:pre-wrap;max-height:320px;overflow:auto}
+  .rank{width:24px;height:24px;border-radius:7px;background:var(--nv-soft);color:var(--nv-ink);display:grid;place-items:center;
+    font:700 12px var(--display);flex:0 0 auto;border:1px solid var(--nv-line)}
+  .srctitle{font-size:15px;font-weight:600;color:var(--text);flex:1}
+  .sbar{width:96px;height:5px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden;flex:0 0 auto}
+  .sbar i{display:block;height:100%;background:linear-gradient(90deg,#4f8a00,var(--nv-2))}
+  .spct{font:500 12.5px var(--display);color:var(--text-3);width:40px;text-align:right;flex:0 0 auto}
+  .passage{display:none;font-size:14.5px;line-height:1.65;color:var(--text-2);background:rgba(3,8,24,.5);border:1px solid var(--line);
+    border-radius:12px;padding:12px 14px;margin:0 0 12px;white-space:pre-wrap;max-height:320px;overflow:auto}
   .src.open .passage{display:block}
   .docs{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
-  .doc{border:1px solid var(--line);border-radius:12px;padding:12px 14px;cursor:pointer;background:#fff}
-  .doc:hover{border-color:var(--nv)}
-  .doc .dt{font-size:14px;font-weight:640;color:var(--ink-2);margin-bottom:4px}
-  .doc .dp{font-size:12.5px;color:var(--ink-3);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-  .chain{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:12px 0 14px;font-size:13px}
-  .cstep{background:var(--nv-soft);color:var(--nv-d);padding:6px 11px;border-radius:9px;font-weight:620;border:1px solid var(--nv-line)}
+  .doc{border:1px solid var(--line);border-radius:12px;padding:12px 14px;cursor:pointer;background:rgba(255,255,255,.025);transition:border-color .15s}
+  .doc:hover{border-color:var(--nv-line)}
+  .doc .dt{font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px}
+  .doc .dp{font-size:12.5px;color:var(--text-3);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .chain{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:12px 0 14px;font-size:13px;color:var(--text-4)}
+  .cstep{background:var(--nv-soft);color:#dcf6b3;padding:6px 11px;border-radius:9px;font-weight:600;border:1px solid var(--nv-line)}
 
   /* ---------------- lab 3 ---------------- */
   .dsrow{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-  .dsname{font-weight:700;font-size:16px}
-  .tablewrap{overflow:auto;border:1px solid var(--line);border-radius:11px;margin-top:10px;max-height:340px}
+  .dsname{font-weight:600;font-size:16px;color:#fff}
+  .tablewrap{overflow:auto;border:1px solid var(--line);border-radius:12px;margin-top:10px;max-height:340px}
   table.data{border-collapse:collapse;width:100%;font-size:13px}
-  table.data th{position:sticky;top:0;background:#f1f5f9;text-align:left;padding:7px 10px;font-weight:650;color:var(--ink-2);white-space:nowrap}
-  table.data td{padding:6px 10px;border-top:1px solid var(--line);white-space:nowrap}
-  table.data tr:nth-child(even) td{background:#fbfcfd}
-  .routebar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px}
-  .trace{display:flex;flex-direction:column;gap:0}
+  table.data th{position:sticky;top:0;background:#0d1a44;text-align:left;padding:8px 11px;font-weight:600;color:var(--text-2);white-space:nowrap}
+  table.data td{padding:7px 11px;border-top:1px solid var(--line);white-space:nowrap;color:var(--text-2)}
+  table.data tr:nth-child(even) td{background:rgba(255,255,255,.02)}
+  .routebar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:14px}
+  .trace{display:flex;flex-direction:column}
   .tstep{display:flex;gap:12px;padding:10px 0;position:relative}
-  .tstep:not(:last-child)::after{content:"";position:absolute;left:15px;top:44px;bottom:-4px;width:2px;background:var(--line)}
-  .ticon{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;font-size:16px;flex:0 0 auto;border:1.5px solid var(--line-2);background:#fff;z-index:1}
-  .tstep.k-llm .ticon{border-color:#bfd0fb;background:#eef3ff}
-  .tstep.k-call .ticon,.tstep.k-res .ticon{border-color:#dccbfb;background:#f5f0ff}
-  .tstep.k-ans .ticon{border-color:#f5c6dd;background:#fdf0f7}
-  .tstep.k-err .ticon{border-color:#f3c2c2;background:var(--red-soft)}
-  .tbody{flex:1;min-width:0}
-  .ttitle{font-weight:650;color:var(--ink-2);font-size:15px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-  .tsub{font-size:13px;color:var(--ink-3);margin-top:2px}
+  .tstep:not(:last-child)::after{content:"";position:absolute;left:16px;top:47px;bottom:-4px;width:1px;background:var(--line-2)}
+  .ticon{width:33px;height:33px;border-radius:10px;display:grid;place-items:center;flex:0 0 auto;border:1px solid var(--line-2);
+    background:rgba(3,8,24,.7);color:var(--text-2);z-index:1}
+  .ticon .i{width:17px;height:17px}
+  .tstep.k-llm .ticon{border-color:var(--blue-line);color:var(--blue-2);background:#0b1a42}
+  .tstep.k-call .ticon{border-color:var(--violet-line);color:var(--violet);background:#17163f}
+  .tstep.k-res .ticon{border-color:var(--nv-line);color:var(--nv-ink);background:#0f2125}
+  .tstep.k-ans .ticon{border-color:var(--pink-line);color:var(--pink);background:#211538}
+  .tstep.k-err .ticon{border-color:var(--red-line);color:var(--red);background:#22142c}
+  .tbody{flex:1;min-width:0;padding-top:5px}
+  .ttitle{font-weight:600;color:var(--text);font-size:15px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .ttitle code{font-size:12.5px;color:var(--violet)}
+  .tsub{font-size:13px;color:var(--text-3);margin-top:2px}
   .ttitle:empty{display:none}
-  .mdt{border-collapse:collapse;margin:6px 0 12px;font-size:14px} .mdt th,.mdt td{border:1px solid var(--line);padding:5px 9px;text-align:left} .mdt th{background:#f4f6f9;font-weight:650}
-  .thought{font-size:14px;color:var(--ink-2)} .thought p{margin:0 0 4px} .thought ul{margin:2px 0 6px;padding-left:18px}
+  .mdt{border-collapse:collapse;margin:6px 0 12px;font-size:14px}
+  .mdt th,.mdt td{border:1px solid var(--line-2);padding:6px 10px;text-align:left}
+  .mdt th{background:rgba(255,255,255,.05);font-weight:600}
+  .thought{font-size:14px;color:var(--text-2)} .thought p{margin:0 0 4px} .thought ul{margin:2px 0 6px;padding-left:18px}
   .args{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
-  .arg{font:12.5px/1.4 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:#f5f0ff;border:1px solid #e4d8fd;color:#5b21b6;
+  .arg{font:12.5px/1.4 var(--mono);background:var(--violet-soft);border:1px solid var(--violet-line);color:#ddd2ff;
     padding:3px 8px;border-radius:7px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .hl{margin:6px 0 0;padding-left:18px;font-size:14px;color:var(--ink-2)}
+  .hl{margin:6px 0 0;padding-left:18px;font-size:14px;color:var(--text-2)}
   .hl li{margin:2px 0}
-  .thumb{margin-top:8px;max-width:520px;width:100%;border-radius:10px;border:1px solid var(--line);cursor:zoom-in;display:block}
-  .filebtn{display:inline-flex;align-items:center;gap:8px;margin-top:8px;text-decoration:none;font-weight:650;font-size:14px;
-    padding:8px 13px;border-radius:10px;background:#ecfdf3;border:1px solid #b7ebc9;color:#166534}
-  .filebtn:hover{filter:brightness(.98)}
+  .thumb{margin-top:8px;max-width:520px;width:100%;border-radius:12px;border:1px solid var(--line-2);cursor:zoom-in;display:block;background:#fff}
+  .filebtn{display:inline-flex;align-items:center;gap:8px;margin-top:8px;text-decoration:none;font-weight:600;font-size:14px;
+    padding:9px 14px;border-radius:10px;background:var(--nv-soft);border:1px solid var(--nv-line);color:#dcf6b3}
+  .filebtn:hover{background:rgba(118,185,0,.2)}
   .md p{margin:0 0 10px}
   .md ul{margin:4px 0 10px;padding-left:22px}
   .md li{margin:3px 0}
-  .answer-grid{display:grid;grid-template-columns:1.05fr 1fr;gap:20px;align-items:start}
-  .bigchart{width:100%;border-radius:12px;border:1px solid var(--line);cursor:zoom-in}
+  .md strong{color:#fff}
+  .answer-grid{display:grid;grid-template-columns:1.05fr 1fr;gap:22px;align-items:start}
+  .bigchart{width:100%;border-radius:14px;border:1px solid var(--line-2);cursor:zoom-in;background:#fff}
 
-  /* ---------------- modal ---------------- */
-  #modal{position:fixed;inset:0;background:rgba(15,23,42,.6);display:none;align-items:center;justify-content:center;padding:26px;z-index:60}
+  /* ---------------- OpenClaw challenge ---------------- */
+  .oc-hero{display:grid;grid-template-columns:1.25fr .75fr;margin:28px 0 30px;overflow:hidden}
+  .oc-main{padding:30px 32px}
+  .oc-side{padding:28px 28px;border-left:1px solid var(--line);background:rgba(3,8,24,.35)}
+  .oc-status{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+  .oc-status .model{font:12.5px var(--mono);color:var(--text-3)}
+  .oc-actions{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+  .oc-addr{font-size:13.5px;color:var(--text-3);max-width:300px;line-height:1.5}
+  .oc-addr code{color:var(--blue-2);background:rgba(92,157,255,.1);padding:2px 7px;border-radius:6px;border:1px solid rgba(92,157,255,.25);white-space:nowrap}
+  .steps{list-style:none;margin:30px 0 0;padding:0;display:grid;grid-template-columns:repeat(4,1fr);gap:16px;counter-reset:s}
+  .steps li{border-top:1px solid var(--line-2);padding-top:13px;counter-increment:s}
+  .steps li::before{content:counter(s,decimal-leading-zero);font:700 13px var(--display);color:var(--nv);letter-spacing:.08em;display:block;margin-bottom:6px}
+  .steps b{display:block;color:#fff;font-size:14.5px;margin-bottom:4px}
+  .steps span{font-size:13px;color:var(--text-3);line-height:1.5;display:block}
+  .caps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:14px}
+  .caps li{display:flex;gap:12px;align-items:flex-start}
+  .caps .ci{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;background:var(--blue-soft);color:var(--blue-2);
+    flex:0 0 auto;border:1px solid var(--blue-line)}
+  .caps .ci .i{width:16px;height:16px}
+  .caps b{display:block;color:#fff;font-size:14px;font-weight:600;line-height:1.35}
+  .caps span{display:block;font-size:12.5px;color:var(--text-3);line-height:1.45;margin-top:1px}
+  .caps code{font-size:11.5px;color:var(--text-2)}
+  .ideas{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:18px}
+  .idea{padding:22px 24px;display:flex;flex-direction:column;gap:12px}
+  .idea .ih{display:flex;align-items:center;gap:13px}
+  .idea .ii{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;background:var(--nv-soft);color:var(--nv-ink);
+    border:1px solid var(--nv-line);flex:0 0 auto}
+  .idea .ii .i{width:19px;height:19px}
+  .idea h3{font-size:18px;line-height:1.25}
+  .idea .uses{font:12px var(--mono);color:var(--text-3);margin-top:2px}
+  .idea>p{margin:0;font-size:14px;color:var(--text-2)}
+  .prompt{border:1px solid var(--line-2);border-radius:12px;background:rgba(3,8,24,.55);padding:11px 14px 13px}
+  .prompt .pl{font:600 11px/1 var(--display);letter-spacing:.16em;text-transform:uppercase;color:var(--text-4);margin-bottom:8px;
+    display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .prompt .pt{font-size:14px;color:var(--text);line-height:1.55}
+  .prompt.then{background:transparent;border-style:dashed}
+  .copy{border:1px solid var(--line-2);background:rgba(255,255,255,.04);color:var(--text-2);border-radius:8px;font:600 12px/1 var(--font);
+    padding:6px 9px;display:inline-flex;align-items:center;gap:6px;cursor:pointer;letter-spacing:0;text-transform:none}
+  .copy:hover{color:#fff;border-color:var(--line-3)}
+  .copy.done{color:var(--nv-ink);border-color:var(--nv-line)}
+  .checks{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:11px}
+  .checks li{display:flex;gap:11px;font-size:14.5px;color:var(--text-2);line-height:1.5}
+  .checks li .i{color:var(--nv);margin-top:3px}
+  .cmd{display:flex;align-items:center;gap:10px;justify-content:space-between;font:13.5px var(--mono);color:var(--text);
+    background:rgba(2,6,18,.7);border:1px solid var(--line);border-radius:10px;padding:9px 10px 9px 13px;margin:8px 0;overflow-x:auto}
+  .cmd span{white-space:nowrap}
+
+  /* ---------------- footer ---------------- */
+  footer.site{border-top:1px solid var(--line);margin-top:30px;padding:34px 0 44px;background:rgba(3,7,20,.55)}
+  .fgrid{display:grid;grid-template-columns:1fr 1.5fr;gap:48px;align-items:start}
+  .fcredit .lockup .gb{height:12px} .fcredit .lockup .nv{height:20px}
+  .fcredit .ev{margin-top:14px;font:700 13px var(--display);letter-spacing:.16em;color:#fff}
+  .fcredit .ev span{display:block;font:400 13px var(--font);letter-spacing:0;color:var(--text-3);margin-top:2px}
+  .by{margin-top:20px;font-size:13.5px;color:var(--text-3);display:flex;flex-direction:column;gap:7px}
+  .by a{color:#fff;text-decoration:none;font-weight:600;display:inline-flex;align-items:center;gap:8px}
+  .by a:hover{color:var(--nv-2)}
+  .by .gh{width:17px;height:17px}
+  .legal{font-size:12px;color:var(--text-4);line-height:1.7}
+  .legal p{margin:0 0 10px}
+  .legal b{color:var(--text-3);font-weight:600}
+
+  /* ---------------- modal & toast ---------------- */
+  #modal{position:fixed;inset:0;background:rgba(2,6,18,.72);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+    display:none;align-items:center;justify-content:center;padding:26px;z-index:60}
   #modal.on{display:flex}
-  .sheet{background:#fff;border-radius:16px;max-width:960px;width:100%;max-height:88vh;display:flex;flex-direction:column;overflow:hidden}
-  .sheet .shead{padding:16px 22px;border-bottom:1px solid var(--line);display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
-  .sheet h2{margin:0}
-  .sheet .content{padding:18px 22px;overflow:auto;font-size:14.5px;line-height:1.7;white-space:pre-wrap;color:var(--ink-2)}
-  .sheet .content img{max-width:100%}
-  .x{border:0;background:var(--bg);width:32px;height:32px;border-radius:9px;cursor:pointer;font-size:17px;flex:0 0 auto}
-  footer{text-align:center;font-size:13px;color:var(--ink-3);margin-top:30px}
+  .sheet{background:#0a1638;border:1px solid var(--line-2);border-radius:18px;max-width:960px;width:100%;max-height:88vh;display:flex;
+    flex-direction:column;overflow:hidden;box-shadow:0 40px 120px -40px rgba(0,0,0,.95)}
+  .sheet .shead{padding:18px 22px;border-bottom:1px solid var(--line);display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
+  .sheet h2{font-size:19px}
+  .sheet .content{padding:18px 22px;overflow:auto;font-size:14.5px;line-height:1.7;white-space:pre-wrap;color:var(--text-2)}
+  .sheet .content img{max-width:100%;border-radius:10px;background:#fff}
+  .x{border:1px solid var(--line-2);background:rgba(255,255,255,.04);color:var(--text-2);width:34px;height:34px;border-radius:10px;
+    cursor:pointer;display:grid;place-items:center;flex:0 0 auto}
+  .x:hover{color:#fff;border-color:var(--line-3)}
+  #toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,16px);opacity:0;background:#0d1d4a;border:1px solid var(--nv-line);
+    color:#e3f7c4;padding:11px 16px;border-radius:12px;font-size:14px;display:flex;gap:9px;align-items:center;transition:all .25s;
+    z-index:70;pointer-events:none;box-shadow:0 20px 50px -20px rgba(0,0,0,.9)}
+  #toast .i{color:var(--nv)}
+  #toast.on{opacity:1;transform:translate(-50%,0)}
 
-  @media (max-width:900px){
-    .grid2,.grid3,.arch,.cmp,.answer-grid{grid-template-columns:1fr}
-    .flow{flex-direction:column}
-    .flink{flex:0 0 22px;transform:rotate(90deg)}
+  @media (max-width:1180px){
+    .labs{grid-template-columns:repeat(2,1fr)}
     .chips{display:none}
+  }
+  @media (max-width:920px){
+    .hero,.grid2,.arch,.cmp,.answer-grid,.oc-hero,.ideas,.fgrid{grid-template-columns:1fr}
+    .hero{padding:36px 0 28px;gap:30px}
+    .oc-side{border-left:0;border-top:1px solid var(--line)}
+    .steps{grid-template-columns:1fr 1fr}
+    .flow{flex-direction:column}
+    .flink{flex:0 0 26px;transform:rotate(90deg)}
     .askrow{flex-direction:column}
+    .event,#hdr-openclaw{display:none}
+  }
+  @media (max-width:560px){
+    .wrap{padding:0 16px}
+    .labs,.steps{grid-template-columns:1fr}
+    .toprow{gap:12px;height:58px}
+    .lockup{gap:10px} .lockup .gb{height:11px} .lockup .nv{height:18px}
+    .agenda{padding:20px 18px 14px}
+    .agenda ol>li{grid-template-columns:1fr;gap:2px}
+    .oc-main,.oc-side{padding:22px 18px}
+    .card{padding:18px}
+    details.sect{padding:0 18px}
   }
 </style>
 </head>
 <body>
 
+<svg class="sprite" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-ext" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 4 2.8 20h18.4L12 4z"/><path d="M12 10v4.5M12 17.6v.1"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7.5 3v5.5c0 4.6-3.1 8.1-7.5 9.5-4.4-1.4-7.5-4.9-7.5-9.5V6L12 3z"/><path d="M9 12l2 2 4-4"/></symbol>
+  <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 3 5 13.5h6L10 21l8-10.5h-6L13 3z"/></symbol>
+  <symbol id="i-cpu" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/><path d="M9.5 2.5v3M14.5 2.5v3M9.5 18.5v3M14.5 18.5v3M2.5 9.5h3M2.5 14.5h3M18.5 9.5h3M18.5 14.5h3"/></symbol>
+  <symbol id="i-msg" viewBox="0 0 24 24"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v9a1.5 1.5 0 0 1-1.5 1.5H10l-4.5 4v-4A1.5 1.5 0 0 1 4 14.5v-9z"/></symbol>
+  <symbol id="i-clip" viewBox="0 0 24 24"><rect x="5.5" y="4.5" width="13" height="16.5" rx="2"/><path d="M9 4.5V3h6v1.5M9 13l2 2 4-4.5"/></symbol>
+  <symbol id="i-term" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9.5l3 2.5-3 2.5M12.5 15H17"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11M7 10.5l5 4.5 5-4.5M5 20h14"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V5M7 9.5 12 5l5 4.5M5 20h14"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-6.5-6-6.5-11.2a6.5 6.5 0 0 1 13 0C18.5 15 12 21 12 21z"/><circle cx="12" cy="9.8" r="2.4"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5v-15z"/><path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H19v-3"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20h16M7 16.5v-5M12 16.5V6.5M17 16.5v-8"/></symbol>
+  <symbol id="i-pkg" viewBox="0 0 24 24"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/></symbol>
+  <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.6 2.6 3.8 5.5 3.8 8.5s-1.2 5.9-3.8 8.5c-2.6-2.6-3.8-5.5-3.8-8.5s1.2-5.9 3.8-8.5z"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24"><path d="M12 3.5 21 8.5l-9 5-9-5 9-5z"/><path d="M3 12.5l9 5 9-5M3 16.5l9 5 9-5"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8.5" y="8.5" width="12" height="12" rx="2"/><path d="M15.5 8.5V5A1.5 1.5 0 0 0 14 3.5H5A1.5 1.5 0 0 0 3.5 5v9A1.5 1.5 0 0 0 5 15.5h3.5"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5M12 7.6v.1"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3.5l1.9 5.1 5.1 1.9-5.1 1.9L12 17.5l-1.9-5.1L5 10.5l5.1-1.9L12 3.5z"/><path d="M18.5 16.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8.8-2z"/></symbol>
+  <symbol id="i-db" viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="7" ry="2.5"/><path d="M5 6v12c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5V6M5 12c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+  <symbol id="i-present" viewBox="0 0 24 24"><path d="M3 4.5h18M5 4.5v10.5h14V4.5M12 15v4.5M8.5 20.5h7"/></symbol>
+  <symbol id="i-github" viewBox="0 0 16 16"><path fill="currentColor" stroke="none" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></symbol>
+</svg>
+<div class="waves" aria-hidden="true"></div>
+
 <header class="top">
-  <div class="wrap">
-    <div class="toprow">
-      <div class="brand">
-        <div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="#0b1200" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z"/></svg></div>
-        <div>
-          <div class="bname" data-i18n="app_title"></div>
-          <div class="bsub" data-i18n="app_sub"></div>
-        </div>
-      </div>
-      <div class="chips">
-        <span class="chip"><span class="dot" id="d-gpu"></span><span id="c-gpu">GPU</span></span>
-        <span class="chip"><span class="dot" id="d-ollama"></span>Ollama</span>
-        <span class="chip"><span class="dot" id="d-sandbox"></span>NemoClaw</span>
-        <span class="chip"><span class="dot" id="d-agent"></span><span data-i18n="chip_agent"></span></span>
-      </div>
-      <div class="lang">
-        <button type="button" data-lang="vi">VI</button>
-        <button type="button" data-lang="en">EN</button>
-      </div>
+  <div class="wrap toprow">
+    <a class="lockup" href="#home" aria-label="GIGABYTE · NVIDIA">
+      <img class="gb" src="/static/brand/gigabyte.svg" alt="GIGABYTE">
+      <span class="sep"></span>
+      <img class="nv" src="/static/brand/nvidia.svg" alt="NVIDIA">
+    </a>
+    <div class="event"><b>ACE 2026 VIETNAM</b><span>Agentic Computing at the Edge</span></div>
+    <div class="spacer"></div>
+    <div class="chips">
+      <span class="chip"><span class="dot" id="d-gpu"></span><span id="c-gpu">GPU</span></span>
+      <span class="chip"><span class="dot" id="d-ollama"></span>Ollama</span>
+      <span class="chip"><span class="dot" id="d-sandbox"></span>NemoClaw</span>
+      <span class="chip"><span class="dot" id="d-agent"></span>OpenClaw</span>
     </div>
-    <nav class="tabs">
-      <button type="button" data-tab="home" data-i18n="tab_home"></button>
-      <button type="button" data-tab="lab1" data-i18n="tab_lab1"></button>
-      <button type="button" data-tab="lab2" data-i18n="tab_lab2"></button>
-      <button type="button" data-tab="lab3" data-i18n="tab_lab3"></button>
-    </nav>
+    <a class="btn ghost small" id="hdr-openclaw" href="/openclaw" target="_blank" rel="noopener">OpenClaw <svg class="i"><use href="#i-ext"/></svg></a>
+    <div class="lang">
+      <button type="button" data-lang="vi">VI</button>
+      <button type="button" data-lang="en">EN</button>
+    </div>
   </div>
+  <nav class="wrap tabs">
+    <button type="button" data-tab="home"><span data-i18n="tab_home"></span></button>
+    <button type="button" data-tab="lab1"><span class="n">01</span><span data-i18n="tab_lab1"></span></button>
+    <button type="button" data-tab="lab2"><span class="n">02</span><span data-i18n="tab_lab2"></span></button>
+    <button type="button" data-tab="lab3"><span class="n">03</span><span data-i18n="tab_lab3"></span></button>
+    <button type="button" data-tab="openclaw"><span class="n">04</span><span data-i18n="tab_oc"></span><span class="live"></span></button>
+  </nav>
 </header>
 
 <main class="wrap">
@@ -283,58 +509,87 @@
 <!-- ======================================================== HOME ======== -->
 <section class="tab" id="tab-home">
   <div class="hero">
-    <div class="kicker">NVIDIA DGX Spark · NemoClaw · Ollama</div>
-    <h1 data-i18n="home_h1"></h1>
-    <p class="lead" data-i18n="home_p"></p>
+    <div>
+      <div class="eyebrow" data-i18n="home_eyebrow"></div>
+      <h1 class="display">ACE 2026<br>Vietnam</h1>
+      <div class="tagline">Agentic Computing at the Edge</div>
+      <p class="lead" data-i18n="home_p"></p>
+      <div class="when">
+        <div><svg class="i"><use href="#i-cal"/></svg><b data-i18n="ev_date"></b></div>
+        <div><svg class="i"><use href="#i-pin"/></svg><span>Capella Gallery Hall · 24 Đường Ba Tháng Hai, P. Hoà Hưng, TP.HCM</span></div>
+      </div>
+      <div class="cta">
+        <button type="button" class="btn" data-go="lab1"><span data-i18n="cta_start"></span><svg class="i"><use href="#i-arrow"/></svg></button>
+        <button type="button" class="btn ghost" data-go="openclaw"><span data-i18n="cta_oc"></span></button>
+      </div>
+    </div>
+    <aside class="agenda glass glow">
+      <div class="ah"><b>AGENDA</b><span data-i18n="ev_day"></span></div>
+      <ol id="agenda"></ol>
+    </aside>
   </div>
-  <div class="grid3">
-    <div class="card labcard">
-      <div class="num">1</div>
-      <h2 data-i18n="lab1_title"></h2>
+
+  <div class="labs">
+    <article class="labcard glass" data-go="lab1">
+      <div class="lnum">01</div>
+      <div class="ltag" data-i18n="lab1_k"></div>
+      <h3 data-i18n="lab1_n"></h3>
       <p data-i18n="lab1_desc"></p>
-      <div class="status" id="home-s1"></div>
-      <div><button type="button" class="btn small" data-go="lab1" data-i18n="open"></button></div>
-    </div>
-    <div class="card labcard">
-      <div class="num">2</div>
-      <h2 data-i18n="lab2_title"></h2>
+      <div class="lfoot"><span id="home-s1"></span><span class="linkbtn"><span data-i18n="open"></span><svg class="i"><use href="#i-arrow"/></svg></span></div>
+    </article>
+    <article class="labcard glass" data-go="lab2">
+      <div class="lnum">02</div>
+      <div class="ltag" data-i18n="lab2_k"></div>
+      <h3 data-i18n="lab2_n"></h3>
       <p data-i18n="lab2_desc"></p>
-      <div class="status" id="home-s2"></div>
-      <div><button type="button" class="btn small" data-go="lab2" data-i18n="open"></button></div>
-    </div>
-    <div class="card labcard">
-      <div class="num">3</div>
-      <h2 data-i18n="lab3_title"></h2>
+      <div class="lfoot"><span id="home-s2"></span><span class="linkbtn"><span data-i18n="open"></span><svg class="i"><use href="#i-arrow"/></svg></span></div>
+    </article>
+    <article class="labcard glass" data-go="lab3">
+      <div class="lnum">03</div>
+      <div class="ltag" data-i18n="lab3_k"></div>
+      <h3 data-i18n="lab3_n"></h3>
       <p data-i18n="lab3_desc"></p>
-      <div class="status" id="home-s3"></div>
-      <div><button type="button" class="btn small" data-go="lab3" data-i18n="open"></button></div>
-    </div>
+      <div class="lfoot"><span id="home-s3"></span><span class="linkbtn"><span data-i18n="open"></span><svg class="i"><use href="#i-arrow"/></svg></span></div>
+    </article>
+    <article class="labcard glass challenge" data-go="openclaw">
+      <div class="lnum">04</div>
+      <div class="ltag" data-i18n="lab4_k"></div>
+      <h3 data-i18n="lab4_n"></h3>
+      <p data-i18n="lab4_desc"></p>
+      <div class="lfoot"><span id="home-s4"></span><span class="linkbtn"><span data-i18n="open"></span><svg class="i"><use href="#i-arrow"/></svg></span></div>
+    </article>
   </div>
+
   <div class="card">
     <div class="label" data-i18n="arch_title"></div>
     <div class="arch">
-      <div class="abox"><b data-i18n="arch_models"></b><div class="muted" id="arch-models"></div></div>
-      <div class="abox"><b data-i18n="arch_sandbox"></b><div class="muted" data-i18n="arch_sandbox_d"></div></div>
-      <div class="abox"><b data-i18n="arch_app"></b><div class="muted" data-i18n="arch_app_d"></div></div>
+      <div class="abox"><div class="ai"><svg class="i"><use href="#i-cpu"/></svg></div>
+        <div><b data-i18n="arch_models"></b><div class="muted" id="arch-models"></div></div></div>
+      <div class="abox"><div class="ai"><svg class="i"><use href="#i-shield"/></svg></div>
+        <div><b data-i18n="arch_sandbox"></b><div class="muted" data-i18n="arch_sandbox_d"></div></div></div>
+      <div class="abox"><div class="ai"><svg class="i"><use href="#i-layers"/></svg></div>
+        <div><b data-i18n="arch_app"></b><div class="muted" data-i18n="arch_app_d"></div></div></div>
     </div>
   </div>
 </section>
 
 <!-- ======================================================== LAB 1 ======= -->
 <section class="tab" id="tab-lab1">
-  <div class="kicker" data-i18n="lab1_title"></div>
-  <h1 data-i18n="l1_h"></h1>
-  <p class="lead" data-i18n="l1_p"></p>
+  <div class="pagehead">
+    <div class="eyebrow" data-i18n="lab1_title"></div>
+    <h1 data-i18n="l1_h"></h1>
+    <p class="lead" data-i18n="l1_p"></p>
+  </div>
 
   <div class="flow" id="flow1">
     <div class="fnode" data-n="data"><div class="ft" data-i18n="f1_data"></div><div class="fd" id="f1-data-d"></div></div>
-    <div class="flink">→</div>
+    <div class="flink"><svg class="i"><use href="#i-arrow"/></svg></div>
     <div class="fnode" data-n="train"><div class="ft" data-i18n="f1_train"></div><div class="fd" id="f1-train-d">Qwen2.5-1.5B</div></div>
-    <div class="flink">→</div>
+    <div class="flink"><svg class="i"><use href="#i-arrow"/></svg></div>
     <div class="fnode" data-n="gguf"><div class="ft" data-i18n="f1_gguf"></div><div class="fd">safetensors → GGUF</div></div>
-    <div class="flink">→</div>
+    <div class="flink"><svg class="i"><use href="#i-arrow"/></svg></div>
     <div class="fnode" data-n="ollama"><div class="ft" data-i18n="f1_ollama"></div><div class="fd" id="f1-ollama-d">aurora-assistant</div></div>
-    <div class="flink">→</div>
+    <div class="flink"><svg class="i"><use href="#i-arrow"/></svg></div>
     <div class="fnode" data-n="compare"><div class="ft" data-i18n="f1_compare"></div><div class="fd" data-i18n="f1_compare_d"></div></div>
   </div>
 
@@ -343,11 +598,11 @@
       <div class="label"><span data-i18n="data_title"></span><span class="pill gray" id="l1-count"></span></div>
       <p class="muted" style="margin-top:0" data-i18n="data_note"></p>
       <div class="examples" id="l1-examples"></div>
-      <div style="margin-top:12px"><button type="button" class="btn ghost small" id="l1-all" data-i18n="view_all"></button></div>
+      <div style="margin-top:14px"><button type="button" class="btn ghost small" id="l1-all" data-i18n="view_all"></button></div>
     </div>
     <div class="card">
       <div class="label" data-i18n="train_title"></div>
-      <div class="muted"><span data-i18n="base_model"></span>: <b id="l1-base"></b></div>
+      <div class="muted"><span data-i18n="base_model"></span>: <b id="l1-base" style="color:var(--text)"></b></div>
       <div class="params">
         <label><span data-i18n="epochs"></span>
           <select id="p-epochs"><option>2</option><option>3</option><option>4</option><option selected>5</option><option>6</option></select></label>
@@ -373,7 +628,7 @@
         <div class="sample" id="l1-sample" style="display:none"></div>
       </div>
       <div class="muted" id="l1-last" style="margin-top:12px"></div>
-      <details style="margin-top:10px"><summary class="muted" style="cursor:pointer" data-i18n="log_label"></summary><pre class="log" id="l1-log"></pre></details>
+      <details class="mini" style="margin-top:10px"><summary><svg class="i chev"><use href="#i-chev"/></svg><span data-i18n="log_label"></span></summary><pre class="log" id="l1-log"></pre></details>
     </div>
   </div>
 
@@ -383,7 +638,7 @@
       <input type="text" id="l1-q" autocomplete="off">
       <button type="button" class="btn" id="l1-ask" data-i18n="cmp_ask"></button>
     </div>
-    <div class="muted" style="margin:10px 0 8px" data-i18n="cmp_hint"></div>
+    <div class="muted" style="margin:12px 0 9px" data-i18n="cmp_hint"></div>
     <div class="qchips" id="l1-chips"></div>
     <div class="cmp">
       <div class="side before">
@@ -395,23 +650,25 @@
         <div class="txt" id="l1-a-tuned"></div><div class="meta" id="l1-m-tuned"></div>
       </div>
     </div>
-    <div class="note green" style="margin-top:14px" data-i18n="cmp_note"></div>
+    <div class="note green" style="margin-top:16px"><svg class="i"><use href="#i-info"/></svg><span data-i18n="cmp_note"></span></div>
   </div>
 </section>
 
 <!-- ======================================================== LAB 2 ======= -->
 <section class="tab" id="tab-lab2">
-  <div class="kicker" data-i18n="lab2_title"></div>
-  <h1 data-i18n="l2_h1"></h1>
-  <p class="lead" data-i18n="l2_sub"></p>
+  <div class="pagehead">
+    <div class="eyebrow" data-i18n="lab2_title"></div>
+    <h1 data-i18n="l2_h1"></h1>
+    <p class="lead" data-i18n="l2_sub"></p>
+  </div>
 
   <div class="flow" id="flow2">
     <div class="fnode" data-n="q"><div class="ft" data-i18n="f2_q"></div><div class="fd" data-i18n="f2_q_d"></div></div>
-    <div class="flink">→</div>
+    <div class="flink"><svg class="i"><use href="#i-arrow"/></svg></div>
     <div class="fnode" data-n="embed"><div class="ft" data-i18n="f2_embed"></div><div class="fd" id="f2-embed-d">qwen3-embedding</div></div>
-    <div class="flink">→</div>
+    <div class="flink"><svg class="i"><use href="#i-arrow"/></svg></div>
     <div class="fnode" data-n="search"><div class="ft" data-i18n="f2_search"></div><div class="fd" data-i18n="f2_search_d"></div></div>
-    <div class="flink">→</div>
+    <div class="flink"><svg class="i"><use href="#i-arrow"/></svg></div>
     <div class="fnode" data-n="answer"><div class="ft" data-i18n="f2_answer"></div><div class="fd" data-i18n="f2_answer_d"></div></div>
   </div>
 
@@ -420,7 +677,7 @@
       <input type="text" id="l2-q" autocomplete="off">
       <button type="button" class="btn" id="l2-go" data-i18n="l2_ask"></button>
     </div>
-    <div class="muted" style="margin-top:10px" data-i18n="l2_hint"></div>
+    <div class="muted" style="margin-top:12px" data-i18n="l2_hint"></div>
   </div>
 
   <div class="card" id="l2-pipeline" style="display:none">
@@ -435,52 +692,55 @@
   </div>
 
   <details class="sect" open>
-    <summary><span data-i18n="l2_trythese"></span></summary>
+    <summary><svg class="i chev"><use href="#i-chev"/></svg><span data-i18n="l2_trythese"></span></summary>
     <div class="body group" id="l2-examples"></div>
   </details>
   <details class="sect">
-    <summary><span data-i18n="l2_library"></span><span class="count" id="l2-libcount"></span></summary>
+    <summary><svg class="i chev"><use href="#i-chev"/></svg><span data-i18n="l2_library"></span><span class="count" id="l2-libcount"></span></summary>
     <div class="body"><p style="margin-top:0" data-i18n="l2_library_sub"></p><div class="docs" id="l2-docs"></div></div>
   </details>
   <details class="sect">
-    <summary><span data-i18n="l2_how"></span></summary>
+    <summary><svg class="i chev"><use href="#i-chev"/></svg><span data-i18n="l2_how"></span></summary>
     <div class="body">
       <p data-i18n="l2_how_p1"></p>
-      <div class="chain"><span class="cstep" data-i18n="l2_chain1"></span>→<span class="cstep" data-i18n="l2_chain2"></span>→<span class="cstep" data-i18n="l2_chain3"></span>→<span class="cstep" data-i18n="l2_chain4"></span></div>
+      <div class="chain"><span class="cstep" data-i18n="l2_chain1"></span><svg class="i"><use href="#i-arrow"/></svg><span class="cstep" data-i18n="l2_chain2"></span><svg class="i"><use href="#i-arrow"/></svg><span class="cstep" data-i18n="l2_chain3"></span><svg class="i"><use href="#i-arrow"/></svg><span class="cstep" data-i18n="l2_chain4"></span></div>
       <p data-i18n="l2_how_p2"></p>
-      <div class="note" data-i18n="l2_how_note"></div>
+      <div class="note"><svg class="i"><use href="#i-alert"/></svg><span data-i18n="l2_how_note"></span></div>
     </div>
   </details>
 </section>
 
 <!-- ======================================================== LAB 3 ======= -->
 <section class="tab" id="tab-lab3">
-  <div class="kicker" data-i18n="lab3_title"></div>
-  <h1 data-i18n="l3_h"></h1>
-  <p class="lead" data-i18n="l3_p"></p>
+  <div class="pagehead">
+    <div class="eyebrow" data-i18n="lab3_title"></div>
+    <h1 data-i18n="l3_h"></h1>
+    <p class="lead" data-i18n="l3_p"></p>
+  </div>
 
   <div class="flow" id="flow3">
     <div class="fnode f-user" data-n="user"><div class="ft" data-i18n="f3_user"></div><div class="fd" id="f3-user-d" data-i18n="f3_user_d"></div></div>
-    <div class="flink">→</div>
-    <div class="fnode f-nc" data-n="nc"><div class="ft">NeMo Claw</div><div class="fd" data-i18n="f3_nc_d"></div></div>
-    <div class="flink">→</div>
+    <div class="flink"><svg class="i"><use href="#i-arrow"/></svg></div>
+    <div class="fnode f-nc" data-n="nc"><div class="ft">NemoClaw</div><div class="fd" data-i18n="f3_nc_d"></div></div>
+    <div class="flink"><svg class="i"><use href="#i-arrow"/></svg></div>
     <div class="fnode f-py" data-n="py"><div class="ft">Python</div><div class="fd">Pandas · Matplotlib · Excel</div></div>
-    <div class="flink">→</div>
+    <div class="flink"><svg class="i"><use href="#i-arrow"/></svg></div>
     <div class="fnode f-out" data-n="out"><div class="ft" data-i18n="f3_out"></div><div class="fd" data-i18n="f3_out_d"></div></div>
   </div>
 
   <div class="card">
     <div class="label" data-i18n="ds_title"></div>
     <div class="dsrow">
+      <svg class="i" style="color:var(--nv);width:20px;height:20px"><use href="#i-file"/></svg>
       <span class="dsname" id="l3-dsname">—</span>
       <span class="muted" id="l3-dsmeta"></span>
       <span style="flex:1"></span>
-      <a class="btn ghost small" id="l3-dsdl" href="#" style="text-decoration:none" data-i18n="ds_download"></a>
-      <button type="button" class="btn ghost small" id="l3-upload" data-i18n="ds_upload"></button>
+      <a class="btn ghost small" id="l3-dsdl" href="#"><svg class="i"><use href="#i-download"/></svg><span data-i18n="ds_download"></span></a>
+      <button type="button" class="btn ghost small" id="l3-upload"><svg class="i"><use href="#i-upload"/></svg><span data-i18n="ds_upload"></span></button>
       <button type="button" class="btn ghost small" id="l3-reset" style="display:none" data-i18n="ds_reset"></button>
       <input type="file" id="l3-file" accept=".xlsx,.csv" style="display:none">
     </div>
-    <details style="margin-top:8px"><summary class="muted" style="cursor:pointer" data-i18n="ds_preview"></summary><div class="tablewrap" id="l3-preview"></div></details>
+    <details class="mini" style="margin-top:10px"><summary><svg class="i chev"><use href="#i-chev"/></svg><span data-i18n="ds_preview"></span></summary><div class="tablewrap" id="l3-preview"></div></details>
     <div id="l3-dserr"></div>
   </div>
 
@@ -498,9 +758,9 @@
           <option value="nemoclaw">NemoClaw</option>
           <option value="direct" data-i18n="route_dir"></option>
         </select></label>
-      <a class="btn ghost small" id="l3-control" href="#" target="_blank" rel="noopener" style="text-decoration:none" data-i18n="open_control"></a>
+      <a class="btn ghost small" id="l3-control" href="/openclaw" target="_blank" rel="noopener"><svg class="i"><use href="#i-ext"/></svg><span data-i18n="open_control"></span></a>
     </div>
-    <div class="group" style="margin-top:14px" id="l3-examples"></div>
+    <div class="group" style="margin-top:18px" id="l3-examples"></div>
   </div>
 
   <div class="card" id="l3-tracecard" style="display:none">
@@ -522,15 +782,94 @@
   </div>
 </section>
 
-<footer><span data-i18n="footer1"></span><br><span data-i18n="footer2"></span></footer>
+<!-- ===================================================== OPENCLAW ====== -->
+<section class="tab" id="tab-openclaw">
+  <div class="pagehead">
+    <div class="eyebrow" data-i18n="oc_kicker"></div>
+    <h1 data-i18n="oc_h"></h1>
+    <p class="lead" data-i18n="oc_p"></p>
+  </div>
+
+  <div class="oc-hero glass glow">
+    <div class="oc-main">
+      <div class="oc-status" id="oc-status"></div>
+      <div class="oc-actions">
+        <a class="btn big" id="oc-open" href="/openclaw" target="_blank" rel="noopener"><span data-i18n="oc_open"></span><svg class="i"><use href="#i-ext"/></svg></a>
+        <div class="oc-addr" id="oc-addr"></div>
+      </div>
+      <div class="note blue" id="oc-remote" style="display:none;margin-top:18px"><svg class="i"><use href="#i-info"/></svg><span data-i18n="oc_remote"></span></div>
+      <ol class="steps">
+        <li><b data-i18n="oc_s1"></b><span data-i18n="oc_s1d"></span></li>
+        <li><b data-i18n="oc_s2"></b><span data-i18n="oc_s2d"></span></li>
+        <li><b data-i18n="oc_s3"></b><span data-i18n="oc_s3d"></span></li>
+        <li><b data-i18n="oc_s4"></b><span data-i18n="oc_s4d"></span></li>
+      </ol>
+    </div>
+    <div class="oc-side">
+      <div class="label" data-i18n="oc_can"></div>
+      <ul class="caps" id="oc-caps"></ul>
+    </div>
+  </div>
+
+  <div class="label" data-i18n="oc_ideas"></div>
+  <div class="ideas" id="oc-ideas"></div>
+
+  <div class="grid2">
+    <div class="card">
+      <div class="label"><svg class="i" style="color:var(--nv)"><use href="#i-present"/></svg><span data-i18n="oc_show"></span></div>
+      <ul class="checks" id="oc-show"></ul>
+    </div>
+    <div class="card">
+      <div class="label"><svg class="i" style="color:var(--nv)"><use href="#i-spark"/></svg><span data-i18n="oc_tips"></span></div>
+      <ul class="checks" id="oc-tips"></ul>
+    </div>
+  </div>
+
+  <details class="sect">
+    <summary><svg class="i chev"><use href="#i-chev"/></svg><span data-i18n="oc_term"></span></summary>
+    <div class="body">
+      <p style="margin-top:0" data-i18n="oc_term_p"></p>
+      <div id="oc-cmds"></div>
+      <p class="muted" style="margin-bottom:0" data-i18n="oc_term_policy"></p>
+    </div>
+  </details>
+</section>
 </main>
+
+<footer class="site">
+  <div class="wrap fgrid">
+    <div class="fcredit">
+      <div class="lockup">
+        <img class="gb" src="/static/brand/gigabyte.svg" alt="GIGABYTE">
+        <span class="sep"></span>
+        <img class="nv" src="/static/brand/nvidia.svg" alt="NVIDIA">
+      </div>
+      <div class="ev">ACE 2026 VIETNAM<span>Agentic Computing at the Edge · <span data-i18n="ev_date_short"></span></span></div>
+      <div class="by">
+        <span data-i18n="credit_by"></span>
+        <a href="https://github.com/an6122003" target="_blank" rel="noopener"><svg class="i gh"><use href="#i-github"/></svg>an6122003</a>
+        <a href="https://github.com/an6122003/nemoclaw-rag-demo" target="_blank" rel="noopener" style="font-weight:500;color:var(--text-2)"><svg class="i"><use href="#i-term"/></svg>github.com/an6122003/nemoclaw-rag-demo</a>
+      </div>
+    </div>
+    <div class="legal">
+      <p><b data-i18n="tm_title"></b></p>
+      <p data-i18n="tm_gb"></p>
+      <p data-i18n="tm_nv"></p>
+      <p data-i18n="tm_other"></p>
+      <p data-i18n="footer1"></p>
+      <p data-i18n="footer2"></p>
+    </div>
+  </div>
+</footer>
 
 <div id="modal">
   <div class="sheet">
-    <div class="shead"><div><h2 id="m-title"></h2><div class="muted" id="m-sub"></div></div><button type="button" class="x" id="m-close">✕</button></div>
+    <div class="shead"><div><h2 id="m-title"></h2><div class="muted" id="m-sub"></div></div>
+      <button type="button" class="x" id="m-close" aria-label="Close"><svg class="i"><use href="#i-x"/></svg></button></div>
     <div class="content" id="m-body"></div>
   </div>
 </div>
+<div id="toast"><svg class="i"><use href="#i-check"/></svg><span id="toast-text"></span></div>
 
 <script>
 'use strict';
@@ -538,28 +877,38 @@
 /* ============================================================ i18n ===== */
 const I18N = {
   en: {
-    app_title: 'DGX Spark AI Workshop',
-    app_sub: 'Three hands-on labs · running 100% on this machine',
-    chip_agent: 'Agent',
-    tab_home: 'Overview', tab_lab1: '1 · Fine-tuning', tab_lab2: '2 · RAG', tab_lab3: '3 · Agent',
-    home_h1: 'Tune, ground and orchestrate local AI — on one DGX Spark',
-    home_p: 'Every model, document and tool call in this workshop runs on this machine. Nothing is sent to the cloud.',
+    tab_home: 'Overview', tab_lab1: 'Fine-tuning', tab_lab2: 'RAG', tab_lab3: 'Agent', tab_oc: 'OpenClaw · Challenge',
+    home_eyebrow: 'Hands-on workshop · NVIDIA DGX Spark',
+    home_p: 'Three hands-on labs and one challenge on the GIGABYTE AI TOP ATOM, powered by the NVIDIA GB10 Grace Blackwell Superchip. Every model, document and tool call runs on this machine — nothing is sent to the cloud.',
+    ev_date: '8 October · 8:00 – 12:30', ev_date_short: '8 October 2026', ev_day: 'Thursday · 8 Oct',
+    cta_start: 'Start with Hands-on 1', cta_oc: 'Go to the challenge',
+    ag_now: 'Now', ag_go_labs: 'Open Hands-on 1', ag_go_oc: 'Open OpenClaw',
+    lab1_k: 'Hands-on 1', lab1_n: 'Fine-tuning local LLMs',
+    lab2_k: 'Hands-on 2', lab2_n: 'Build RAG with NemoClaw',
+    lab3_k: 'Hands-on 3', lab3_n: 'Build an agentic workflow',
+    lab4_k: 'Challenge · 10:00', lab4_n: 'Build your own agent with OpenClaw',
     lab1_title: 'Hands-on 1 · Fine-tuning Local LLMs',
     lab1_desc: 'Teach a small open model a new identity, answer style and scope with LoRA in a few minutes on the GPU — then compare it with the original, side by side.',
     lab2_title: 'Hands-on 2 · Build RAG with NemoClaw',
     lab2_desc: 'Ask 28 technical manuals anything. Retrieval runs inside the NemoClaw sandbox, and every answer shows the passage it came from.',
     lab3_title: 'Hands-on 3 · Build an Agentic Workflow',
     lab3_desc: 'Ask about sales in Vietnamese. The NemoClaw agent reads the Excel file, calls Python tools, draws a chart and exports an Excel report.',
+    lab4_desc: 'Open OpenClaw, the agent inside this machine’s sandbox, and build a workflow that acts on its own: it runs code, writes files and uses skills. Showcase at 11:10.',
     open: 'Open',
-    st_ready: '✓ Ready', st_reduced: '! Direct mode', st_missing: '✗ Not set up',
+    st_ready: 'Ready', st_reduced: 'Direct mode', st_missing: 'Not set up', st_oc_off: 'Not answering yet',
     arch_title: 'What runs where',
     arch_models: 'Ollama · local models',
     arch_sandbox: 'NemoClaw sandbox',
-    arch_sandbox_d: 'OpenShell isolates an OpenClaw agent: it can only reach what its policy allows. It hosts the RAG memory search and the Sales Analyst agent.',
+    arch_sandbox_d: 'OpenShell isolates an OpenClaw agent: it can only reach what its policy allows. It hosts the RAG memory search, the Sales Analyst agent and the agent you build in the challenge.',
     arch_app: 'Workshop app',
     arch_app_d: 'This page. It starts the fine-tuning job, runs the Python tools the agent asks for, and shows every step.',
+    credit_by: 'Workshop app designed & built by',
+    tm_title: 'Trademarks',
+    tm_gb: 'GIGABYTE and AI TOP are trademarks or registered trademarks of GIGA-BYTE Technology Co., Ltd.',
+    tm_nv: 'NVIDIA, the NVIDIA logo, DGX, DGX Spark, Grace Blackwell and Nemotron are trademarks and/or registered trademarks of NVIDIA Corporation in the U.S. and other countries.',
+    tm_other: 'Other company and product names, including Ollama, OpenClaw and Qwen, may be trademarks of their respective owners.',
     footer1: 'Aurora Grid Systems is a fictional company; its documents and sales data are synthetic.',
-    footer2: 'NVIDIA DGX Spark · NemoClaw (OpenShell + OpenClaw) · Ollama · Nemotron · Qwen',
+    footer2: 'Built with NemoClaw (OpenShell + OpenClaw), Ollama, Nemotron and Qwen. Fonts: Be Vietnam Pro and Saira (SIL Open Font License).',
 
     l1_h: 'Fine-tune a local model in minutes',
     l1_p: 'LoRA trains a few million extra parameters on top of a frozen open model. Here Qwen2.5-1.5B learns to become “Aurora”, the Aurora Grid technical assistant: its name, its answer format and what it should refuse.',
@@ -627,7 +976,7 @@ const I18N = {
     route_label: 'Route ', route_auto: 'Auto', route_dir: 'Direct',
     route_nemoclaw: 'Orchestrated by NemoClaw · agent {agent} in the sandbox',
     route_direct: 'Direct mode · {model} · NemoClaw not reachable',
-    open_control: 'Open the OpenClaw UI',
+    open_control: 'Open in OpenClaw',
     tr_title: 'What the agent is doing',
     tr_start_nc: 'Question sent to the NemoClaw agent {agent} (model {model})',
     tr_start_direct: 'Question sent directly to {model} (fallback mode)',
@@ -637,40 +986,70 @@ const I18N = {
     tr_nudge_described: 'Workflow check: the agent described a step without running it → it continues',
     tr_nudge_figures: 'Workflow check: numbers must come from a tool → the agent runs the analysis',
     tr_nudge_quote: 'Workflow check: some figures match no tool result → the agent rewrites the answer',
-    an_unverified: '⚠️ These figures do not match any tool result: {f}',
+    an_unverified: 'These figures do not match any tool result: {f}',
     tr_error: 'Tool error — the agent will read it and try again',
     tr_fallback: 'NemoClaw did not answer — switched to direct mode',
     tr_table: 'Show the table', tr_download: 'Download the Excel report',
     tool_get_dataset_info: 'Read the Excel file', tool_analyze_sales: 'Analyse with pandas',
     tool_create_chart: 'Draw a chart with matplotlib', tool_export_excel_report: 'Export an Excel report',
-    an_title: 'Insight', an_meta: '{s}s total · {n} tool calls · {r}', an_route_nc: 'via NemoClaw', an_route_direct: 'direct mode',
+    an_title: 'Insight', an_question: 'Question:', an_meta: '{s}s total · {n} tool calls · {r}', an_route_nc: 'via NemoClaw', an_route_direct: 'direct mode',
     err_busy: 'The agent is busy with another question. Wait a moment.',
     err_generic: 'Something went wrong: {e}',
-    err_tools: 'The Python tools are not installed — run the install command again.'
+    err_tools: 'The Python tools are not installed — run the install command again.',
+
+    oc_kicker: 'Challenge · 10:00 – 11:10',
+    oc_h: 'Build an agentic workflow that can act',
+    oc_p: 'OpenClaw is the AI agent that lives in this machine’s NemoClaw sandbox. Open its own interface, give it a real job in plain language, and turn what works into a skill. At 11:10 every team shows what it built.',
+    oc_open: 'Open OpenClaw',
+    oc_addr: 'Opens in a new tab. You can also type {addr} in the address bar.',
+    oc_ready: 'OpenClaw is ready', oc_off: 'OpenClaw is not answering yet — wait a minute, or restart the workshop from its desktop icon.',
+    oc_model: 'agent main · {model}',
+    oc_remote: 'OpenClaw only opens in the browser on the Spark itself: for safety it listens on this machine only.',
+    oc_s1: 'Open OpenClaw', oc_s1d: 'Click the green button. OpenClaw opens on its Chat page.',
+    oc_s2: 'Give it a job', oc_s2d: 'Say what to do, with which data, and what you want back. Vietnamese works.',
+    oc_s3: 'Make it a skill', oc_s3d: 'Ask it to save the workflow as a skill, then try it in a new chat.',
+    oc_s4: 'Showcase at 11:10', oc_s4d: 'Three minutes: the problem, a live run, what it produced.',
+    oc_can: 'What the agent can use',
+    oc_ideas: 'Starter ideas — copy one into OpenClaw, then make it yours',
+    oc_start: 'Start', oc_then: 'Then', oc_copy: 'Copy', oc_copied: 'Copied — paste it into OpenClaw’s chat box',
+    oc_show: 'For the showcase', oc_tips: 'Tips',
+    oc_term: 'For developers: OpenClaw in a terminal',
+    oc_term_p: 'Open a shell inside the sandbox, then start OpenClaw’s terminal chat:',
+    oc_term_policy: 'The sandbox only reaches the internet hosts its policy allows. To see or change them: nemoclaw {sb} policy list'
   },
   vi: {
-    app_title: 'Workshop AI trên DGX Spark',
-    app_sub: 'Ba bài thực hành · chạy 100% trên máy này',
-    chip_agent: 'Agent',
-    tab_home: 'Tổng quan', tab_lab1: '1 · Tinh chỉnh', tab_lab2: '2 · RAG', tab_lab3: '3 · Agent',
-    home_h1: 'Tinh chỉnh, truy xuất và điều phối AI cục bộ — trên một máy DGX Spark',
-    home_p: 'Mọi mô hình, tài liệu và lệnh gọi công cụ trong workshop đều chạy trên máy này. Không có dữ liệu nào được gửi lên đám mây.',
+    tab_home: 'Tổng quan', tab_lab1: 'Tinh chỉnh', tab_lab2: 'RAG', tab_lab3: 'Agent', tab_oc: 'OpenClaw · Thử thách',
+    home_eyebrow: 'Workshop thực hành · NVIDIA DGX Spark',
+    home_p: 'Ba bài thực hành và một thử thách trên GIGABYTE AI TOP ATOM, sử dụng siêu chip NVIDIA GB10 Grace Blackwell. Mọi mô hình, tài liệu và lệnh gọi công cụ đều chạy ngay trên máy này — không gửi gì lên đám mây.',
+    ev_date: '08 Tháng 10 · 8:00 – 12:30', ev_date_short: '08/10/2026', ev_day: 'Thứ Năm · 08/10',
+    cta_start: 'Bắt đầu với Bài 1', cta_oc: 'Đến phần thử thách',
+    ag_now: 'Đang diễn ra', ag_go_labs: 'Mở Bài 1', ag_go_oc: 'Mở OpenClaw',
+    lab1_k: 'Bài 1', lab1_n: 'Tinh chỉnh mô hình cục bộ',
+    lab2_k: 'Bài 2', lab2_n: 'Xây dựng RAG với NemoClaw',
+    lab3_k: 'Bài 3', lab3_n: 'Xây dựng quy trình agent',
+    lab4_k: 'Thử thách · 10:00', lab4_n: 'Tự xây agent với OpenClaw',
     lab1_title: 'Bài 1 · Tinh chỉnh mô hình ngôn ngữ cục bộ',
     lab1_desc: 'Dạy một mô hình mở nhỏ danh tính, cách trả lời và phạm vi hỗ trợ mới bằng LoRA chỉ trong vài phút trên GPU — rồi so sánh song song với bản gốc.',
     lab2_title: 'Bài 2 · Xây dựng RAG với NemoClaw',
     lab2_desc: 'Hỏi 28 tài liệu kỹ thuật bất cứ điều gì. Việc truy xuất chạy trong sandbox NemoClaw, và mỗi câu trả lời đều kèm đoạn tài liệu gốc.',
     lab3_title: 'Bài 3 · Xây dựng quy trình Agent',
     lab3_desc: 'Hỏi về doanh số bằng tiếng Việt. Agent NemoClaw tự đọc file Excel, gọi công cụ Python, vẽ biểu đồ và xuất báo cáo Excel.',
+    lab4_desc: 'Mở OpenClaw — agent chạy trong sandbox của máy này — và tự xây một quy trình biết hành động: tự chạy code, ghi file, dùng skill. Trình diễn lúc 11:10.',
     open: 'Mở',
-    st_ready: '✓ Sẵn sàng', st_reduced: '! Chế độ trực tiếp', st_missing: '✗ Chưa cài đặt',
+    st_ready: 'Sẵn sàng', st_reduced: 'Chế độ trực tiếp', st_missing: 'Chưa cài đặt', st_oc_off: 'Chưa phản hồi',
     arch_title: 'Thành phần nào chạy ở đâu',
     arch_models: 'Ollama · mô hình cục bộ',
     arch_sandbox: 'Sandbox NemoClaw',
-    arch_sandbox_d: 'OpenShell cô lập một agent OpenClaw: agent chỉ truy cập được những gì chính sách cho phép. Sandbox chứa bộ tìm kiếm tài liệu (RAG) và agent phân tích doanh số.',
+    arch_sandbox_d: 'OpenShell cô lập một agent OpenClaw: agent chỉ truy cập được những gì chính sách cho phép. Sandbox chứa bộ tìm kiếm tài liệu (RAG), agent phân tích doanh số và agent bạn tự xây trong phần thử thách.',
     arch_app: 'Ứng dụng workshop',
     arch_app_d: 'Chính trang này. Nó khởi chạy việc tinh chỉnh, thực thi các công cụ Python mà agent yêu cầu, và hiển thị từng bước.',
+    credit_by: 'Ứng dụng workshop được thiết kế và phát triển bởi',
+    tm_title: 'Nhãn hiệu',
+    tm_gb: 'GIGABYTE và AI TOP là nhãn hiệu hoặc nhãn hiệu đã đăng ký của GIGA-BYTE Technology Co., Ltd.',
+    tm_nv: 'NVIDIA, logo NVIDIA, DGX, DGX Spark, Grace Blackwell và Nemotron là nhãn hiệu và/hoặc nhãn hiệu đã đăng ký của NVIDIA Corporation tại Hoa Kỳ và các quốc gia khác.',
+    tm_other: 'Các tên công ty và sản phẩm khác, gồm Ollama, OpenClaw và Qwen, có thể là nhãn hiệu của chủ sở hữu tương ứng.',
     footer1: 'Aurora Grid Systems là công ty hư cấu; tài liệu và số liệu bán hàng đều là dữ liệu tổng hợp.',
-    footer2: 'NVIDIA DGX Spark · NemoClaw (OpenShell + OpenClaw) · Ollama · Nemotron · Qwen',
+    footer2: 'Xây dựng với NemoClaw (OpenShell + OpenClaw), Ollama, Nemotron và Qwen. Phông chữ: Be Vietnam Pro và Saira (giấy phép SIL Open Font License).',
 
     l1_h: 'Tinh chỉnh mô hình cục bộ trong vài phút',
     l1_p: 'LoRA chỉ huấn luyện thêm vài triệu tham số trên một mô hình mở được giữ nguyên. Ở đây Qwen2.5-1.5B học trở thành “Aurora” — trợ lý kỹ thuật của Aurora Grid: tên của nó, cách trình bày câu trả lời và những gì nên từ chối.',
@@ -738,7 +1117,7 @@ const I18N = {
     route_label: 'Tuyến ', route_auto: 'Tự động', route_dir: 'Trực tiếp',
     route_nemoclaw: 'Điều phối bởi NemoClaw · agent {agent} trong sandbox',
     route_direct: 'Chế độ trực tiếp · {model} · chưa kết nối NemoClaw',
-    open_control: 'Mở giao diện OpenClaw',
+    open_control: 'Mở trong OpenClaw',
     tr_title: 'Agent đang làm gì',
     tr_start_nc: 'Câu hỏi được gửi tới agent NemoClaw {agent} (mô hình {model})',
     tr_start_direct: 'Câu hỏi được gửi thẳng tới {model} (chế độ dự phòng)',
@@ -748,17 +1127,115 @@ const I18N = {
     tr_nudge_described: 'Kiểm tra quy trình: agent mới mô tả bước tiếp theo mà chưa chạy → làm tiếp',
     tr_nudge_figures: 'Kiểm tra quy trình: số liệu phải đến từ công cụ → agent chạy phân tích',
     tr_nudge_quote: 'Kiểm tra quy trình: có con số không khớp kết quả công cụ → agent viết lại câu trả lời',
-    an_unverified: '⚠️ Các con số này không khớp với kết quả công cụ nào: {f}',
+    an_unverified: 'Các con số này không khớp với kết quả công cụ nào: {f}',
     tr_error: 'Công cụ báo lỗi — agent sẽ đọc lỗi và thử lại',
     tr_fallback: 'NemoClaw không phản hồi — chuyển sang chế độ trực tiếp',
     tr_table: 'Xem bảng', tr_download: 'Tải báo cáo Excel',
     tool_get_dataset_info: 'Đọc file Excel', tool_analyze_sales: 'Phân tích bằng pandas',
     tool_create_chart: 'Vẽ biểu đồ bằng matplotlib', tool_export_excel_report: 'Xuất báo cáo Excel',
-    an_title: 'Nhận định', an_meta: 'tổng {s} giây · {n} lệnh gọi công cụ · {r}', an_route_nc: 'qua NemoClaw', an_route_direct: 'chế độ trực tiếp',
+    an_title: 'Nhận định', an_question: 'Câu hỏi:', an_meta: 'tổng {s} giây · {n} lệnh gọi công cụ · {r}', an_route_nc: 'qua NemoClaw', an_route_direct: 'chế độ trực tiếp',
     err_busy: 'Agent đang xử lý câu hỏi khác. Vui lòng chờ một chút.',
     err_generic: 'Có lỗi xảy ra: {e}',
-    err_tools: 'Chưa cài công cụ Python — hãy chạy lại lệnh cài đặt.'
+    err_tools: 'Chưa cài công cụ Python — hãy chạy lại lệnh cài đặt.',
+
+    oc_kicker: 'Thử thách · 10:00 – 11:10',
+    oc_h: 'Xây dựng quy trình agent biết hành động',
+    oc_p: 'OpenClaw là agent AI chạy trong sandbox NemoClaw của chính máy này. Hãy mở giao diện của OpenClaw, giao cho nó một việc thật bằng ngôn ngữ thường ngày, rồi biến cách làm hiệu quả thành skill. Lúc 11:10, mỗi đội trình diễn sản phẩm của mình.',
+    oc_open: 'Mở OpenClaw',
+    oc_addr: 'Mở trong tab mới. Bạn cũng có thể gõ {addr} vào thanh địa chỉ.',
+    oc_ready: 'OpenClaw đã sẵn sàng', oc_off: 'OpenClaw chưa phản hồi — chờ một phút, hoặc khởi động lại workshop bằng biểu tượng trên màn hình.',
+    oc_model: 'agent main · {model}',
+    oc_remote: 'OpenClaw chỉ mở được trong trình duyệt trên chính máy Spark: để an toàn, nó chỉ lắng nghe trên máy này.',
+    oc_s1: 'Mở OpenClaw', oc_s1d: 'Bấm nút xanh. OpenClaw mở ra ở trang Chat.',
+    oc_s2: 'Giao việc', oc_s2d: 'Nói rõ việc cần làm, dùng dữ liệu nào và muốn nhận lại gì. Viết tiếng Việt được.',
+    oc_s3: 'Biến thành skill', oc_s3d: 'Yêu cầu agent lưu quy trình thành skill, rồi thử lại trong một cuộc chat mới.',
+    oc_s4: 'Trình diễn lúc 11:10', oc_s4d: 'Ba phút: vấn đề, chạy trực tiếp, kết quả tạo ra.',
+    oc_can: 'Agent có thể dùng',
+    oc_ideas: 'Ý tưởng khởi đầu — sao chép vào OpenClaw, rồi phát triển theo cách của bạn',
+    oc_start: 'Bắt đầu', oc_then: 'Tiếp theo', oc_copy: 'Sao chép', oc_copied: 'Đã sao chép — hãy dán vào khung chat của OpenClaw',
+    oc_show: 'Chuẩn bị trình diễn', oc_tips: 'Mẹo',
+    oc_term: 'Dành cho lập trình viên: dùng OpenClaw trong terminal',
+    oc_term_p: 'Mở shell bên trong sandbox, rồi chạy giao diện chat dạng terminal của OpenClaw:',
+    oc_term_policy: 'Sandbox chỉ truy cập được các địa chỉ internet mà chính sách cho phép. Để xem hoặc thay đổi: nemoclaw {sb} policy list'
   }
+};
+
+/* The event, as printed on the key visual. */
+const EVENT_DAY = '2026-10-08';
+const AGENDA = [
+  {s: '08:00', e: '08:30', title: 'Check-in, Networking & Group Photo'},
+  {s: '08:30', e: '09:15', title: 'Introduction: AI TOP ATOM & AI Solution'},
+  {s: '09:15', e: '10:00', title: 'Hands-on Kick-off', go: 'lab1',
+   sub: ['Introduction to Today’s Build', 'KOL experiences using ATOM', 'Use cases involving ATOM', 'Guide to connecting models to create AI Agents']},
+  {s: '10:00', e: '11:10', title: 'Challenge', desc: 'Build an Agentic Workflow That Can Act', go: 'openclaw'},
+  {s: '11:10', e: '11:30', title: 'Showcase & Sharing', desc: 'What Did We Build?'},
+  {s: '11:30', e: '12:30', title: 'Prize & Closing Event'}
+];
+
+/* The challenge page: what OpenClaw's agent can use, and starter ideas. */
+const CAPS = [
+  {icon: 'term', en: ['Run commands and Python', 'It writes scripts and runs them inside the sandbox.'],
+                 vi: ['Chạy lệnh và Python', 'Tự viết script và chạy ngay trong sandbox.']},
+  {icon: 'file', en: ['Read and write files', 'In its workspace, /sandbox/.openclaw/workspace'],
+                 vi: ['Đọc và ghi file', 'Trong thư mục làm việc /sandbox/.openclaw/workspace']},
+  {icon: 'book', en: ['Search the Aurora manuals', 'The 28 documents from Hands-on 2, through memory search.'],
+                 vi: ['Tìm trong tài liệu Aurora', '28 tài liệu của Bài 2, qua tìm kiếm bộ nhớ.']},
+  {icon: 'chart', en: ['The sales-analyst skill', 'pandas, matplotlib and Excel on the Hands-on 3 workbook.'],
+                  vi: ['Skill sales-analyst', 'pandas, matplotlib và Excel trên file dữ liệu của Bài 3.']},
+  {icon: 'pkg', en: ['Install packages', 'PyPI and npm are open in the sandbox policy.'],
+                vi: ['Cài thêm thư viện', 'Chính sách sandbox cho phép PyPI và npm.']},
+  {icon: 'globe', en: ['A small, safe slice of the internet', 'Only hosts the policy allows; everything else is blocked.'],
+                  vi: ['Internet có kiểm soát', 'Chỉ các địa chỉ được chính sách cho phép; còn lại bị chặn.']}
+];
+const IDEAS = [
+  {icon: 'book', uses: 'memory_search · skill',
+   en: {title: 'Field-service assistant', desc: 'Turn the 28 technical manuals into step-by-step checklists a technician can follow on site.',
+        start: 'Search the Aurora documents: what must a technician do when an AX-400 battery cabinet reports over-temperature? Answer as a step-by-step checklist and name the source documents.',
+        then: 'Save this as a skill called aurora-checklist: given a fault or symptom, it searches the documents and returns a checklist with sources.'},
+   vi: {title: 'Trợ lý kỹ thuật hiện trường', desc: 'Biến 28 tài liệu kỹ thuật thành checklist từng bước cho kỹ thuật viên tại công trình.',
+        start: 'Tìm trong tài liệu Aurora: khi tủ pin AX-400 báo quá nhiệt thì kỹ thuật viên phải làm gì? Trả lời thành checklist từng bước và ghi tên tài liệu nguồn.',
+        then: 'Lưu cách làm này thành skill tên aurora-checklist: nhận một lỗi hoặc triệu chứng, tìm trong tài liệu và trả về checklist kèm nguồn.'}},
+  {icon: 'chart', uses: 'sales-analyst · Excel',
+   en: {title: 'Automatic sales report', desc: 'From the Excel workbook to a chart, a report and a summary email — in one request.',
+        start: 'Use the sales-analyst skill: analyse revenue by region, draw a chart and export an Excel report.',
+        then: 'Now write a short email to the director with the three key points and save it as outputs/email.md.'},
+   vi: {title: 'Báo cáo doanh số tự động', desc: 'Từ file Excel đến biểu đồ, báo cáo và email tóm tắt — chỉ bằng một yêu cầu.',
+        start: 'Dùng skill sales-analyst: phân tích doanh thu theo khu vực, vẽ biểu đồ và xuất báo cáo Excel.',
+        then: 'Viết thêm một email ngắn gửi giám đốc tóm tắt 3 điểm chính, lưu thành outputs/email.md.'}},
+  {icon: 'term', uses: 'exec · Python',
+   en: {title: 'Your own Python tool', desc: 'The agent writes the code, runs it and fixes its own errors — then packages it as a skill.',
+        start: 'Write a Python script outputs/top_margin.py that reads skills/sales-analyst/data/aurora_sales_2024_2025.xlsx and finds the 5 products with the highest profit margin in 2025. Run it and show me the result.',
+        then: 'Turn this script into a skill so that next time I only have to ask.'},
+   vi: {title: 'Công cụ Python của riêng bạn', desc: 'Agent tự viết code, chạy thử, tự sửa lỗi — rồi đóng gói thành skill.',
+        start: 'Viết script Python outputs/top_margin.py đọc file skills/sales-analyst/data/aurora_sales_2024_2025.xlsx và tìm 5 sản phẩm có biên lợi nhuận cao nhất năm 2025. Chạy script và cho tôi xem kết quả.',
+        then: 'Biến script này thành một skill để lần sau tôi chỉ cần hỏi.'}},
+  {icon: 'cal', uses: 'memory_search · write',
+   en: {title: 'Planning agent', desc: 'Reads the maintenance schedule in the manuals and writes a plan file the team can use.',
+        start: 'Read the preventive maintenance schedule in the Aurora documents and create outputs/maintenance-plan.md: a 3-month maintenance plan for one AX-400 cabinet, as a table.',
+        then: 'Add a column with the source document for each task, then show me the file.'},
+   vi: {title: 'Agent lập kế hoạch', desc: 'Đọc lịch bảo trì trong tài liệu và tạo file kế hoạch để giao cho đội kỹ thuật.',
+        start: 'Đọc lịch bảo trì định kỳ trong tài liệu Aurora rồi tạo file outputs/ke-hoach-bao-tri.md: kế hoạch bảo trì 3 tháng tới cho một tủ AX-400, trình bày dạng bảng.',
+        then: 'Thêm cột tài liệu nguồn cho từng việc, rồi cho tôi xem nội dung file.'}}
+];
+const SHOWCASE = {
+  en: ['The problem in one sentence: who has it, and why it matters.',
+       'A live run: one request, and the agent acts on its own.',
+       'What it produced: a file, a chart, or a skill others can reuse.',
+       'Where it ran: everything on this machine, inside the sandbox.'],
+  vi: ['Vấn đề trong một câu: ai gặp phải, và vì sao quan trọng.',
+       'Chạy trực tiếp: một yêu cầu, agent tự hành động.',
+       'Kết quả: một file, một biểu đồ, hoặc một skill người khác dùng lại được.',
+       'Chạy ở đâu: tất cả trên máy này, bên trong sandbox.']
+};
+const TIPS = {
+  en: ['Be specific: name the input file, the steps and the format you want back.',
+       'Type /new for a fresh chat when you switch ideas.',
+       'If it stops halfway, reply “continue”.',
+       'Ask “which files did you create?” to find its output.'],
+  vi: ['Viết cụ thể: tên file đầu vào, các bước và định dạng kết quả mong muốn.',
+       'Gõ /new để mở cuộc chat mới khi đổi ý tưởng.',
+       'Nếu agent dừng giữa chừng, trả lời “tiếp tục”.',
+       'Hỏi “bạn đã tạo những file nào?” để tìm kết quả.']
 };
 
 let LANG = 'vi';
@@ -774,6 +1251,9 @@ function esc(s){ return (s == null ? '' : String(s)).replace(/[&<>"']/g, c => ({
 function num(v, d){ const n = Number(v); if (!isFinite(n)) return String(v);
   return n.toLocaleString(LANG === 'vi' ? 'vi-VN' : 'en-US', {maximumFractionDigits: d == null ? 1 : d}); }
 function secs(v){ return t('seconds', {s: num(v, 1)}); }
+/* Line icons from the sprite at the top of <body>. */
+function ic(name, cls){ return `<svg class="i${cls ? ' ' + cls : ''}" aria-hidden="true"><use href="#i-${name}"/></svg>`; }
+function stateHtml(kind, text){ return `<span class="state ${kind}"><i></i>${esc(text)}</span>`; }
 
 /* Minimal, safe markdown: **bold**, bullet lines, paragraphs. */
 function md(text){
@@ -837,7 +1317,7 @@ function applyLang(){
   $('#l2-q').placeholder = t('l2_placeholder');
   $('#l3-q').placeholder = t('l3_placeholder');
   $$('.lang button').forEach(b => b.classList.toggle('on', b.dataset.lang === LANG));
-  renderHomeStatus(); lab1Render(); lab2Examples(); lab3Examples(); lab3RouteBadge(); lab3Dataset();
+  renderAgenda(); renderHomeStatus(); lab1Render(); lab2Examples(); lab3Examples(); lab3RouteBadge(); lab3Dataset(); ocRender();
   if (L2.last) lab2RenderAnswer(L2.last);
   if (L2.sources) lab2RenderSources(L2.sources);
 }
@@ -848,15 +1328,19 @@ $$('.lang button').forEach(b => b.addEventListener('click', () => {
 }));
 
 /* ============================================================== tabs === */
+const TABS = ['home', 'lab1', 'lab2', 'lab3', 'openclaw'];
 function showTab(name){
-  if (!['home', 'lab1', 'lab2', 'lab3'].includes(name)) name = 'home';
+  if (!TABS.includes(name)) name = 'home';
   $$('section.tab').forEach(s => s.classList.toggle('on', s.id === 'tab-' + name));
   $$('nav.tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === name));
   if (location.hash !== '#' + name) history.replaceState(null, '', '#' + name);
   window.scrollTo({top: 0});
 }
 $$('nav.tabs button').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
-$$('[data-go]').forEach(b => b.addEventListener('click', () => showTab(b.dataset.go)));
+document.addEventListener('click', e => {  // cards, agenda links and buttons that lead to a tab
+  const go = e.target.closest('[data-go]');
+  if (go) showTab(go.dataset.go);
+});
 window.addEventListener('hashchange', () => showTab(location.hash.slice(1)));
 
 /* ============================================================= modal === */
@@ -869,6 +1353,31 @@ $('#m-close').addEventListener('click', closeModal);
 $('#modal').addEventListener('click', e => { if (e.target.id === 'modal') closeModal(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 
+let toastTimer = null;
+function toast(text){
+  $('#toast-text').textContent = text;
+  $('#toast').classList.add('on');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => $('#toast').classList.remove('on'), 2600);
+}
+
+/* ============================================================ agenda === */
+function renderAgenda(){
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const minutes = hm => Number(hm.slice(0, 2)) * 60 + Number(hm.slice(3, 5));
+  const cur = now.getHours() * 60 + now.getMinutes();
+  $('#agenda').innerHTML = AGENDA.map(a => {
+    const live = today === EVENT_DAY && cur >= minutes(a.s) && cur < minutes(a.e);
+    return `<li class="${live ? 'now' : ''}"><div class="tm">${a.s} – ${a.e}</div><div>` +
+      `<div class="tt">${esc(a.title)}${live ? `<span class="livetag">${esc(t('ag_now'))}</span>` : ''}</div>` +
+      (a.desc ? `<div class="ts">${esc(a.desc)}</div>` : '') +
+      (a.sub ? '<ul class="sub">' + a.sub.map(x => `<li>${esc(x)}</li>`).join('') + '</ul>' : '') +
+      (a.go ? `<button type="button" class="linkbtn aglink" data-go="${a.go}">${esc(t(a.go === 'openclaw' ? 'ag_go_oc' : 'ag_go_labs'))}${ic('arrow')}</button>` : '') +
+      '</div></li>';
+  }).join('');
+}
+
 /* ============================================================ health === */
 let HEALTH = null;
 async function health(){
@@ -879,23 +1388,21 @@ async function health(){
   $('#c-gpu').textContent = h.gpu || 'GPU';
   $('#d-sandbox').className = 'dot' + (h.sandbox && h.sandbox.ok ? ' on' : (h.sandbox && h.sandbox.checked ? ' warn' : ''));
   $('#d-agent').className = 'dot' + (h.gateway && h.gateway.ready ? ' on' : '');
-  if (h.control_ui) $('#l3-control').href = h.control_ui;
   if (h.chat_model){
     $('#arch-models').textContent = [h.chat_model.name, h.embed_model && h.embed_model.name, L1.info && L1.info.base_model, L1.info && L1.info.tuned_model]
       .filter(Boolean).join(' · ');
   }
   if (h.doc_count) L2.docCount = h.doc_count;
-  renderHomeStatus();
+  renderHomeStatus(); ocStatus();
 }
 function renderHomeStatus(){
   const h = HEALTH || {};
-  const s = (ok, reduced) => ok ? `<span class="pill">${esc(t('st_ready'))}</span>`
-                         : reduced ? `<span class="pill amber">${esc(t('st_reduced'))}</span>`
-                         : `<span class="pill gray">${esc(t('st_missing'))}</span>`;
+  const s = (ok, reduced) => ok ? stateHtml('ok', t('st_ready')) : reduced ? stateHtml('warn', t('st_reduced')) : stateHtml('', t('st_missing'));
   const i1 = L1.info || {};
   $('#home-s1').innerHTML = s(i1.tuned_ready && i1.trainer && i1.trainer.ready, i1.tuned_ready || i1.base_ready);
   $('#home-s2').innerHTML = s(h.sandbox && h.sandbox.ok, h.ollama);
   $('#home-s3').innerHTML = s(h.gateway && h.gateway.ready, h.ollama);
+  $('#home-s4').innerHTML = h.gateway && h.gateway.ready ? stateHtml('ok', t('st_ready')) : stateHtml('', t('st_oc_off'));
 }
 
 /* ============================================================= LAB 1 === */
@@ -925,7 +1432,7 @@ function lab1Render(){
   const tr = i.trainer || {};
   const startBtn = $('#l1-start');
   startBtn.disabled = !tr.ready || L1.running;
-  $('#l1-trainer').innerHTML = tr.ready ? '' : `<div class="note">${esc(t('tr_' + (tr.reason || 'image_missing')))}</div>`;
+  $('#l1-trainer').innerHTML = tr.ready ? '' : `<div class="note">${ic('alert')}<span>${esc(t('tr_' + (tr.reason || 'image_missing')))}</span></div>`;
   const lr = i.last_run;
   $('#l1-last').textContent = lr ? t('last_run', {steps: lr.steps, sec: num(lr.train_seconds, 0), dev: lr.device}) : '';
   lab1Flow(L1.stage || (i.tuned_ready ? 'finished' : ''));
@@ -967,7 +1474,7 @@ async function lab1Follow(from){
   L1.following = true; L1.running = true;
   $('#l1-progress').style.display = 'block';
   $('#l1-start').disabled = true;
-  $('#l1-cancel').style.display = 'inline-block';
+  $('#l1-cancel').style.display = 'inline-flex';
   try { await streamNDJSON('/api/lab1/stream?from=' + from, null, lab1Event, 'GET'); }
   catch (e) { lab1Stage('error', {msg: String(e.message || e)}); }
   L1.following = false; L1.running = false;
@@ -977,8 +1484,8 @@ async function lab1Follow(from){
 
 function lab1Stage(key, vars){
   const spinning = L1.running && !['finished', 'error', 'cancelled'].includes(key);
-  $('#l1-stage').innerHTML = (spinning ? '<span class="spin"></span>' : (key === 'finished' ? '✅' : key === 'error' ? '⚠️' : ''))
-    + ' <span>' + esc(t('st_' + key, vars)) + '</span>';
+  const icon = spinning ? '<span class="spin"></span>' : key === 'finished' ? ic('check') : key === 'error' ? ic('alert', 'bad') : '';
+  $('#l1-stage').innerHTML = icon + '<span>' + esc(t('st_' + key, vars)) + '</span>';
 }
 
 function lab1Event(ev){
@@ -1029,13 +1536,14 @@ function lab1Loss(){
   const area = `${x(0).toFixed(1)},${(H - P).toFixed(1)} ${pts} ${x(ys.length - 1).toFixed(1)},${(H - P).toFixed(1)}`;
   const grid = [0, .25, .5, .75, 1].map(f => {
     const v = min + (max - min) * f, yy = y(v).toFixed(1);
-    return `<line x1="${P}" x2="${W - 8}" y1="${yy}" y2="${yy}" stroke="#e2e8f0" stroke-width="1"/>` +
-           `<text x="2" y="${(+yy + 4).toFixed(1)}" font-size="11" fill="#64748b">${num(v, 2)}</text>`;
+    return `<line x1="${P}" x2="${W - 8}" y1="${yy}" y2="${yy}" stroke="rgba(148,180,255,.14)" stroke-width="1"/>` +
+           `<text x="2" y="${(+yy + 4).toFixed(1)}" font-size="11" fill="#8b98be" font-family="Saira, sans-serif">${num(v, 2)}</text>`;
   }).join('');
-  svg.innerHTML = grid +
-    `<polygon points="${area}" fill="rgba(118,185,0,.12)"/>` +
-    `<polyline points="${pts}" fill="none" stroke="#76b900" stroke-width="2.5" stroke-linejoin="round"/>` +
-    `<text x="${W - 8}" y="${H - 6}" font-size="11" fill="#64748b" text-anchor="end">${ys.length} / ${n}</text>`;
+  svg.innerHTML = '<defs><linearGradient id="lossfill" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#76b900" stop-opacity=".32"/>' +
+    '<stop offset="1" stop-color="#76b900" stop-opacity="0"/></linearGradient></defs>' + grid +
+    `<polygon points="${area}" fill="url(#lossfill)"/>` +
+    `<polyline points="${pts}" fill="none" stroke="#93d600" stroke-width="2.5" stroke-linejoin="round" style="filter:drop-shadow(0 0 6px rgba(118,185,0,.6))"/>` +
+    `<text x="${W - 8}" y="${H - 6}" font-size="11" fill="#8b98be" text-anchor="end" font-family="Saira, sans-serif">${ys.length} / ${n}</text>`;
 }
 
 async function lab1Compare(){
@@ -1051,7 +1559,7 @@ async function lab1Compare(){
       if (ev.text){ buf[s] += ev.text; $('#l1-a-' + s).innerHTML = md(buf[s]); }
       if (ev.error){
         const name = s === 'base' ? (L1.info || {}).base_model : (L1.info || {}).tuned_model;
-        $('#l1-a-' + s).innerHTML = `<div class="note">${esc(ev.error === 'model_missing' ? t('cmp_missing', {m: ev.model || name}) : ev.error)}</div>`;
+        $('#l1-a-' + s).innerHTML = `<div class="note">${ic('alert')}<span>${esc(ev.error === 'model_missing' ? t('cmp_missing', {m: ev.model || name}) : ev.error)}</span></div>`;
       }
       if (ev.done) $('#l1-m-' + s).textContent = secs(ev.seconds);
     });
@@ -1068,7 +1576,7 @@ $('#l1-q').addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventD
 $('#l1-all').addEventListener('click', () => {
   const all = ((L1.info || {}).dataset || {}).all || [];
   openModal(t('data_title'), t('data_count', {n: all.length}),
-    all.map(e => `<div class="ex" style="margin-bottom:9px"><div class="q">${esc(e.q)}</div><div style="white-space:pre-wrap;font-size:13.5px;color:#475569">${esc(e.a)}</div></div>`).join(''));
+    all.map(e => `<div class="ex" style="margin-bottom:9px"><div class="q">${esc(e.q)}</div><div style="white-space:pre-wrap;font-size:13.5px;color:var(--text-2)">${esc(e.a)}</div></div>`).join(''));
 });
 
 /* ============================================================= LAB 2 === */
@@ -1116,7 +1624,7 @@ function lab2Paint(active, detail){
   $('#l2-steps').innerHTML = L2STEPS.map((id, idx) => {
     const state = idx < cur ? 'done' : idx === cur ? 'active' : 'pending';
     const vars = {n: id === 'found' ? ((detail && detail.n) || '') : L2.docCount, s: (detail && detail.s) || ''};
-    const icon = state === 'done' ? '✓' : state === 'active' ? '<span class="spin"></span>' : (idx + 1);
+    const icon = state === 'done' ? ic('check') : state === 'active' ? '<span class="spin"></span>' : (idx + 1);
     const d = t('step_' + id + '_d', vars);
     return `<div class="pstep ${state}"><div class="pdot">${icon}</div><div><div class="ptitle">${esc(t('step_' + id, vars))}</div>` +
       (state !== 'pending' && d !== 'step_' + id + '_d' ? `<div class="pdetail">${esc(d)}</div>` : '') + '</div></div>';
@@ -1208,8 +1716,8 @@ function lab3RouteBadge(){
   const i = L3.info; if (!i) return;
   const nc = i.nemoclaw || {};
   $('#l3-route').innerHTML = nc.ready
-    ? `<span class="pill">🛡️ ${esc(t('route_nemoclaw', {agent: nc.agent}))}</span>`
-    : `<span class="pill amber" title="${esc(nc.detail || '')}">⚡ ${esc(t('route_direct', {model: i.chat_model}))}</span>`;
+    ? `<span class="pill">${ic('shield')}${esc(t('route_nemoclaw', {agent: nc.agent}))}</span>`
+    : `<span class="pill amber" title="${esc(nc.detail || '')}">${ic('bolt')}${esc(t('route_direct', {model: i.chat_model}))}</span>`;
   if (!i.tools_ok) $('#l3-dserr').innerHTML = `<div class="err" style="margin-top:10px">${esc(t('err_tools'))}</div>`;
 }
 
@@ -1219,7 +1727,7 @@ function lab3Dataset(){
   $('#l3-dsname').textContent = d.name;
   $('#l3-dsmeta').textContent = t('ds_meta', {n: num(d.rows, 0), c: d.columns.length, s: d.sheet});
   $('#l3-dsdl').href = '/api/lab3/dataset?name=' + encodeURIComponent(d.name);
-  $('#l3-reset').style.display = d.default ? 'none' : 'inline-block';
+  $('#l3-reset').style.display = d.default ? 'none' : 'inline-flex';
   $('#l3-preview').innerHTML = '<table class="data"><thead><tr>' + d.columns.map(c => `<th>${esc(c)}</th>`).join('') +
     '</tr></thead><tbody>' + d.preview.map(r => '<tr>' + r.map(v =>
       // Years and months are integers: never group their digits ("2.024").
@@ -1236,7 +1744,7 @@ function lab3Flow(active){
 function traceAdd(kind, icon, title, sub, extra){
   const el = document.createElement('div');
   el.className = 'tstep k-' + kind;
-  el.innerHTML = `<div class="ticon">${icon}</div><div class="tbody"><div class="ttitle">${title}</div>` +
+  el.innerHTML = `<div class="ticon">${ic(icon)}</div><div class="tbody"><div class="ttitle">${title}</div>` +
     (sub ? `<div class="tsub">${sub}</div>` : '') + (extra || '') + '</div>';
   $('#l3-trace').appendChild(el);
   return el;
@@ -1267,13 +1775,13 @@ function toolResultHtml(ev){
     const tb = ui.table || {columns: [], rows: []};
     const table = '<table class="data"><thead><tr>' + tb.columns.map(c => `<th>${esc(c)}</th>`).join('') + '</tr></thead><tbody>' +
       tb.rows.map(r => '<tr>' + r.map(v => `<td>${esc(v)}</td>`).join('') + '</tr>').join('') + '</tbody></table>';
-    return `<ul class="hl">${hl}</ul><details style="margin-top:6px"><summary class="muted" style="cursor:pointer">${esc(t('tr_table'))}</summary><div class="tablewrap">${table}</div></details>`;
+    return `<ul class="hl">${hl}</ul><details class="mini" style="margin-top:6px"><summary>${ic('chev', 'chev')}${esc(t('tr_table'))}</summary><div class="tablewrap">${table}</div></details>`;
   }
   if (ev.name === 'create_chart' && ev.image_url){
     return `<img class="thumb" src="${esc(ev.image_url)}" alt="${esc(ui.title || '')}" data-zoom="1">`;
   }
   if (ev.name === 'export_excel_report' && ev.file_url){
-    return `<a class="filebtn" href="${esc(ev.file_url)}">📥 ${esc(t('tr_download'))} · ${esc(ui.file || '')}</a>` +
+    return `<a class="filebtn" href="${esc(ev.file_url)}">${ic('download')}${esc(t('tr_download'))} · ${esc(ui.file || '')}</a>` +
       (ui.sheets ? `<div class="tsub" style="margin-top:4px">${esc(ui.sheets.join(' · '))}</div>` : '');
   }
   return '';
@@ -1303,13 +1811,13 @@ async function lab3Run(){
       const e = ev.event;
       if (e === 'start'){
         const nc = ev.route === 'nemoclaw';
-        traceAdd('llm', nc ? '🛡️' : '⚡', esc(nc ? t('tr_start_nc', {agent: ev.agent, model: ev.model}) : t('tr_start_direct', {model: ev.model})),
+        traceAdd('llm', nc ? 'shield' : 'bolt', esc(nc ? t('tr_start_nc', {agent: ev.agent, model: ev.model}) : t('tr_start_direct', {model: ev.model})),
           esc(ev.data || ''));
       } else if (e === 'fallback'){
-        traceAdd('err', '⚠️', esc(t('tr_fallback')), esc(ev.reason || ''));
+        traceAdd('err', 'alert', esc(t('tr_fallback')), esc(ev.reason || ''));
       } else if (e === 'llm'){
         lab3Flow('nc');
-        thinking = traceAdd('llm', '🧠', '<span class="spin"></span> ' + esc(t('tr_thinking', {n: ev.step})));
+        thinking = traceAdd('llm', 'cpu', '<span class="spin"></span> ' + esc(t('tr_thinking', {n: ev.step})));
       } else if (e === 'llm_done'){
         if (thinking){
           thinking.querySelector('.ttitle').innerHTML = esc(ev.tool_calls ? t('tr_thought', {s: num(ev.seconds), k: ev.tool_calls})
@@ -1317,9 +1825,9 @@ async function lab3Run(){
           thinking = null;
         }
       } else if (e === 'thought'){
-        traceAdd('llm', '💭', '', `<div class="thought">${md(ev.text)}</div>`);
+        traceAdd('llm', 'msg', '', `<div class="thought">${md(ev.text)}</div>`);
       } else if (e === 'nudge'){
-        traceAdd('llm', '📋', esc(ev.reason === 'described' ? t('tr_nudge_described')
+        traceAdd('llm', 'clip', esc(ev.reason === 'described' ? t('tr_nudge_described')
           : ev.reason === 'no_analysis' ? t('tr_nudge_figures')
           : ev.reason === 'figures' ? t('tr_nudge_quote')
           : t('tr_nudge', {m: (ev.missing || []).map(n => t('tool_' + n)).join(', ')})));
@@ -1327,13 +1835,13 @@ async function lab3Run(){
         L3.calls++;
         lab3Flow('py');
         const friendly = t('tool_' + ev.name);
-        L3.stepEl = traceAdd('call', '🐍', `${esc(friendly)} <span class="muted" style="font-weight:500">· ${esc(t('tr_call'))} <code>${esc(ev.name)}</code></span>`, '', argChips(ev.args));
+        L3.stepEl = traceAdd('call', 'term', `${esc(friendly)} <span class="muted" style="font-weight:500">· ${esc(t('tr_call'))} <code>${esc(ev.name)}</code></span>`, '', argChips(ev.args));
       } else if (e === 'tool_result'){
         const el = L3.stepEl;
         if (!ev.ok) sawError = true;
         if (el){
           el.classList.add(ev.ok ? 'k-res' : 'k-err');
-          el.querySelector('.ticon').textContent = ev.ok ? '✅' : '⚠️';
+          el.querySelector('.ticon').innerHTML = ic(ev.ok ? 'check' : 'alert');
           const tb = el.querySelector('.tbody');
           tb.insertAdjacentHTML('beforeend', `<div class="tsub">${esc(ev.ok ? t('tr_result', {s: num(ev.seconds, 2)}) : t('tr_error'))}</div>` + toolResultHtml(ev));
           tb.querySelectorAll('img[data-zoom]').forEach(img => img.addEventListener('click', () => openModal(img.alt || '', '', `<img src="${esc(img.src)}" alt="">`)));
@@ -1347,12 +1855,12 @@ async function lab3Run(){
       } else if (e === 'error'){
         sawError = true;
         const msg = ev.message === 'busy' ? t('err_busy') : /missing Python package/.test(ev.message || '') ? t('err_tools') : t('err_generic', {e: ev.message});
-        traceAdd('err', '⚠️', esc(msg));
+        traceAdd('err', 'alert', esc(msg));
         lab3Flow('');
       }
     });
   } catch (err) {
-    traceAdd('err', '⚠️', esc(t('err_generic', {e: err.message || err})));
+    traceAdd('err', 'alert', esc(t('err_generic', {e: err.message || err})));
     lab3Flow('');
   }
   lab3Clock(false);
@@ -1363,12 +1871,12 @@ async function lab3Run(){
 
 function lab3Answer(ev){
   $('#l3-answer').style.display = 'block';
-  $('#l3-qecho').innerHTML = `<b>${esc(LANG === 'vi' ? 'Câu hỏi:' : 'Question:')}</b> ${esc(L3.q)}`;
+  $('#l3-qecho').innerHTML = `<b>${esc(t('an_question'))}</b> ${esc(L3.q)}`;
   $('#l3-text').innerHTML = md(ev.text || '') +
-    (ev.unverified ? `<div class="note">${esc(t('an_unverified', {f: ev.unverified.slice(0, 6).join(', ')}))}</div>` : '');
+    (ev.unverified ? `<div class="note">${ic('alert')}<span>${esc(t('an_unverified', {f: ev.unverified.slice(0, 6).join(', ')}))}</span></div>` : '');
   $('#l3-meta').innerHTML = `<span>${esc(t('an_meta', {s: num(ev.seconds), n: L3.calls, r: ev.route === 'nemoclaw' ? t('an_route_nc') : t('an_route_direct')}))}</span>`;
   const reports = (ev.files || []).filter(f => f.kind === 'report');
-  $('#l3-files').innerHTML = reports.map(f => `<a class="filebtn" href="${esc(f.url)}">📥 ${esc(t('tr_download'))} · ${esc(f.name)}</a>`).join(' ');
+  $('#l3-files').innerHTML = reports.map(f => `<a class="filebtn" href="${esc(f.url)}">${ic('download')}${esc(t('tr_download'))} · ${esc(f.name)}</a>`).join(' ');
   const chart = L3.lastChart || ((ev.files || []).find(f => f.kind === 'chart') || {}).url;
   $('#l3-chart').innerHTML = chart ? `<img class="bigchart" src="${esc(chart)}" alt="chart">` : '';
   const big = $('#l3-chart img');
@@ -1381,7 +1889,7 @@ $('#l3-q').addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventD
 $('#l3-upload').addEventListener('click', () => $('#l3-file').click());
 $('#l3-file').addEventListener('change', async () => {
   const f = $('#l3-file').files[0]; if (!f) return;
-  $('#l3-dserr').innerHTML = `<div class="muted" style="margin-top:8px"><span class="spin"></span> ${esc(t('ds_uploading'))}</div>`;
+  $('#l3-dserr').innerHTML = `<div class="muted" style="margin-top:8px;display:flex;gap:8px;align-items:center"><span class="spin"></span> ${esc(t('ds_uploading'))}</div>`;
   try {
     const res = await fetch('/api/lab3/upload', {method: 'POST', headers: {'X-Filename': encodeURIComponent(f.name)}, body: f});
     const j = await res.json();
@@ -1401,6 +1909,67 @@ $('#l3-reset').addEventListener('click', async () => {
   await lab3Load();
 });
 
+/* ========================================================== OPENCLAW === */
+/* OpenClaw's own web UI is served by the sandbox gateway. /openclaw on this
+   app redirects to it with the access token, for a browser on this machine. */
+async function copyText(text){
+  try { await navigator.clipboard.writeText(text); return true; } catch (e) {}
+  const ta = document.createElement('textarea');  // http on a LAN address has no clipboard API
+  ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta); ta.select();
+  let ok = false;
+  try { ok = document.execCommand('copy'); } catch (e) {}
+  ta.remove();
+  return ok;
+}
+
+function promptBox(kind, text){
+  return `<div class="prompt ${kind}"><div class="pl"><span>${esc(t(kind === 'then' ? 'oc_then' : 'oc_start'))}</span>` +
+    `<button type="button" class="copy" data-copy="${esc(text)}">${ic('copy')}${esc(t('oc_copy'))}</button></div>` +
+    `<div class="pt">${esc(text)}</div></div>`;
+}
+
+function ocRender(){
+  $('#oc-caps').innerHTML = CAPS.map(c => {
+    const [title, sub] = c[LANG] || c.en;
+    return `<li><span class="ci">${ic(c.icon)}</span><div><b>${esc(title)}</b><span>${esc(sub)}</span></div></li>`;
+  }).join('');
+  $('#oc-ideas').innerHTML = IDEAS.map(idea => {
+    const x = idea[LANG] || idea.en;
+    return `<article class="idea glass"><div class="ih"><span class="ii">${ic(idea.icon)}</span><div><h3>${esc(x.title)}</h3>` +
+      `<div class="uses">${esc(idea.uses)}</div></div></div><p>${esc(x.desc)}</p>${promptBox('start', x.start)}${promptBox('then', x.then)}</article>`;
+  }).join('');
+  $('#oc-show').innerHTML = (SHOWCASE[LANG] || SHOWCASE.en).map(s => `<li>${ic('check')}<span>${esc(s)}</span></li>`).join('');
+  $('#oc-tips').innerHTML = (TIPS[LANG] || TIPS.en).map(s => `<li>${ic('arrow')}<span>${esc(s)}</span></li>`).join('');
+  ocStatus();
+}
+
+function ocStatus(){
+  const h = HEALTH || {};
+  const sb = (h.sandbox && h.sandbox.name) || 'dgx-workshop';
+  const ready = h.gateway && h.gateway.ready;
+  const model = h.chat_model ? h.chat_model.name : '';
+  $('#oc-status').innerHTML = (ready ? stateHtml('ok', t('oc_ready')) : stateHtml('warn', t('oc_off'))) +
+    (ready && model ? `<span class="model">${esc(t('oc_model', {model}))}</span>` : '');
+  const addr = location.host + '/openclaw';
+  $('#oc-addr').innerHTML = esc(t('oc_addr', {addr: '\u0000'})).replace('\u0000', `<code>${esc(addr)}</code>`);
+  $('#oc-remote').style.display = HEALTH && !h.local ? 'flex' : 'none';
+  const port = h.nemoclaw_port || '8990';
+  $('#oc-cmds').innerHTML = [`export NEMOCLAW_GATEWAY_PORT=${port}`, `nemoclaw ${sb} connect`, 'openclaw tui'].map(c =>
+    `<div class="cmd"><span>${esc(c)}</span><button type="button" class="copy" data-copy="${esc(c)}">${ic('copy')}${esc(t('oc_copy'))}</button></div>`).join('');
+  $$('[data-i18n="oc_term_policy"]').forEach(el => { el.textContent = t('oc_term_policy', {sb}); });
+}
+
+document.addEventListener('click', async e => {
+  const b = e.target.closest('[data-copy]');
+  if (!b) return;
+  if (await copyText(b.dataset.copy)){
+    b.classList.add('done');
+    setTimeout(() => b.classList.remove('done'), 1600);
+    toast(t('oc_copied'));
+  }
+});
+
 /* ============================================================== init === */
 (async function init(){
   applyLang();
@@ -1410,6 +1979,7 @@ $('#l3-reset').addEventListener('click', async () => {
   health();
   setInterval(health, 10000);
   setInterval(() => { if (!L1.running) lab1Load(); }, 30000);
+  setInterval(renderAgenda, 60000);
 })();
 </script>
 </body>

@@ -305,6 +305,10 @@ for m in "${MODELS[@]}"; do
     fi
   fi
 done
+if ollama_up && ollama_has "$CHAT_MODEL" && [ "$CHECK_ONLY" -eq 0 ]; then
+  ensure_chat_context && ok "Chat model context: $CHAT_CONTEXT tokens" "Ngữ cảnh của mô hình chat: $CHAT_CONTEXT token" \
+    || warn "Could not set the chat model's context window (OpenClaw's own chat may overflow)"
+fi
 if ollama_up && ollama_has "$EMBED_MODEL"; then
   DIM_OUT=$(curl -fsS -m 120 "$OLLAMA_URL/api/embed" -d "{\"model\":\"$EMBED_MODEL\",\"input\":[\"probe\"]}" 2>/dev/null \
             | python3 -c 'import json,sys; print(len(json.load(sys.stdin)["embeddings"][0]))' 2>/dev/null || echo 0)
@@ -365,6 +369,7 @@ else
           NEMOCLAW_NON_INTERACTIVE=1 NEMOCLAW_ACCEPT_THIRD_PARTY_SOFTWARE=1 NEMOCLAW_YES=1 \
           NEMOCLAW_AGENT=openclaw NEMOCLAW_PROVIDER=ollama NEMOCLAW_MODEL="$CHAT_MODEL" \
           NEMOCLAW_SANDBOX_NAME="$SANDBOX" NEMOCLAW_POLICY_TIER=balanced \
+          NEMOCLAW_CONTEXT_WINDOW="$CHAT_CONTEXT" \
       timeout 5400 bash -c 'curl -fsSL https://www.nvidia.com/nemoclaw.sh | bash -s -- --non-interactive --yes-i-accept-third-party-software' \
       || note_log "the NemoClaw installer did not finish cleanly"
     if command -v nemoclaw >/dev/null 2>&1; then

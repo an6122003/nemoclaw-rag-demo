@@ -68,6 +68,7 @@ if ! ollama_up; then
 fi
 if ollama_up; then
   ok "AI model server is running" "Máy chủ mô hình AI đang chạy"
+  ensure_chat_context || note_log "could not set the chat model's context window"
 else
   bad "The AI model server (Ollama) is not answering" "Máy chủ mô hình (Ollama) không phản hồi"
   info "Try: sudo systemctl restart ollama   then start the workshop again" \
@@ -125,6 +126,13 @@ if command -v nemoclaw >/dev/null 2>&1; then
     else
       ok "Sales Analyst agent is ready" "Agent phân tích doanh số đã sẵn sàng"
     fi
+    # The challenge uses OpenClaw's own chat: its context window and its sales
+    # skill (pandas inside the sandbox, which a recreated sandbox has lost;
+    # reinstalled from wheels kept on this machine, no internet needed).
+    run_long "Checking OpenClaw for the challenge… / Đang kiểm tra OpenClaw cho phần thử thách…" \
+        bash "$ROOT/scripts/lab3-sandbox-setup.sh" --sandbox "$SANDBOX" --openclaw-chat \
+      || warn "OpenClaw's sales skill is not ready — the rest of OpenClaw still works" \
+              "Skill phân tích doanh số của OpenClaw chưa sẵn sàng — các phần khác của OpenClaw vẫn dùng được"
   else
     warn "The sandbox is not running — labs 2 and 3 will run in direct mode" \
          "Sandbox chưa chạy — bài 2 và 3 sẽ chạy ở chế độ trực tiếp"
