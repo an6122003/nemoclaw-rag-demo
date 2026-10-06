@@ -41,7 +41,8 @@ INDEX_HTML = HERE / "index.html"
 # Logos and fonts, served from disk so the page works without internet.
 STATIC = HERE / "static"
 STATIC_TYPES = {".css": "text/css; charset=utf-8", ".svg": "image/svg+xml", ".woff2": "font/woff2",
-                ".png": "image/png", ".txt": "text/plain; charset=utf-8"}
+                ".png": "image/png", ".txt": "text/plain; charset=utf-8",
+                ".js": "text/javascript; charset=utf-8"}
 RETRIEVAL_MODE = "auto"
 MAX_UPLOAD = 25 * 1024 * 1024
 

@@ -235,6 +235,13 @@ else:
         del catalog[ref]
         changes.append(f"agents.defaults.models[{ref}] removed")
 
+# Heartbeats post "[OpenClaw heartbeat poll]" turns into the main chat every
+# 30 minutes and keep the GPU busy; nobody needs them in a workshop.
+heartbeat = agents.setdefault("defaults", {}).setdefault("heartbeat", {})
+if heartbeat.get("every") != "0m":
+    heartbeat["every"] = "0m"
+    changes.append("agents.defaults.heartbeat.every = 0m (off)")
+
 if mode == "chat":
     open(path, "w", encoding="utf-8").write(json.dumps(d, indent=2, ensure_ascii=False) + "\n")
     print("\n".join(changes) if changes else "no changes")

@@ -125,8 +125,31 @@ printf '\n   Full details / Chi tiết đầy đủ: %s\n' "$LOG"
 step "Checking this computer" "Kiểm tra máy tính"
 
 SUDO_OK=0
-# Stop here, with plain instructions, when a step cannot work without the password.
+sudo_keepalive() {  # keep sudo alive while setup runs, so a long download does not ask again
+  [ -n "${SUDO_KEEPALIVE:-}" ] && return 0
+  ( while kill -0 $$ 2>/dev/null; do sudo -n true 2>/dev/null; sleep 50; done ) &
+  SUDO_KEEPALIVE=$!
+  trap 'kill "$SUDO_KEEPALIVE" 2>/dev/null' EXIT
+}
+ask_password() {  # up to three rounds of sudo's own three tries
+  local round
+  sudo -n true 2>/dev/null && { SUDO_OK=1; sudo_keepalive; return 0; }
+  [ -t 0 ] || return 1
+  for round in 1 2 3; do
+    info "Type the password you log in with, then press Enter. Nothing appears while you type." \
+         "Gõ mật khẩu đăng nhập máy rồi nhấn Enter. Khi gõ, màn hình KHÔNG hiện ký tự nào — đó là bình thường."
+    if sudo -v; then
+      SUDO_OK=1
+      sudo_keepalive
+      return 0
+    fi
+    [ "$round" -lt 3 ] && warn "The password was not accepted — let's try again" "Mật khẩu chưa đúng — hãy thử lại"
+  done
+  return 1
+}
+# Only when a step cannot work at all without the password.
 need_password() {
+  ask_password && return 0
   bad "$1 needs administrator access, and the password was not accepted." \
       "Bước này cần quyền quản trị, nhưng mật khẩu chưa được chấp nhận."
   info "Run the install command again and type the password you log in with." \
@@ -135,22 +158,27 @@ need_password() {
   exit 1
 }
 if [ "$CHECK_ONLY" -eq 0 ]; then
-  [ -z "${WORKSHOP_DOCKER_GROUP:-}" ] && {
-    info "Type the password you log in with, then press Enter. Nothing appears while you type." \
-         "Gõ mật khẩu đăng nhập máy rồi nhấn Enter. Khi gõ, màn hình KHÔNG hiện ký tự nào — đó là bình thường."
-  }
-  if sudo -v; then
-    SUDO_OK=1
+  if ask_password; then
     ok "Administrator access granted" "Đã cấp quyền quản trị"
-    # Keep sudo alive while setup runs, so a long download does not ask again.
-    # Stopped again on exit and before the app starts.
-    ( while kill -0 $$ 2>/dev/null; do sudo -n true 2>/dev/null; sleep 50; done ) &
-    SUDO_KEEPALIVE=$!
-    trap 'kill "$SUDO_KEEPALIVE" 2>/dev/null' EXIT
   else
-    warn "No administrator access — some steps may fail" "Không có quyền quản trị — một số bước có thể lỗi"
+    warn "No administrator access — steps that need it will ask again" "Chưa có quyền quản trị — bước nào cần sẽ hỏi lại"
   fi
 fi
+
+# Ubuntu packages, waiting for the automatic updates a fresh machine runs and
+# refreshing the package lists once if a package is not found.
+APT_UPDATED=0
+apt_install() {
+  [ "$SUDO_OK" -eq 1 ] || need_password "Installing $*"
+  local apt=(sudo env DEBIAN_FRONTEND=noninteractive apt-get -o DPkg::Lock::Timeout=900 -y)
+  "${apt[@]}" install --no-install-recommends "$@" >> "$LOG" 2>&1 && return 0
+  if [ "$APT_UPDATED" -eq 0 ]; then
+    APT_UPDATED=1
+    "${apt[@]}" update >> "$LOG" 2>&1 || true
+    "${apt[@]}" install --no-install-recommends "$@" >> "$LOG" 2>&1 && return 0
+  fi
+  return 1
+}
 
 ARCH="$(uname -m)"
 [ "$ARCH" = "aarch64" ] && ok "Processor: $ARCH (DGX Spark)" "Bộ xử lý: $ARCH" \
@@ -172,6 +200,33 @@ FREE_GB=$(df -Pk "$HOME" | awk 'NR==2 {printf "%d", $4/1048576}')
 if [ "$FREE_GB" -ge 80 ]; then ok "${FREE_GB} GB free disk" "${FREE_GB} GB ổ đĩa trống"
 elif [ "$FREE_GB" -ge 45 ]; then warn "${FREE_GB} GB free disk — 80 GB is safer" "${FREE_GB} GB trống — nên có 80 GB"
 else bad "Only ${FREE_GB} GB free disk — about 60 GB is needed" "Chỉ còn ${FREE_GB} GB trống — cần khoảng 60 GB"; CORE_OK=0
+fi
+
+# Tools the setup itself uses; a fresh install of Ubuntu can lack some of them.
+MISSING=()
+for need in curl git zstd python3; do command -v "$need" >/dev/null 2>&1 || MISSING+=("$need"); done
+command -v python3 >/dev/null 2>&1 && python3 -c "import ensurepip, venv" >/dev/null 2>&1 || MISSING+=(python3-venv python3-pip)
+if [ "${#MISSING[@]}" -gt 0 ] && [ "$CHECK_ONLY" -eq 0 ]; then
+  run_long "Installing ${MISSING[*]}… / Đang cài ${MISSING[*]}…" apt_install ca-certificates "${MISSING[@]}" \
+    && ok "Installed ${MISSING[*]}" "Đã cài ${MISSING[*]}" \
+    || warn "Could not install ${MISSING[*]}" "Không cài được ${MISSING[*]}"
+fi
+
+# Docker: installed if missing, started if stopped.
+docker_install() {
+  apt_install docker.io docker-buildx || apt_install docker.io \
+    || sh -c 'curl -fsSL https://get.docker.com | sudo sh' >> "$LOG" 2>&1
+}
+if [ "$CHECK_ONLY" -eq 0 ] && ! command -v docker >/dev/null 2>&1; then
+  [ "$SUDO_OK" -eq 1 ] || need_password "Installing Docker"
+  run_long "Installing Docker… / Đang cài Docker…" docker_install \
+    && ok "Docker installed" "Đã cài Docker" || warn "Could not install Docker" "Không cài được Docker"
+  sudo systemctl enable --now docker >> "$LOG" 2>&1 || true
+fi
+if [ "$CHECK_ONLY" -eq 0 ] && command -v docker >/dev/null 2>&1 && ! docker_ok && ! docker_denied; then
+  [ "$SUDO_OK" -eq 1 ] || need_password "Starting Docker"
+  sudo systemctl enable --now docker >> "$LOG" 2>&1 || sudo systemctl start docker >> "$LOG" 2>&1 || true
+  for _ in $(seq 1 30); do { docker_ok || docker_denied; } && break; sleep 2; done
 fi
 
 if ! command -v docker >/dev/null 2>&1; then
@@ -202,17 +257,23 @@ else
   ok "Docker $(docker version --format '{{.Server.Version}}' 2>/dev/null)" "Docker đang chạy"
 fi
 
+# GPU containers (Hands-on 1 trains in one): the NVIDIA Container Toolkit.
+# DGX OS ships it; add it where it is missing.
+if [ -n "$GPU" ] && [ "$CHECK_ONLY" -eq 0 ] && docker_ok \
+   && ! command -v nvidia-ctk >/dev/null 2>&1 && ! command -v nvidia-container-runtime-hook >/dev/null 2>&1; then
+  if run_long "Installing the NVIDIA Container Toolkit…" apt_install nvidia-container-toolkit; then
+    sudo nvidia-ctk runtime configure --runtime=docker >> "$LOG" 2>&1 && sudo systemctl restart docker >> "$LOG" 2>&1
+    for _ in $(seq 1 30); do docker_ok && break; sleep 2; done
+    ok "NVIDIA Container Toolkit installed" "Đã cài NVIDIA Container Toolkit"
+  else
+    warn "Could not install the NVIDIA Container Toolkit — Hands-on 1 may not train" \
+         "Không cài được NVIDIA Container Toolkit — bài 1 có thể không huấn luyện được"
+  fi
+fi
+
 for need in curl python3; do
   command -v "$need" >/dev/null 2>&1 || { bad "$need is missing" "Thiếu $need"; CORE_OK=0; }
 done
-if ! command -v zstd >/dev/null 2>&1 && [ "$CHECK_ONLY" -eq 0 ]; then
-  # The Ollama installer unpacks a .tar.zst archive.
-  # A fresh machine is often still running unattended upgrades: wait for the lock.
-  run_long "Installing zstd…" sudo env DEBIAN_FRONTEND=noninteractive \
-      apt-get -o DPkg::Lock::Timeout=300 install -y zstd \
-    && ok "zstd installed" "Đã cài zstd" \
-    || warn "Could not install zstd (the Ollama installer needs it)"
-fi
 
 NET_OK=1
 for site in https://ollama.com https://registry.ollama.ai https://www.nvidia.com https://nvcr.io https://huggingface.co https://github.com; do
@@ -241,8 +302,15 @@ if [ "$CHECK_ONLY" -eq 1 ]; then
 else
   if ! command -v ollama >/dev/null 2>&1 || ! version_ge "$(ollama_version)" "$MIN_OLLAMA"; then
     [ "$SUDO_OK" -eq 1 ] || need_password "Installing Ollama"
-    run_long "Installing Ollama… / Đang cài Ollama…" sh -c 'curl -fsSL https://ollama.com/install.sh | sh' \
-      && ok "Ollama $(ollama_version) installed" "Đã cài Ollama" \
+    OLLAMA_INSTALLED=0
+    for attempt in 1 2 3; do  # a slow or dropped download is retried
+      if run_long "Installing Ollama… / Đang cài Ollama…" sh -c 'curl -fsSL https://ollama.com/install.sh | sh'; then
+        OLLAMA_INSTALLED=1; break
+      fi
+      warn "Ollama download failed (attempt $attempt of 3) — retrying" "Tải Ollama lỗi (lần $attempt/3) — thử lại"
+      sleep $((attempt * 15))
+    done
+    [ "$OLLAMA_INSTALLED" -eq 1 ] && ok "Ollama $(ollama_version) installed" "Đã cài Ollama" \
       || { bad "Could not install Ollama" "Không cài được Ollama"; show_log_tail; exit 1; }
   else
     ok "Ollama $(ollama_version) is installed" "Ollama đã được cài"
@@ -342,6 +410,11 @@ else
   if ! venv_ok; then  # fallback without uv
     run_long "Creating the environment (pip)…" sh -c \
       "python3 -m venv '$ROOT/.venv' || { sudo env DEBIAN_FRONTEND=noninteractive apt-get -o DPkg::Lock::Timeout=300 install -y python3-venv && python3 -m venv '$ROOT/.venv'; }; '$ROOT/.venv/bin/pip' install -q -r '$ROOT/hands-on-3-agent/requirements.txt'" || true
+  fi
+  if ! venv_ok; then  # a dropped download: once more, from scratch
+    rm -rf "$ROOT/.venv"
+    run_long "Creating the environment (retry)…" sh -c \
+      "python3 -m venv '$ROOT/.venv' && '$ROOT/.venv/bin/pip' install -q -r '$ROOT/hands-on-3-agent/requirements.txt'" || true
   fi
   venv_ok && ok "Python environment ready (pandas, matplotlib, openpyxl)" "Môi trường Python đã sẵn sàng" \
           || { bad "Could not create the Python environment" "Không tạo được môi trường Python"; show_log_tail; exit 1; }
