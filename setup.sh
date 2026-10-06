@@ -294,8 +294,9 @@ for m in "${MODELS[@]}"; do
     warn "$m not downloaded yet"
   else
     info "Downloading $m … this can take a while" "Đang tải $m … có thể mất một lúc"
-    note_log "ollama pull $m"
-    if ollama pull "$m"; then
+    note_log "pull $m"
+    # Reconnects by itself when the download crawls near the end (an Ollama habit).
+    if python3 "$ROOT/scripts/pull-model.py" "$m"; then
       ok "$m ready" "$m đã sẵn sàng"
     else
       bad "Could not download $m" "Không tải được $m"

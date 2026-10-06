@@ -252,6 +252,7 @@ const children = [
   H1("6. Phần D — Khi gặp sự cố"),
   table(["Hiện tượng", "Cách xử lý"], [
     ["Trình duyệt không tự mở", ["Mở trình duyệt, vào ", { b: "http://127.0.0.1:8090" }]],
+    ["Lúc tải mô hình, tốc độ tụt còn vài KB/s", "Không cần làm gì: sau khoảng 1 phút chương trình tự kết nối lại và tải tiếp, phần đã tải được giữ nguyên"],
     ["Terminal báo “curl: command not found”", ["Dán lệnh ", { b: "sudo apt install -y curl" }, ", nhấn Enter, nhập mật khẩu, rồi dán lại lệnh cài đặt"]],
     ["Terminal báo “Permission denied”", ["Nhớ có chữ ", { b: "bash" }, " ở đầu lệnh: bash ~/dgx-workshop/start.sh"]],
     ["Trang web trắng hoặc không phản hồi", ["Nhấn ", { b: "F5" }, " để tải lại trang"]],

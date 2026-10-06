@@ -171,6 +171,7 @@ The **VI / EN** buttons top right switch language. Tabs along the top: **Overvie
 
 | Hiện tượng · Symptom | Cách xử lý · What to do |
 |---|---|
+| Tải mô hình chậm còn vài KB/s · A model download crawls at a few KB/s | Không cần làm gì: sau khoảng 1 phút chương trình tự kết nối lại, phần đã tải được giữ nguyên · Nothing to do: after about a minute setup reconnects and keeps what it already downloaded |
 | Trình duyệt không tự mở · Browser does not open | Mở thủ công · Open `http://127.0.0.1:8090/` |
 | `Permission denied` | Dùng `bash ~/dgx-workshop/start.sh` (có chữ `bash` ở đầu) |
 | Trang trắng · Blank page | Nhấn `F5` · Press `F5` |
