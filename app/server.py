@@ -4,6 +4,7 @@
     Hands-on 1  Fine-tuning Local LLMs        (lab1_finetune.py)
     Hands-on 2  Build RAG with NemoClaw       (lab2_rag.py)
     Hands-on 3  Build an Agentic Workflow     (lab3_agent.py)
+    Enterprise  Batch jobs on the box         (enterprise.py)
 
 Standard library HTTP server. The Hands-on 3 tools need pandas, matplotlib and
 openpyxl, so start it with the workshop's Python environment:
@@ -33,6 +34,7 @@ from urllib.parse import parse_qs, unquote, urlparse
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import common  # noqa: E402
+import enterprise as ent  # noqa: E402
 import lab1_finetune as lab1  # noqa: E402
 import lab2_rag as lab2  # noqa: E402
 import lab3_agent as lab3  # noqa: E402
@@ -194,6 +196,27 @@ class Handler(BaseHTTPRequestHandler):
             f = lab3.dataset_path((qs.get("name") or [""])[0])
             return self._file(f)
 
+        # ---- Enterprise batch demos
+        demo = (qs.get("demo") or [""])[0]
+        if path == "/api/ent/summary":
+            if (qs.get("active") or [""])[0] == "1":
+                ent.touch_engine()  # the page is open: keep the engine up
+            return self._json(200, ent.summaries())
+        if path == "/api/ent/feed" and demo in ent.DEMOS:
+            only = (qs.get("only") or ["all"])[0]
+            limit = int(_clamp((qs.get("limit") or ["40"])[0], 1, 200, 40, int))
+            return self._json(200, {"rows": ent.feed(demo, limit, only)})
+        if path == "/api/ent/samples" and demo in ent.DEMOS:
+            return self._json(200, {"rows": ent.sample_items(demo)})
+        m = re.fullmatch(r"/api/ent/invoice/([\w.\-]+)", path)
+        if m:
+            f = ent.invoice_image(m.group(1))
+            return self._file(f) if f else self._json(404, {"error": "not found"})
+        if path == "/api/ent/export" and demo in ent.DEMOS:
+            if not ent.results(demo):
+                return self._json(409, {"error": "nothing processed yet"})
+            return self._file(ent.export_xlsx(demo))
+
         return self._json(404, {"error": "not found"})
 
     def _file(self, f: Path) -> None:
@@ -202,6 +225,7 @@ class Handler(BaseHTTPRequestHandler):
             ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             ".csv": "text/csv; charset=utf-8",
             ".json": "application/json",
+            ".jpg": "image/jpeg",
         }.get(f.suffix.lower(), "application/octet-stream")
         extra = {}
         if f.suffix.lower() in (".xlsx", ".csv"):
@@ -268,6 +292,30 @@ class Handler(BaseHTTPRequestHandler):
             route = req.get("route") if req.get("route") in ("auto", "nemoclaw", "direct") else "auto"
             data = req.get("dataset") or None
             return self._stream(lambda emit: lab3.run_agent(q, lang, data, route, emit))
+
+        # ---- Enterprise batch demos
+        if path.startswith("/api/ent/"):
+            demo = req.get("demo")
+            if path == "/api/ent/start" and demo in ent.DEMOS:
+                limit = int(_clamp(req.get("limit"), 1, 100000, 200, int))
+                engine = "ollama" if req.get("engine") == "ollama" else "vllm"
+                ok, why = ent.start_job(demo, limit, engine)
+                return self._json(200 if ok else 409, {"ok": ok, "detail": why})
+            if path == "/api/ent/stop" and demo in ent.DEMOS:
+                return self._json(200, {"ok": ent.stop_job(demo)})
+            if path == "/api/ent/reset" and demo in ent.DEMOS:
+                ok, why = ent.reset_job(demo)
+                return self._json(200 if ok else 409, {"ok": ok, "detail": why})
+            if path == "/api/ent/engine":
+                if req.get("action") == "stop":
+                    if ent.any_running():
+                        return self._json(409, {"ok": False, "detail": "job_running"})
+                    return self._json(200, {"ok": ent.engine_stop()})
+                ok, why = ent.engine_start()
+                ent.touch_engine()
+                return self._json(200 if ok else 409, {"ok": ok, "detail": why})
+            if path == "/api/ent/prepare":
+                return self._json(200, {"ok": ent.prepare(log=lambda m: None)})
 
         return self._json(404, {"error": "not found"})
 
@@ -376,6 +424,15 @@ def main() -> int:
         threading.Thread(target=warm, daemon=True).start()
     if args.retrieval != "local":
         threading.Thread(target=lab2.probe_sandbox, daemon=True).start()
+
+    def reap() -> None:  # the batch engine gives its memory back to the labs when idle
+        while True:
+            time.sleep(60)
+            try:
+                ent.reap_idle_engine(float(common.setting("BATCH_IDLE_MINUTES", "30") or 30))
+            except Exception:
+                pass
+    threading.Thread(target=reap, daemon=True).start()
 
     srv = ThreadingHTTPServer((host, args.port), Handler)
     srv.daemon_threads = True

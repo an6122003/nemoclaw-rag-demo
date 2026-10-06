@@ -20,6 +20,7 @@
 #    --yes            do not pause for the third-party software notice
 #    --skip-finetune  skip Hands-on 1 (the 20 GB training container)
 #    --skip-sandbox   skip NemoClaw (labs 2 and 3 then run in direct mode)
+#    --skip-enterprise  skip the enterprise batch demos (about 35 GB)
 #    --retrain        re-run the Hands-on 1 fine-tune even if it already exists
 #    --no-start       do not open the workshop app at the end
 #    --force          run on a machine that is not Linux (not supported)
@@ -35,17 +36,18 @@ LOG="$ROOT/setup-log.txt"
 # shellcheck source=scripts/workshop-lib.sh
 . "$ROOT/scripts/workshop-lib.sh"
 
-CHECK_ONLY=0; ASSUME_YES=0; SKIP_FT=0; SKIP_SB=0; RETRAIN=0; NO_START=0; FORCE=0
+CHECK_ONLY=0; ASSUME_YES=0; SKIP_FT=0; SKIP_SB=0; SKIP_ENT=0; RETRAIN=0; NO_START=0; FORCE=0
 for arg in "$@"; do
   case "$arg" in
     --check-only)    CHECK_ONLY=1 ;;
     --yes|-y)        ASSUME_YES=1 ;;
     --skip-finetune) SKIP_FT=1 ;;
     --skip-sandbox)  SKIP_SB=1 ;;
+    --skip-enterprise) SKIP_ENT=1 ;;
     --retrain)       RETRAIN=1 ;;
     --no-start)      NO_START=1 ;;
     --force)         FORCE=1 ;;
-    -h|--help)       sed -n '2,28p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help)       sed -n '2,29p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) printf 'Unknown option: %s  (try --help)\n' "$arg"; exit 2 ;;
   esac
 done
@@ -53,8 +55,8 @@ done
 MIN_OLLAMA="0.32.9"   # NemoClaw rejects older Ollama: tool calls come back as text
 STEP=0
 CORE_OK=1             # Ollama + models + Python environment
-LAB1="skipped"; LAB2="skipped"; LAB3="skipped"
-LAB1_NOTE=""; LAB2_NOTE=""; LAB3_NOTE=""
+LAB1="skipped"; LAB2="skipped"; LAB3="skipped"; ENT="skipped"
+LAB1_NOTE=""; LAB2_NOTE=""; LAB3_NOTE=""; ENT_NOTE=""
 SANDBOX_READY=0
 
 step() {
@@ -105,14 +107,14 @@ if [ "$ASSUME_YES" -eq 0 ] && [ "$CHECK_ONLY" -eq 0 ] && [ -t 0 ]; then
   cat <<'NOTICE'
    This will download and install third-party software, each under its own
    license: Ollama, NVIDIA NemoClaw (with OpenShell and OpenClaw), uv, Python
-   packages, NVIDIA's PyTorch container, and open AI models (NVIDIA Nemotron,
-   Qwen). About 60 GB is downloaded; it takes 45-90 minutes. Leave this window
-   open.
+   packages, NVIDIA's PyTorch and vLLM containers, and open AI models (NVIDIA
+   Nemotron, Qwen). About 95 GB is downloaded; it takes 60-120 minutes. Leave
+   this window open.
 
    Chương trình sẽ tải và cài phần mềm của bên thứ ba, mỗi phần mềm theo giấy
    phép riêng: Ollama, NVIDIA NemoClaw (kèm OpenShell và OpenClaw), uv, các gói
-   Python, container PyTorch của NVIDIA và các mô hình AI mở (NVIDIA Nemotron,
-   Qwen). Tải khoảng 60 GB, mất 45-90 phút. Hãy để cửa sổ này mở.
+   Python, container PyTorch và vLLM của NVIDIA và các mô hình AI mở (NVIDIA
+   Nemotron, Qwen). Tải khoảng 95 GB, mất 60-120 phút. Hãy để cửa sổ này mở.
 
 NOTICE
   printf '   Press Enter to continue, or Ctrl-C to cancel.\n'
@@ -628,6 +630,90 @@ else
   fi
 fi
 
+# ======================================================= step: enterprise ===
+step "Enterprise demos: batch engine and sample data (about 35 GB)" "Demo doanh nghiệp: máy chủ xử lý hàng loạt và dữ liệu mẫu (khoảng 35 GB)"
+
+ent_model_ready() {
+  "$PY" -c "import sys; sys.path.insert(0, '$ROOT/app'); import enterprise as e; sys.exit(0 if e.model_ready() else 1)" >/dev/null 2>&1
+}
+ent_download_model() {
+  # Inside the vLLM container (it has huggingface_hub), as this user, so the
+  # files in ~/.cache/huggingface stay the user's own. A rerun resumes.
+  docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp -e HF_HOME=/hf \
+    -e HF_HUB_DISABLE_TELEMETRY=1 -e HF_HUB_DISABLE_PROGRESS_BARS=1 \
+    -v "$BATCH_HF_HOME:/hf" --entrypoint python3 "$BATCH_IMAGE" -c \
+    "from huggingface_hub import snapshot_download; print(snapshot_download('$BATCH_MODEL', revision='$BATCH_MODEL_REVISION'))"
+}
+ENT_STAMP="$BATCH_IMAGE $BATCH_MODEL@$BATCH_MODEL_REVISION"
+
+if [ "$SKIP_ENT" -eq 1 ]; then
+  ENT_NOTE="--skip-enterprise"
+  warn "Skipped (--skip-enterprise)"
+elif [ -z "$GPU" ]; then
+  ENT_NOTE="no GPU"
+  warn "No GPU — the batch engine needs one" "Không có GPU — máy chủ xử lý hàng loạt cần GPU"
+elif [ "$CHECK_ONLY" -eq 1 ]; then
+  ENT="unchecked"
+  docker image inspect "$BATCH_IMAGE" >/dev/null 2>&1 && ok "Batch engine image ready" || warn "Batch engine image not downloaded yet ($BATCH_IMAGE)"
+  ent_model_ready && ok "Batch model ready" || warn "Batch model not downloaded yet ($BATCH_MODEL)"
+else
+  ENT="ready"
+  run_long "Creating the sample data (2,400 messages, 1,000 invoices)… / Đang tạo dữ liệu mẫu…" \
+    "$PY" "$ROOT/app/enterprise.py" prepare \
+    && ok "Sample data ready: 2,400 messages, 1,000 invoices" "Dữ liệu mẫu đã sẵn sàng" \
+    || { ENT="failed"; ENT_NOTE="sample data could not be created"; show_log_tail; }
+
+  if [ "$ENT" = "ready" ] && ! docker image inspect "$BATCH_IMAGE" >/dev/null 2>&1; then
+    info "Downloading NVIDIA's vLLM container (about 12 GB)…" "Đang tải container vLLM của NVIDIA (khoảng 12 GB)…"
+    got=0
+    for attempt in 1 2 3; do
+      note_log "docker pull $BATCH_IMAGE (attempt $attempt)"
+      if docker pull "$BATCH_IMAGE"; then got=1; break; fi
+      warn "Download interrupted (attempt $attempt of 3) — retrying" "Tải bị gián đoạn (lần $attempt/3) — đang thử lại"
+      sleep 10
+    done
+    if [ "$got" -eq 1 ]; then ok "Batch engine downloaded" "Đã tải máy chủ xử lý hàng loạt"
+    else ENT="failed"; ENT_NOTE="could not download $BATCH_IMAGE"; bad "Could not download $BATCH_IMAGE" "Không tải được container vLLM"; fi
+  elif [ "$ENT" = "ready" ]; then
+    ok "Batch engine image ready" "Container máy chủ đã có sẵn"
+  fi
+
+  if [ "$ENT" = "ready" ] && ! ent_model_ready; then
+    info "Downloading $BATCH_MODEL (about 22 GB)…" "Đang tải mô hình $BATCH_MODEL (khoảng 22 GB)…"
+    mkdir -p "$BATCH_HF_HOME"
+    got=0
+    for attempt in 1 2 3; do
+      note_log "download $BATCH_MODEL@$BATCH_MODEL_REVISION (attempt $attempt)"
+      run_long "Downloading the model (22 GB)… / Đang tải mô hình (22 GB)…" ent_download_model
+      if ent_model_ready; then got=1; break; fi
+      warn "Download interrupted (attempt $attempt of 3) — retrying" "Tải bị gián đoạn (lần $attempt/3) — đang thử lại"
+      sleep 10
+    done
+    if [ "$got" -eq 1 ]; then ok "Batch model downloaded" "Đã tải mô hình"
+    else ENT="failed"; ENT_NOTE="could not download $BATCH_MODEL"; bad "Could not download $BATCH_MODEL" "Không tải được mô hình"; fi
+  elif [ "$ENT" = "ready" ]; then
+    ok "Batch model ready ($BATCH_MODEL)" "Mô hình đã có sẵn"
+  fi
+
+  # Start the engine once, process a few messages and invoices, stop it. This
+  # proves it on this machine and caches the GPU compile for later starts.
+  if [ "$ENT" = "ready" ]; then
+    if [ "$(cat "$RUN/enterprise-check" 2>/dev/null)" = "$ENT_STAMP" ]; then
+      ok "Batch engine already checked on this machine" "Máy chủ đã được kiểm tra trên máy này"
+    else
+      run_long "Starting the batch engine and testing it (3-6 minutes)… / Đang khởi động và chạy thử máy chủ (3-6 phút)…" \
+        "$PY" "$ROOT/app/enterprise.py" smoke
+      if [ $? -eq 0 ]; then
+        printf '%s\n' "$ENT_STAMP" > "$RUN/enterprise-check"
+        ok "Batch engine works: messages and invoices processed" "Máy chủ hoạt động: đã xử lý thử tin nhắn và hóa đơn"
+      else
+        ENT="failed"; ENT_NOTE="engine test failed (details in setup-log.txt)"
+        bad "The batch engine did not pass its test" "Máy chủ chưa chạy được"; show_log_tail 20
+      fi
+    fi
+  fi
+fi
+
 # ====================================================== step: final check ===
 step "Final check — every lab, end to end" "Kiểm tra cuối — chạy thử từng bài"
 
@@ -696,7 +782,8 @@ printf '\n%s──────────────────────�
 printf '   %sHands-on 1  Fine-tuning%s          %s  %s\n' "$BLD" "$RST" "$(label "$LAB1")" "$LAB1_NOTE"
 printf '   %sHands-on 2  RAG with NemoClaw%s    %s  %s\n' "$BLD" "$RST" "$(label "$LAB2")" "$LAB2_NOTE"
 printf '   %sHands-on 3  Agentic workflow%s     %s  %s\n' "$BLD" "$RST" "$(label "$LAB3")" "$LAB3_NOTE"
-note_log "summary: lab1=$LAB1 lab2=$LAB2 lab3=$LAB3"
+printf '   %sEnterprise  Batch demos%s          %s  %s\n' "$BLD" "$RST" "$(label "$ENT")" "$ENT_NOTE"
+note_log "summary: lab1=$LAB1 lab2=$LAB2 lab3=$LAB3 enterprise=$ENT"
 
 if [ "$CHECK_ONLY" -eq 1 ]; then
   printf '\n   --check-only: nothing was changed. / Không thay đổi gì.\n\n'
@@ -704,7 +791,7 @@ if [ "$CHECK_ONLY" -eq 1 ]; then
 fi
 
 failed=0
-for s in "$LAB1" "$LAB2" "$LAB3"; do [ "$s" = "failed" ] && failed=1; done
+for s in "$LAB1" "$LAB2" "$LAB3" "$ENT"; do [ "$s" = "failed" ] && failed=1; done
 
 if [ "$failed" -eq 0 ]; then
   cat <<EOF

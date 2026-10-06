@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: Apache-2.0
 #
-# Stop the workshop app and the embedding proxy. / Dừng workshop.
+# Stop the workshop app, the embedding proxy and the batch engine. / Dừng workshop.
 #
 #   ./stop.sh           stop the web app and the embedding proxy
 #   ./stop.sh --all     also stop the NemoClaw sandbox (it keeps its data)
@@ -26,6 +26,10 @@ rm -f "$RUN/hub.pid"
 
 if embed_proxy_running; then
   embed_proxy_stop && ok "Embedding proxy stopped" "Đã dừng cổng mô hình tìm kiếm"
+fi
+
+if docker inspect workshop-batch >/dev/null 2>&1; then
+  docker rm -f workshop-batch >/dev/null 2>&1 && ok "Batch engine stopped" "Đã tắt máy chủ xử lý hàng loạt"
 fi
 
 if [ "${1:-}" = "--all" ] && command -v nemoclaw >/dev/null 2>&1; then

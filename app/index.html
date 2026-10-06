@@ -533,6 +533,80 @@
   #toast .i{color:var(--nv)}
   #toast.on{opacity:1;transform:translate(-50%,0)}
 
+  /* ---------------- enterprise batch demos ---------------- */
+  .ent-engine{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,.9fr) minmax(0,1.2fr);margin-bottom:18px}
+  .ent-engine>div{padding:18px 22px;min-width:0}
+  .ent-engine>div+div{border-left:1px solid var(--line)}
+  .ent-engine .eh{font:600 11px/1.2 var(--display);letter-spacing:.16em;text-transform:uppercase;color:var(--text-3);margin-bottom:8px}
+  .ent-engine .ev{font-weight:600;color:#fff;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+  .ent-engine .es{font-size:13px;color:var(--text-3);margin-top:5px;overflow-wrap:anywhere}
+  .ent-engine .eact{display:flex;flex-direction:column;gap:10px;align-items:flex-start}
+  .seg{display:inline-flex;border:1px solid var(--line-2);border-radius:var(--r-sm);padding:2px;max-width:100%}
+  .seg button{border:0;background:transparent;color:var(--text-3);font:600 12.5px/1.2 var(--font);padding:7px 11px;border-radius:var(--r-xs);cursor:pointer;text-align:left}
+  .seg button.on{background:var(--text);color:#06102c}
+  .ent-demos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-bottom:18px}
+  button.ent-demo{display:block;width:100%;text-align:left;padding:20px 22px;color:var(--text);border:0;font:inherit;cursor:pointer}
+  .ent-demo .dn{font:700 12.5px/1 var(--display);color:var(--text-4);letter-spacing:.1em}
+  .ent-demo h3{font-size:20px;margin:8px 0 4px}
+  .ent-demo p{margin:0;color:var(--text-3);font-size:13.5px}
+  .ent-demo .dprog{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;color:var(--text-3)}
+  .ent-demo.on{--edge:linear-gradient(135deg,rgba(170,205,255,.85),rgba(120,170,255,.2) 40%,rgba(92,157,255,.15) 70%,rgba(118,185,0,.6));
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 0 50px -16px rgba(60,120,255,.5)}
+  .ent-demo.on .dn{color:var(--nv)}
+  .ent-head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px;align-items:start}
+  .ent-head h2{font-size:22px;margin-bottom:6px}
+  .ent-io{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px;color:var(--text-2);margin-top:6px}
+  .ent-io .i{color:var(--text-4)}
+  .ent-ctl{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:16px}
+  .kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));border:1px solid var(--line);border-radius:var(--r-sm);margin:16px 0 18px;overflow:hidden}
+  .kpi{padding:12px 14px;min-width:0;box-shadow:-1px -1px 0 var(--line)}
+  .kpi b{display:block;font:700 22px/1.2 var(--display);color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .kpi span{display:block;font-size:12px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .accgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px 24px}
+  .acc{min-width:0}
+  .acc .ah{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;color:var(--text-2)}
+  .acc .ah b{color:#fff;font-family:var(--display)}
+  .acc .bar{height:4px;background:rgba(255,255,255,.07);border-radius:2px;margin-top:6px;overflow:hidden}
+  .acc .bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#4f8a00,var(--nv-2));transition:width .5s ease}
+  .ent-hl{display:flex;gap:12px;align-items:flex-start;margin-top:16px;padding:12px 14px;border-left:3px solid var(--nv);background:var(--nv-soft);border-radius:var(--r-xs);font-size:14px;color:var(--text-2)}
+  .ent-hl b{color:#fff}
+  .ent-hl .i{color:var(--nv);margin-top:3px}
+  .feedhead{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:22px}
+  table.data td.wrap{white-space:normal;min-width:240px;max-width:460px;line-height:1.45}
+  table.data tr.click{cursor:pointer}
+  table.data tr.click:hover td{background:rgba(92,157,255,.08)}
+  table.data td.num{text-align:right;font-variant-numeric:tabular-nums}
+  .mk{display:inline-flex;align-items:center;gap:3px;font-size:12px;color:var(--text-3)}
+  .mk .i{width:14px;height:14px}
+  .mk.y .i{color:var(--nv)} .mk.n .i{color:var(--red)}
+  .u-critical{color:var(--red);font-weight:700} .u-high{color:var(--amber);font-weight:600} .u-medium{color:var(--text-2)} .u-low{color:var(--text-3)}
+  .chk-ok{color:var(--nv-ink);font-weight:600} .chk-bad{color:var(--amber);font-weight:600}
+  .ent-cost{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:28px}
+  .ent-cost .fld{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:13px;color:var(--text-2);padding:7px 0;border-bottom:1px solid var(--line)}
+  .ent-cost .fld input,.ent-cost .fld select{width:150px;flex:0 0 auto;background:rgba(255,255,255,.04);border:1px solid var(--line-2);border-radius:var(--r-xs);color:var(--text);padding:6px 8px;font:inherit;font-size:13px;text-align:right}
+  .ent-cost .fld select{text-align:left}
+  .costrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);font-size:14px;color:var(--text-2);align-items:baseline}
+  .costrow b{font:700 18px/1.2 var(--display);color:#fff;white-space:nowrap;text-align:right}
+  .costrow small{display:block;font-size:12px;color:var(--text-3)}
+  .costrow.local b{color:var(--nv-ink)}
+  .costrow.big b{font-size:24px}
+  .ent-detail{white-space:normal}
+  .ent-detail blockquote{margin:0 0 16px;padding:12px 14px;border-left:3px solid var(--blue);background:var(--blue-soft);border-radius:var(--r-xs);color:var(--text);white-space:pre-wrap}
+  .ent-2col{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:start}
+  .ent-2col img{width:100%;border:1px solid var(--line);background:#fff}
+  .ent-sub{font:600 11.5px/1.2 var(--display);letter-spacing:.14em;text-transform:uppercase;color:var(--text-3);margin:16px 0 8px}
+  @media (max-width:920px){
+    .ent-engine,.ent-cost,.ent-2col,.ent-head{grid-template-columns:minmax(0,1fr)}
+    .ent-engine>div+div{border-left:0;border-top:1px solid var(--line)}
+    .kpis{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .accgrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  }
+  @media (max-width:560px){
+    .ent-demos{grid-template-columns:minmax(0,1fr)}
+    .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .ent-cost .fld input,.ent-cost .fld select{width:120px}
+  }
+
   @media (max-width:1180px){
     .labs{grid-template-columns:repeat(2,1fr)}
     .sysbar{display:none}
@@ -640,6 +714,7 @@
     <button type="button" data-tab="lab2"><span class="n">02</span><span data-i18n="tab_lab2"></span></button>
     <button type="button" data-tab="lab3"><span class="n">03</span><span data-i18n="tab_lab3"></span></button>
     <button type="button" data-tab="openclaw"><span class="n">04</span><span data-i18n="tab_oc"></span><span class="live"></span></button>
+    <button type="button" data-tab="ent"><span class="n">05</span><span data-i18n="tab_ent"></span></button>
   </nav>
 </header>
 
@@ -997,6 +1072,22 @@
     </div>
   </details>
 </section>
+<!-- ===================================================== ENTERPRISE ===== -->
+<section class="tab" id="tab-ent">
+  <div class="pagehead">
+    <div class="eyebrow" data-i18n="ent_kicker"></div>
+    <h1 data-i18n="ent_h"></h1>
+    <p class="lead" data-i18n="ent_p"></p>
+  </div>
+  <div class="ent-engine glass" id="ent-engine"></div>
+  <div class="ent-demos" id="ent-demos"></div>
+  <div class="card" id="ent-panel"></div>
+  <div class="card">
+    <div class="label" data-i18n="ent_cost_h"></div>
+    <div class="ent-cost" id="ent-cost"></div>
+  </div>
+</section>
+
 </main>
 
 <footer class="site">
@@ -1202,7 +1293,147 @@ const I18N = {
     oc_show: 'For the showcase', oc_tips: 'Tips',
     oc_term: 'For developers: OpenClaw in a terminal',
     oc_term_p: 'Open a shell inside the sandbox, then start OpenClaw’s terminal chat:',
-    oc_term_policy: 'The sandbox only reaches the internet hosts its policy allows. To see or change them: nemoclaw {sb} policy list'
+    oc_term_policy: 'The sandbox only reaches the internet hosts its policy allows. To see or change them: nemoclaw {sb} policy list',
+    tab_ent: "Enterprise",
+    ent_kicker: "Enterprise · Batch AI on one machine",
+    ent_h: "AI on the night shift: real batch jobs, on this machine",
+    ent_p: "Thousands of customer messages and supplier invoices, processed by an open model on the DGX Spark. The data never leaves the company, there is no per-item fee, and every result is checked against an answer key, so the accuracy below is measured, not promised. All data here is invented, for the fictional retailer Aurora Mart.",
+    ent_engine: "Batch engine",
+    ent_loading: "Checking…",
+    ent_gpu_now: "GPU power now",
+    ent_eng_missing: "Not installed",
+    ent_eng_missing_d: "Run the install command again: it downloads the batch engine (about 35 GB).",
+    ent_eng_ready: "Ready",
+    ent_eng_starting: "Starting",
+    ent_eng_failed: "Did not start",
+    ent_eng_failed_d: "Usually not enough free memory: close the labs that are running, then press Start engine.",
+    ent_eng_off: "Off",
+    ent_eng_off_d: "Starts by itself when you run a batch (2–4 minutes) and switches off after 30 idle minutes, giving the memory back to the labs.",
+    ent_phase_starting: "opening the container",
+    ent_phase_loading: "loading the model",
+    ent_phase_compiling: "compiling for the GPU",
+    ent_phase_warming: "warming up",
+    ent_phase_ready: "ready",
+    ent_phase_off: "off",
+    ent_phase_failed: "failed",
+    ent_mem: "{a} of {t} GB memory free",
+    ent_run_on: "Run on",
+    ent_eng_vllm: "vLLM · in batches",
+    ent_eng_ollama: "Ollama · one at a time",
+    ent_eng_start: "Start engine",
+    ent_eng_stop: "Stop engine",
+    ent_eng_starting_toast: "Starting the batch engine (2–4 minutes)…",
+    ent_inbox_k: "Customer service",
+    ent_inbox_n: "Customer inbox triage",
+    ent_inbox_d: "2,400 messages from email, Zalo and Messenger",
+    ent_inbox_long: "Every message gets a topic, an urgency under the company’s own policy, the customer’s mood, red flags (legal threats, safety hazards, hacked accounts) and the order number; critical ones also get a draft reply. Phone numbers and e-mail addresses are masked on screen.",
+    ent_inbox_in: "Messages (typos, no diacritics, chat shorthand)",
+    ent_inbox_out: "Prioritised queue + Excel",
+    ent_invoices_k: "Accounting",
+    ent_invoices_n: "Supplier invoices into Excel",
+    ent_invoices_d: "1,000 scanned VAT invoices from 24 suppliers",
+    ent_invoices_long: "The vision model reads each scanned invoice — seller, tax code, series and number, date, every line, VAT and total. Then the arithmetic is checked the way an accountant would, and duplicates are caught before they are paid twice.",
+    ent_invoices_in: "Scanned invoices (JPG)",
+    ent_invoices_out: "Excel ledger + review list",
+    ent_ai: "Qwen 3.6 (NVFP4) on the GPU",
+    ent_job: "The job",
+    ent_run_n: "Run {n} items",
+    ent_run_all: "Run the rest ({n})",
+    ent_stop: "Stop",
+    ent_export: "Download Excel",
+    ent_reset: "Start over",
+    ent_reset_q: "Delete the results of this job and start again from the first item?",
+    ent_st_running: "Running",
+    ent_st_stopping: "Stopping",
+    ent_st_engine: "Starting the engine",
+    ent_st_preparing: "Preparing",
+    ent_rate: "{n}/min",
+    ent_done_n: "{n} of {t} done",
+    ent_ready_n: "{t} waiting",
+    ent_runline: "This batch: {d} of {t} · {r} per minute · {e} left · {eng}",
+    ent_runline_done: "{d} items at {r} per minute ({eng}).",
+    ent_eng_line_vllm: "vLLM, {c} at a time",
+    ent_eng_line_ollama: "Ollama, one at a time",
+    ent_msg_finished: "Batch finished.",
+    ent_msg_stopped: "Stopped; run again to continue where it stopped.",
+    ent_msg_interrupted: "The batch was interrupted (restart or shutdown). Run again to continue.",
+    ent_msg_error: "The batch could not start: {m}",
+    ent_no_ollama: "Ollama does not have {m} yet: run the install command again.",
+    ent_fail: "Did not work: {m}",
+    ent_k_done: "processed",
+    ent_k_rate: "items per minute",
+    ent_k_eta: "time left",
+    ent_k_busy: "machine time used",
+    ent_k_acc_inbox: "topic correct",
+    ent_k_acc_invoices: "total correct",
+    ent_k_wh: "GPU energy (measured)",
+    ent_k_tokens: "tokens processed",
+    ent_acc_h: "Accuracy against the answer key",
+    ent_f_category: "Topic",
+    ent_f_urgency: "Urgency",
+    ent_f_sentiment: "Sentiment",
+    ent_f_order: "Order number",
+    ent_f_flags: "Red flags",
+    ent_f_tax_code: "Seller tax code",
+    ent_f_series: "Series",
+    ent_f_number: "Invoice number",
+    ent_f_date: "Date",
+    ent_f_subtotal: "Subtotal",
+    ent_f_vat: "VAT",
+    ent_f_total: "Total",
+    ent_f_lines: "Number of lines",
+    ent_f_seller: "Seller",
+    ent_hl_inbox: "Caught {f} of {o} critical messages (legal threats, safety hazards, hacked accounts): they go to the top of the queue with a draft reply.",
+    ent_hl_invoices: "Flagged {c} of {p} invoices with a planted problem · {d} duplicates caught · {fa} other invoices sent for a second look · {v} đ read in total.",
+    ent_hl_none: "Run a batch to measure the accuracy.",
+    ent_feed_h: "Latest results",
+    ent_only_all: "All",
+    ent_only_review: "Needs a person",
+    ent_feed_note: "Click a row for the details and the answer key.",
+    ent_samples_note: "Nothing processed yet: this is what goes in.",
+    ent_th_id: "ID",
+    ent_th_channel: "Channel",
+    ent_th_msg: "Message (phones and e-mails masked)",
+    ent_th_check: "vs answer key",
+    ent_th_file: "File",
+    ent_th_checks: "Checks",
+    ent_th_desc: "Description",
+    ent_th_unit: "Unit",
+    ent_th_qty: "Qty",
+    ent_th_price: "Unit price",
+    ent_th_amount: "Amount",
+    ent_ok: "OK",
+    ent_truth: "Answer key",
+    ent_todo: "What to do",
+    ent_reply: "Draft reply",
+    ent_items: "Lines",
+    ent_extracted: "Read by the AI",
+    ent_planted: "Planted problem: {p}",
+    ent_cost_h: "What it costs: this machine vs a cloud API",
+    ent_c_month: "Items per month",
+    ent_c_tier: "Cloud API price (per 1M tokens in / out)",
+    ent_tier_frontier: "Large model · $3 / $15",
+    ent_tier_mid: "Mid-size · $1.25 / $10",
+    ent_tier_mini: "Small · $0.25 / $2",
+    ent_c_usd: "VND per USD",
+    ent_c_kwh: "Electricity (VND per kWh)",
+    ent_c_watts: "Machine power (W, at most)",
+    ent_c_box: "Machine price (VND)",
+    ent_c_months: "Written off over (months)",
+    ent_c_note: "Cloud prices are typical public list prices of 2025–2026 tiers; enter your own quote. Token counts and speed are measured on this machine.",
+    ent_c_wait: "Run a batch: the costs use the speed and token counts measured here.",
+    ent_c_batch: "The {n} items processed so far",
+    ent_c_cloud: "Cloud API",
+    ent_c_local: "This machine: electricity",
+    ent_c_local_d: "{w} W at most × {h} of machine time · GPU measured {g} W on average",
+    ent_c_permonth: "Every month, at {v} items",
+    ent_c_cloud_m: "Cloud API, per month",
+    ent_c_local_m: "This machine, per month",
+    ent_c_local_m_d: "write-off {a} + electricity {e} · busy {h} ({s}% of the month)",
+    ent_c_payback: "Pays for itself in",
+    ent_c_months_n: "{n} months",
+    ent_c_never: "At this volume the API is cheaper for this one job; the same machine also runs the other jobs, the labs and your private data.",
+    ent_c_free: "And the data stays in the company, with no rate limits."
   },
   vi: {
     tab_home: 'Tổng quan', tab_sp: 'Diễn giả', tab_lab1: 'Tinh chỉnh', tab_lab2: 'RAG', tab_lab3: 'Agent', tab_oc: 'OpenClaw · Thử thách',
@@ -1359,7 +1590,147 @@ const I18N = {
     oc_show: 'Chuẩn bị trình diễn', oc_tips: 'Mẹo',
     oc_term: 'Dành cho lập trình viên: dùng OpenClaw trong terminal',
     oc_term_p: 'Mở shell bên trong sandbox, rồi chạy giao diện chat dạng terminal của OpenClaw:',
-    oc_term_policy: 'Sandbox chỉ truy cập được các địa chỉ internet mà chính sách cho phép. Để xem hoặc thay đổi: nemoclaw {sb} policy list'
+    oc_term_policy: 'Sandbox chỉ truy cập được các địa chỉ internet mà chính sách cho phép. Để xem hoặc thay đổi: nemoclaw {sb} policy list',
+    tab_ent: "Doanh nghiệp",
+    ent_kicker: "Doanh nghiệp · AI xử lý hàng loạt trên một máy",
+    ent_h: "AI làm ca đêm: xử lý hàng loạt ngay trên máy này",
+    ent_p: "Hàng nghìn tin nhắn khách hàng và hóa đơn nhà cung cấp được một mô hình mở xử lý ngay trên DGX Spark. Dữ liệu không rời khỏi công ty, không tốn phí theo từng lượt, và mỗi kết quả được so với đáp án, nên độ chính xác bên dưới là số đo thật chứ không phải lời hứa. Toàn bộ dữ liệu là giả lập, cho chuỗi bán lẻ hư cấu Aurora Mart.",
+    ent_engine: "Máy chủ xử lý hàng loạt",
+    ent_loading: "Đang kiểm tra…",
+    ent_gpu_now: "Công suất GPU",
+    ent_eng_missing: "Chưa cài đặt",
+    ent_eng_missing_d: "Hãy chạy lại lệnh cài đặt: chương trình sẽ tải máy chủ xử lý hàng loạt (khoảng 35 GB).",
+    ent_eng_ready: "Sẵn sàng",
+    ent_eng_starting: "Đang khởi động",
+    ent_eng_failed: "Không khởi động được",
+    ent_eng_failed_d: "Thường do thiếu bộ nhớ trống: hãy đóng các bài lab đang chạy rồi bấm Bật máy chủ.",
+    ent_eng_off: "Đang tắt",
+    ent_eng_off_d: "Tự bật khi bạn chạy một lô (2–4 phút) và tự tắt sau 30 phút không dùng, trả bộ nhớ lại cho các bài lab.",
+    ent_phase_starting: "đang mở container",
+    ent_phase_loading: "đang nạp mô hình",
+    ent_phase_compiling: "đang biên dịch cho GPU",
+    ent_phase_warming: "đang chạy thử",
+    ent_phase_ready: "sẵn sàng",
+    ent_phase_off: "đang tắt",
+    ent_phase_failed: "lỗi",
+    ent_mem: "Bộ nhớ trống {a}/{t} GB",
+    ent_run_on: "Chạy bằng",
+    ent_eng_vllm: "vLLM · theo lô",
+    ent_eng_ollama: "Ollama · từng mục",
+    ent_eng_start: "Bật máy chủ",
+    ent_eng_stop: "Tắt máy chủ",
+    ent_eng_starting_toast: "Đang bật máy chủ xử lý hàng loạt (2–4 phút)…",
+    ent_inbox_k: "Chăm sóc khách hàng",
+    ent_inbox_n: "Phân loại hộp thư khách hàng",
+    ent_inbox_d: "2.400 tin nhắn từ email, Zalo và Messenger",
+    ent_inbox_long: "Mỗi tin nhắn được gán chủ đề, mức ưu tiên theo chính sách của công ty, cảm xúc của khách, cờ cảnh báo (dọa kiện, nguy hiểm, tài khoản bị xâm nhập) và mã đơn; tin khẩn cấp có sẵn bản nháp trả lời. Số điện thoại và email được che khi hiển thị.",
+    ent_inbox_in: "Tin nhắn (sai chính tả, không dấu, viết tắt)",
+    ent_inbox_out: "Hàng đợi ưu tiên + Excel",
+    ent_invoices_k: "Kế toán",
+    ent_invoices_n: "Hóa đơn đầu vào sang Excel",
+    ent_invoices_d: "1.000 hóa đơn VAT dạng ảnh scan từ 24 nhà cung cấp",
+    ent_invoices_long: "Mô hình thị giác đọc từng hóa đơn scan — bên bán, mã số thuế, ký hiệu và số, ngày, từng dòng hàng, thuế VAT và tổng tiền. Sau đó số liệu được kiểm tra như một kế toán viên, và hóa đơn trùng bị phát hiện trước khi bị thanh toán hai lần.",
+    ent_invoices_in: "Hóa đơn scan (JPG)",
+    ent_invoices_out: "Bảng kê Excel + danh sách cần kiểm tra",
+    ent_ai: "Qwen 3.6 (NVFP4) trên GPU",
+    ent_job: "Công việc",
+    ent_run_n: "Chạy {n} mục",
+    ent_run_all: "Chạy hết phần còn lại ({n})",
+    ent_stop: "Dừng",
+    ent_export: "Tải Excel",
+    ent_reset: "Làm lại từ đầu",
+    ent_reset_q: "Xóa kết quả của công việc này và bắt đầu lại từ mục đầu tiên?",
+    ent_st_running: "Đang chạy",
+    ent_st_stopping: "Đang dừng",
+    ent_st_engine: "Đang bật máy chủ",
+    ent_st_preparing: "Đang chuẩn bị",
+    ent_rate: "{n}/phút",
+    ent_done_n: "Đã xử lý {n}/{t}",
+    ent_ready_n: "{t} mục đang chờ",
+    ent_runline: "Lô này: {d}/{t} · {r} mục/phút · còn {e} · {eng}",
+    ent_runline_done: "{d} mục, {r} mục/phút ({eng}).",
+    ent_eng_line_vllm: "vLLM, {c} mục cùng lúc",
+    ent_eng_line_ollama: "Ollama, từng mục một",
+    ent_msg_finished: "Lô đã chạy xong.",
+    ent_msg_stopped: "Đã dừng; bấm chạy để tiếp tục từ chỗ dừng.",
+    ent_msg_interrupted: "Lô bị gián đoạn (khởi động lại hoặc tắt máy). Bấm chạy để tiếp tục.",
+    ent_msg_error: "Không chạy được lô: {m}",
+    ent_no_ollama: "Ollama chưa có {m}: hãy chạy lại lệnh cài đặt.",
+    ent_fail: "Không thực hiện được: {m}",
+    ent_k_done: "đã xử lý",
+    ent_k_rate: "mục mỗi phút",
+    ent_k_eta: "thời gian còn lại",
+    ent_k_busy: "thời gian máy đã chạy",
+    ent_k_acc_inbox: "đúng chủ đề",
+    ent_k_acc_invoices: "đúng tổng tiền",
+    ent_k_wh: "điện GPU (đo thực tế)",
+    ent_k_tokens: "token đã xử lý",
+    ent_acc_h: "Độ chính xác so với đáp án",
+    ent_f_category: "Chủ đề",
+    ent_f_urgency: "Mức ưu tiên",
+    ent_f_sentiment: "Cảm xúc",
+    ent_f_order: "Mã đơn",
+    ent_f_flags: "Cờ cảnh báo",
+    ent_f_tax_code: "MST bên bán",
+    ent_f_series: "Ký hiệu",
+    ent_f_number: "Số hóa đơn",
+    ent_f_date: "Ngày",
+    ent_f_subtotal: "Tiền hàng",
+    ent_f_vat: "Tiền thuế",
+    ent_f_total: "Tổng tiền",
+    ent_f_lines: "Số dòng hàng",
+    ent_f_seller: "Bên bán",
+    ent_hl_inbox: "Bắt được {f}/{o} tin khẩn cấp (dọa kiện, nguy hiểm, tài khoản bị xâm nhập): được đưa lên đầu hàng đợi kèm bản nháp trả lời.",
+    ent_hl_invoices: "Phát hiện {c}/{p} hóa đơn có lỗi cài sẵn · bắt được {d} hóa đơn trùng · {fa} hóa đơn khác cần xem lại · đã đọc tổng giá trị {v} đ.",
+    ent_hl_none: "Hãy chạy một lô để đo độ chính xác.",
+    ent_feed_h: "Kết quả mới nhất",
+    ent_only_all: "Tất cả",
+    ent_only_review: "Cần người xem",
+    ent_feed_note: "Bấm vào một dòng để xem chi tiết và đáp án.",
+    ent_samples_note: "Chưa xử lý: đây là dữ liệu đầu vào.",
+    ent_th_id: "Mã",
+    ent_th_channel: "Kênh",
+    ent_th_msg: "Tin nhắn (đã che SĐT, email)",
+    ent_th_check: "So với đáp án",
+    ent_th_file: "Tệp",
+    ent_th_checks: "Kiểm tra",
+    ent_th_desc: "Mô tả",
+    ent_th_unit: "ĐVT",
+    ent_th_qty: "SL",
+    ent_th_price: "Đơn giá",
+    ent_th_amount: "Thành tiền",
+    ent_ok: "Hợp lệ",
+    ent_truth: "Đáp án",
+    ent_todo: "Việc cần làm",
+    ent_reply: "Bản nháp trả lời",
+    ent_items: "Dòng hàng",
+    ent_extracted: "AI đọc được",
+    ent_planted: "Lỗi cài sẵn: {p}",
+    ent_cost_h: "Chi phí: máy tại chỗ so với API đám mây",
+    ent_c_month: "Số mục mỗi tháng",
+    ent_c_tier: "Giá API đám mây (mỗi 1 triệu token vào / ra)",
+    ent_tier_frontier: "Mô hình lớn · $3 / $15",
+    ent_tier_mid: "Tầm trung · $1,25 / $10",
+    ent_tier_mini: "Cỡ nhỏ · $0,25 / $2",
+    ent_c_usd: "Tỷ giá (VND/USD)",
+    ent_c_kwh: "Giá điện (VND/kWh)",
+    ent_c_watts: "Công suất máy (W, tối đa)",
+    ent_c_box: "Giá máy (VND)",
+    ent_c_months: "Khấu hao trong (tháng)",
+    ent_c_note: "Giá API là mức niêm yết công khai phổ biến của 2025–2026; hãy nhập báo giá của bạn. Số token và tốc độ là số đo thực tế trên máy này.",
+    ent_c_wait: "Hãy chạy một lô: chi phí được tính từ tốc độ và số token đo trên máy này.",
+    ent_c_batch: "{n} mục đã xử lý",
+    ent_c_cloud: "API đám mây",
+    ent_c_local: "Máy tại chỗ: tiền điện",
+    ent_c_local_d: "Tối đa {w} W × {h} máy chạy · GPU đo được trung bình {g} W",
+    ent_c_permonth: "Mỗi tháng, với {v} mục",
+    ent_c_cloud_m: "API đám mây mỗi tháng",
+    ent_c_local_m: "Máy tại chỗ mỗi tháng",
+    ent_c_local_m_d: "khấu hao {a} + điện {e} · máy bận {h} ({s}% thời gian trong tháng)",
+    ent_c_payback: "Hoàn vốn sau",
+    ent_c_months_n: "{n} tháng",
+    ent_c_never: "Ở khối lượng này, riêng việc này thì API rẻ hơn; nhưng cùng một máy còn chạy các việc khác, các bài lab và dữ liệu nội bộ.",
+    ent_c_free: "Và dữ liệu không rời công ty, không bị giới hạn lượt gọi."
   }
 };
 
@@ -1577,6 +1948,7 @@ function applyLang(){
   $('#l3-q').placeholder = t('l3_placeholder');
   $$('.lang button').forEach(b => b.classList.toggle('on', b.dataset.lang === LANG));
   renderAgenda(); spRender(); renderHomeStatus(); lab1Render(); lab2Examples(); lab3Examples(); lab3RouteBadge(); lab3Dataset(); ocRender();
+  ENT.built = ''; ENT.costBuilt = ''; entRender();
   if (L2.last) lab2RenderAnswer(L2.last);
   if (L2.sources) lab2RenderSources(L2.sources);
 }
@@ -1610,7 +1982,7 @@ function animateTab(name){
       .from('#tab-home > .card', {y: 24, autoAlpha: 0, duration: .6}, '<.35');
   } else {
     const items = sec.querySelectorAll(':scope > .pagehead > *, :scope > .flow > *, :scope > .card, :scope > .grid2 > .card, ' +
-      ':scope > .oc-hero, :scope > .label, :scope > .ideas > .idea, :scope > details, #sp-people > .spk');
+      ':scope > .oc-hero, :scope > .label, :scope > .ideas > .idea, :scope > details, #sp-people > .spk, :scope > .ent-engine, :scope > .ent-demos > .ent-demo');
     tl.from(Array.from(items).filter(el => el.offsetParent !== null), {y: 20, autoAlpha: 0, duration: .55, stagger: .035});
   }
   tabAnim = finishSoon(tl, 1800);
@@ -1644,7 +2016,7 @@ function spRender(){
 }
 
 /* ============================================================== tabs === */
-const TABS = ['home', 'speakers', 'lab1', 'lab2', 'lab3', 'openclaw'];
+const TABS = ['home', 'speakers', 'lab1', 'lab2', 'lab3', 'openclaw', 'ent'];
 function showTab(name){
   if (!TABS.includes(name)) name = 'home';
   $$('section.tab').forEach(s => s.classList.toggle('on', s.id === 'tab-' + name));
@@ -1652,6 +2024,7 @@ function showTab(name){
   if (location.hash !== '#' + name) history.replaceState(null, '', '#' + name);
   window.scrollTo({top: 0});
   animateTab(name);
+  if (name === 'ent') entTick(true);
 }
 $$('nav.tabs button').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
 document.addEventListener('click', e => {  // cards, agenda links and buttons that lead to a tab
@@ -2388,6 +2761,393 @@ document.addEventListener('click', async e => {
   }
 });
 
+/* ======================================================== ENTERPRISE === */
+/* Batch jobs over thousands of invented items (app/enterprise.py). The page
+   polls a summary; the jobs themselves run in background processes. */
+const ENT = {demo: 'inbox', engine: 'vllm', data: null, rows: [], samples: {}, only: 'all', built: '', costBuilt: ''};
+try { ENT.demo = localStorage.getItem('ent-demo') || 'inbox'; ENT.engine = localStorage.getItem('ent-engine') || 'vllm'; } catch (e) {}
+if (!['inbox', 'invoices'].includes(ENT.demo)) ENT.demo = 'inbox';
+const ENT_ACTIVE = ['running', 'stopping', 'engine', 'preparing'];
+const ENT_TIERS = {frontier: [3, 15], mid: [1.25, 10], mini: [0.25, 2]};
+const ENT_COST = {inbox_month: 60000, invoices_month: 10000, tier: 'mid', usd: 26000, kwh: 3000, watts: 240, box: 100000000, months: 36};
+try { Object.assign(ENT_COST, JSON.parse(localStorage.getItem('ent-cost') || '{}')); } catch (e) {}
+const ENT_FIELDS = {inbox: ['category', 'urgency', 'sentiment', 'order'],
+                    invoices: ['tax_code', 'series', 'number', 'date', 'subtotal', 'vat', 'total', 'lines']};
+const ENT_LABELS = {
+  en: {cat: {delivery: 'Delivery', defect: 'Defective item', wrong_item: 'Wrong or missing item', return_refund: 'Return & refund',
+             billing: 'Payment & invoice', warranty: 'Warranty & install', account: 'Account', inquiry: 'Product question', praise: 'Praise', spam: 'Spam or scam'},
+       urg: {critical: 'Critical', high: 'High', medium: 'Medium', low: 'Low'},
+       sent: {negative: 'Negative', neutral: 'Neutral', positive: 'Positive'},
+       flag: {legal_threat: 'Legal threat', safety: 'Safety hazard', security: 'Hacked account', social_media: 'Social media threat',
+              churn_risk: 'May leave', refund_request: 'Wants a refund'},
+       chk: {line_mismatch: 'A line: quantity × price ≠ amount', sum_mismatch: 'Lines do not add up to the subtotal', vat_mismatch: 'VAT amount is wrong',
+             vat_rate: 'Unusual VAT rate', total_mismatch: 'Total ≠ subtotal + VAT', wrong_buyer: 'Not Aurora Mart’s tax code',
+             duplicate: 'Duplicate of an invoice already received'},
+       ch: {email: 'Email', zalo: 'Zalo', messenger: 'Messenger', webform: 'Web form'}},
+  vi: {cat: {delivery: 'Giao hàng', defect: 'Hàng lỗi', wrong_item: 'Giao sai, thiếu hàng', return_refund: 'Đổi trả, hoàn tiền',
+             billing: 'Thanh toán, hóa đơn', warranty: 'Bảo hành, lắp đặt', account: 'Tài khoản', inquiry: 'Hỏi sản phẩm', praise: 'Khen ngợi', spam: 'Spam, lừa đảo'},
+       urg: {critical: 'Khẩn cấp', high: 'Cao', medium: 'Trung bình', low: 'Thấp'},
+       sent: {negative: 'Tiêu cực', neutral: 'Trung tính', positive: 'Tích cực'},
+       flag: {legal_threat: 'Dọa kiện', safety: 'Nguy hiểm', security: 'Bị xâm nhập TK', social_media: 'Dọa đăng MXH',
+              churn_risk: 'Dọa bỏ đi', refund_request: 'Đòi hoàn tiền'},
+       chk: {line_mismatch: 'Dòng hàng: số lượng × đơn giá ≠ thành tiền', sum_mismatch: 'Cộng các dòng ≠ tiền hàng', vat_mismatch: 'Tiền thuế sai',
+             vat_rate: 'Thuế suất bất thường', total_mismatch: 'Tổng ≠ tiền hàng + thuế', wrong_buyer: 'Sai mã số thuế của Aurora Mart',
+             duplicate: 'Trùng với hóa đơn đã nhận'},
+       ch: {email: 'Email', zalo: 'Zalo', messenger: 'Messenger', webform: 'Form web'}}
+};
+function EL(group, key){ const L = ENT_LABELS[LANG] || ENT_LABELS.en; return (L[group] && L[group][key]) || key || '—'; }
+function setHTML(el, html){ if (el && el.__h !== html){ el.innerHTML = html; el.__h = html; } }
+function entDur(s){
+  s = Math.max(0, Math.round(s || 0));
+  const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60;
+  const U = LANG === 'vi' ? ['giờ', 'phút', 'giây'] : ['h', 'min', 's'];
+  if (h) return `${h} ${U[0]} ${m} ${U[1]}`;
+  if (m) return `${m} ${U[1]}` + (m < 10 && x ? ` ${x} ${U[2]}` : '');
+  return `${x} ${U[2]}`;
+}
+const vnd = v => num(Math.round(v), 0) + ' đ';
+const usd = v => '$' + num(v, v < 10 ? 2 : 0);
+function mark(ok, label){ return `<span class="mk ${ok ? 'y' : 'n'}" title="${esc(label || '')}">${ic(ok ? 'check' : 'x')}${label ? esc(label) : ''}</span>`; }
+const entCur = () => ENT.data && ENT.data.demos && ENT.data.demos[ENT.demo];
+function entEngineOk(){
+  const d = ENT.data; if (!d) return false;
+  return ENT.engine === 'ollama' ? !!d.ollama_ready : !!(d.installed && d.installed.image && d.installed.model);
+}
+
+function entRender(){
+  if (!$('#tab-ent')) return;
+  entEngine(); entDemos(); entPanel(); entLive(); entCostForm(); entCostCalc(); entFeedRender();
+}
+
+function entEngine(){
+  const d = ENT.data, box = $('#ent-engine');
+  if (!d){ setHTML(box, `<div><div class="eh">${esc(t('ent_engine'))}</div><div class="ev">${esc(t('ent_loading'))}</div></div>`); return; }
+  const e = d.engine || {}, inst = d.installed || {};
+  let kind = '', state = t('ent_eng_off'), sub = t('ent_eng_off_d');
+  if (!inst.image || !inst.model){ kind = 'warn'; state = t('ent_eng_missing'); sub = t('ent_eng_missing_d'); }
+  else if (e.ready){ kind = 'ok'; state = t('ent_eng_ready'); sub = `${d.engine_model} · vLLM`; }
+  else if (e.container === 'running'){
+    kind = 'warn'; state = t('ent_eng_starting');
+    sub = t('ent_phase_' + (e.phase || 'starting')) + (e.percent != null ? ` ${e.percent}%` : '') + (e.seconds ? ' · ' + entDur(e.seconds) : '');
+  } else if (e.phase === 'failed'){ kind = 'warn'; state = t('ent_eng_failed'); sub = t('ent_eng_failed_d'); }
+  const w = d.power_w != null ? num(d.power_w, 0) + ' W' : '—';
+  const mem = d.memory ? t('ent_mem', {a: num(d.memory.available_gb, 0), t: num(d.memory.total_gb, 0)}) : '';
+  const btn = e.container === 'running'
+    ? `<button type="button" class="btn ghost small" data-ent="engine-stop">${esc(t('ent_eng_stop'))}</button>`
+    : `<button type="button" class="btn ghost small" data-ent="engine-start"${inst.image && inst.model ? '' : ' disabled'}>${esc(t('ent_eng_start'))}</button>`;
+  setHTML(box,
+    `<div><div class="eh">${esc(t('ent_engine'))}</div><div class="ev">${stateHtml(kind, state)}</div><div class="es">${esc(sub)}</div></div>` +
+    `<div><div class="eh">${esc(t('ent_gpu_now'))}</div><div class="ev">${ic('bolt')}${esc(w)}</div><div class="es">${esc(mem)}</div></div>` +
+    `<div class="eact"><div class="eh" style="margin:0">${esc(t('ent_run_on'))}</div><div class="seg">` +
+    ['vllm', 'ollama'].map(k => `<button type="button" data-ent-engine="${k}" class="${ENT.engine === k ? 'on' : ''}">${esc(t('ent_eng_' + k))}</button>`).join('') +
+    `</div>${btn}</div>`);
+}
+
+function entDemos(){
+  const d = ENT.data;
+  setHTML($('#ent-demos'), ['inbox', 'invoices'].map((k, i) => {
+    const s = d && d.demos && d.demos[k];
+    const pct = s && s.total ? Math.floor(s.processed / s.total * 100) : 0;
+    let status = '';
+    if (s) status = ENT_ACTIVE.includes(s.status)
+      ? t('ent_st_' + s.status) + (s.status === 'running' && s.rate_per_min ? ' · ' + t('ent_rate', {n: num(s.rate_per_min, 0)}) : '')
+      : (s.processed ? t('ent_done_n', {n: num(s.processed, 0), t: num(s.total, 0)}) : t('ent_ready_n', {t: num(s.total, 0)}));
+    return `<button type="button" class="ent-demo glass${ENT.demo === k ? ' on' : ''}" data-ent-demo="${k}">` +
+      `<div class="dn">0${i + 1} · ${esc(t('ent_' + k + '_k'))}</div><h3>${esc(t('ent_' + k + '_n'))}</h3><p>${esc(t('ent_' + k + '_d'))}</p>` +
+      `<div class="progress"><i style="width:${pct}%"></i></div><div class="dprog"><span>${esc(status)}</span><span>${pct}%</span></div></button>`;
+  }).join(''));
+}
+
+function entPanel(){
+  const k = ENT.demo, key = k + LANG + ENT.only;
+  if (ENT.built === key) return;
+  ENT.built = key;
+  $('#ent-panel').innerHTML =
+    `<div class="ent-head"><div><div class="label" style="margin-bottom:10px">${esc(t('ent_job'))}</div>` +
+    `<h2>${esc(t('ent_' + k + '_n'))}</h2><p class="muted" style="margin:0;max-width:780px">${esc(t('ent_' + k + '_long'))}</p>` +
+    `<div class="ent-io">${ic(k === 'inbox' ? 'msg' : 'file')}<span>${esc(t('ent_' + k + '_in'))}</span>${ic('arrow')}` +
+    `${ic('cpu')}<span>${esc(t('ent_ai'))}</span>${ic('arrow')}${ic('download')}<span>${esc(t('ent_' + k + '_out'))}</span></div></div></div>` +
+    `<div class="ent-ctl" id="ent-ctl"></div>` +
+    `<div class="progress" id="ent-runbar"><i></i></div><div class="muted" id="ent-runline"></div>` +
+    `<div class="kpis" id="ent-kpis"></div>` +
+    `<div class="label">${esc(t('ent_acc_h'))}</div><div class="accgrid" id="ent-acc"></div><div id="ent-hl"></div>` +
+    `<div class="feedhead"><div class="label" style="margin:0;flex:1">${esc(t('ent_feed_h'))}</div><div class="seg">` +
+    ['all', 'review'].map(o => `<button type="button" data-ent-only="${o}" class="${ENT.only === o ? 'on' : ''}">${esc(t('ent_only_' + o))}</button>`).join('') +
+    `</div></div><div class="tablewrap" style="max-height:460px"><table class="data" id="ent-feed"></table></div>` +
+    `<div class="muted" id="ent-feednote" style="margin-top:8px"></div>`;
+}
+
+function entLive(){
+  const s = entCur(), k = ENT.demo;
+  if (!$('#ent-ctl')) return;
+  const active = !!(s && ENT_ACTIVE.includes(s.status));
+  const left = s ? Math.max(0, s.total - s.processed) : 0;
+  const can = !!(s && !active && left > 0 && entEngineOk());
+  const n = k === 'inbox' ? 300 : 100;
+  setHTML($('#ent-ctl'),
+    `<button type="button" class="btn" data-ent="run" data-n="${n}"${can ? '' : ' disabled'}>${ic('bolt')}${esc(t('ent_run_n', {n}))}</button>` +
+    `<button type="button" class="btn ghost" data-ent="run" data-n="100000"${can ? '' : ' disabled'}>${esc(t('ent_run_all', {n: num(left, 0)}))}</button>` +
+    `<button type="button" class="btn ghost" data-ent="stop"${active ? '' : ' disabled'}>${esc(t('ent_stop'))}</button>` +
+    `<button type="button" class="btn ghost" data-ent="export"${s && s.processed ? '' : ' disabled'}>${ic('download')}${esc(t('ent_export'))}</button>` +
+    `<button type="button" class="btn ghost small" data-ent="reset"${s && s.processed && !active ? '' : ' disabled'}>${esc(t('ent_reset'))}</button>`);
+  // this batch
+  const run = (s && s.run) || {};
+  const bar = $('#ent-runbar');
+  bar.style.display = active || run.target ? '' : 'none';
+  bar.querySelector('i').style.width = (run.target ? Math.min(100, run.done / run.target * 100) : 0) + '%';
+  let line = '';
+  if (s){
+    const eng = run.engine === 'ollama' ? t('ent_eng_line_ollama') : t('ent_eng_line_vllm', {c: run.concurrency || ''});
+    if (s.status === 'engine' || s.status === 'preparing'){
+      const e = (ENT.data && ENT.data.engine) || {};
+      line = t('ent_st_' + s.status) + (s.status === 'engine' ? ' · ' + t('ent_phase_' + (e.phase || 'starting')) + (e.percent != null ? ` ${e.percent}%` : '') : '') + '…';
+    } else if (active){
+      line = t('ent_runline', {d: num(run.done || 0, 0), t: num(run.target || 0, 0), r: num(s.rate_per_min || 0, 0),
+                               e: s.eta_s != null ? entDur(s.eta_s) : '—', eng});
+    } else if (s.message === 'finished' || s.message === 'stopped'){
+      line = t('ent_msg_' + s.message) + (run.done ? ' ' + t('ent_runline_done', {d: num(run.done, 0), r: num(s.rate_per_min || 0, 0), eng}) : '');
+    } else if (s.message === 'interrupted'){ line = t('ent_msg_interrupted'); }
+    else if (String(s.message || '').startsWith('engine:')){ line = t('ent_msg_error', {m: s.message.slice(7)}); }
+    if (!entEngineOk() && ENT.data) line = ENT.engine === 'ollama' ? t('ent_no_ollama', {m: ENT.data.ollama_model}) : t('ent_eng_missing_d');
+  }
+  setHTML($('#ent-runline'), esc(line));
+  // headline numbers
+  const tot = (s && s.totals) || {}, acc = (s && s.accuracy) || {};
+  const accMain = k === 'inbox' ? acc.category : acc.total;
+  const cell = (v, l) => `<div class="kpi"><b>${esc(v)}</b><span>${esc(l)}</span></div>`;
+  setHTML($('#ent-kpis'),
+    cell(s ? `${num(s.processed, 0)} / ${num(s.total, 0)}` : '—', t('ent_k_done')) +
+    cell(s && s.rate_per_min ? num(s.rate_per_min, 0) : '—', t('ent_k_rate')) +
+    (active ? cell(s.eta_s != null ? entDur(s.eta_s) : '—', t('ent_k_eta')) : cell(tot.busy_s ? entDur(tot.busy_s) : '—', t('ent_k_busy'))) +
+    cell(s && s.processed && accMain != null ? num(accMain, 1) + '%' : '—', t('ent_k_acc_' + k)) +
+    cell(tot.wh ? num(tot.wh, 1) + ' Wh' : '—', t('ent_k_wh')) +
+    cell(tot.tokens_in ? num((tot.tokens_in + tot.tokens_out) / 1e6, 2) + ' M' : '—', t('ent_k_tokens')));
+  setHTML($('#ent-acc'), ENT_FIELDS[k].map(f => {
+    const v = acc[f];
+    return `<div class="acc"><div class="ah"><span>${esc(t('ent_f_' + f))}</span><b>${s && s.processed && v != null ? num(v, 1) + '%' : '—'}</b></div>` +
+      `<div class="bar"><i style="width:${s && s.processed ? v || 0 : 0}%"></i></div></div>`;
+  }).join(''));
+  let hl = '';
+  if (s && s.processed){
+    if (k === 'inbox' && s.critical) hl = t('ent_hl_inbox', {f: num(s.critical.found, 0), o: num(s.critical.of, 0)});
+    if (k === 'invoices' && s.problems) hl = t('ent_hl_invoices', {c: num(s.problems.caught, 0), p: num(s.problems.planted, 0),
+      d: num(s.problems.duplicates, 0), fa: num(s.problems.false_alarms, 0), v: num(s.value || 0, 0)});
+  }
+  setHTML($('#ent-hl'), hl ? `<div class="ent-hl">${ic('shield')}<span>${esc(hl)}</span></div>` : `<p class="muted" style="margin:12px 0 0">${esc(t('ent_hl_none'))}</p>`);
+}
+
+async function entFeed(){
+  if (!$('#ent-feed')) return;
+  const demo = ENT.demo;
+  try {
+    const j = await (await fetch(`/api/ent/feed?demo=${demo}&limit=60&only=${ENT.only}`)).json();
+    if (demo !== ENT.demo) return;
+    ENT.rows = j.rows || [];
+  } catch (e) { return; }
+  if (!ENT.rows.length && !ENT.samples[demo]){
+    try { ENT.samples[demo] = (await (await fetch('/api/ent/samples?demo=' + demo)).json()).rows || []; } catch (e) {}
+  }
+  entFeedRender();
+}
+
+function entFeedRender(){
+  const tb = $('#ent-feed'); if (!tb) return;
+  const k = ENT.demo, rows = ENT.rows || [];
+  if (!rows.length){
+    const smp = ENT.only === 'all' ? (ENT.samples[k] || []) : [];
+    setHTML(tb, k === 'inbox'
+      ? `<tr><th>${esc(t('ent_th_id'))}</th><th>${esc(t('ent_th_channel'))}</th><th>${esc(t('ent_th_msg'))}</th></tr>` +
+        smp.map(r => `<tr><td>${esc(r.id)}</td><td>${esc(EL('ch', r.channel))}</td><td class="wrap">${esc(r.text)}</td></tr>`).join('')
+      : `<tr><th>${esc(t('ent_th_file'))}</th><th>${esc(t('ent_f_seller'))}</th></tr>` +
+        smp.map(r => `<tr class="click" data-img="${esc(r.file)}"><td>${esc(r.file)}</td><td>${esc(r.seller)}</td></tr>`).join(''));
+    setHTML($('#ent-feednote'), esc(smp.length ? t('ent_samples_note') : ''));
+    return;
+  }
+  if (k === 'inbox'){
+    setHTML(tb, `<tr><th>${esc(t('ent_th_id'))}</th><th>${esc(t('ent_th_channel'))}</th><th>${esc(t('ent_th_msg'))}</th>` +
+      `<th>${esc(t('ent_f_category'))}</th><th>${esc(t('ent_f_urgency'))}</th><th>${esc(t('ent_th_check'))}</th></tr>` +
+      rows.map(r => {
+        const p = r.pred || {}, ok = r.ok || {};
+        const txt = r.text.length > 150 ? r.text.slice(0, 150) + '…' : r.text;
+        return `<tr class="click" data-id="${esc(r.id)}"><td>${esc(r.id)}</td><td>${esc(EL('ch', r.channel))}</td><td class="wrap">${esc(txt)}</td>` +
+          (r.error ? `<td colspan="3" class="chk-bad">${esc(r.error)}</td>` :
+          `<td>${esc(EL('cat', p.category))}</td><td class="u-${esc(p.urgency)}">${esc(EL('urg', p.urgency))}</td>` +
+          `<td>${mark(ok.category, t('ent_f_category'))} ${mark(ok.urgency, t('ent_f_urgency'))}</td>`) + '</tr>';
+      }).join(''));
+  } else {
+    setHTML(tb, `<tr><th>${esc(t('ent_th_file'))}</th><th>${esc(t('ent_f_seller'))}</th><th>${esc(t('ent_f_number'))}</th>` +
+      `<th>${esc(t('ent_f_total'))}</th><th>${esc(t('ent_th_checks'))}</th><th>${esc(t('ent_th_check'))}</th></tr>` +
+      rows.map(r => {
+        const p = r.pred || {}, ok = r.ok || {};
+        const right = Object.values(ok).filter(Boolean).length, all = Object.keys(ok).length;
+        const checks = (r.checks || []).length
+          ? `<span class="chk-bad">${esc(r.checks.map(c => EL('chk', c)).join(' · '))}</span>` : `<span class="chk-ok">${esc(t('ent_ok'))}</span>`;
+        return `<tr class="click" data-id="${esc(r.id)}"><td>${esc(r.file)}</td>` +
+          (r.error ? `<td colspan="5" class="chk-bad">${esc(r.error)}</td>` :
+          `<td class="wrap" style="min-width:200px">${esc(p.seller_name || '—')}</td><td>${esc(p.number || '—')}</td>` +
+          `<td class="num">${esc(num(p.total || 0, 0))}</td><td class="wrap" style="min-width:160px">${checks}</td>` +
+          `<td>${mark(right === all, `${right}/${all}`)}</td>`) + '</tr>';
+      }).join(''));
+  }
+  setHTML($('#ent-feednote'), esc(t('ent_feed_note')));
+}
+
+function entDetail(id){
+  const r = (ENT.rows || []).find(x => x.id === id); if (!r) return;
+  const p = r.pred || {};
+  const tr3 = (label, a, b, ok) => `<tr><td>${esc(label)}</td><td class="wrap">${esc(a)}</td><td class="wrap">${esc(b)}</td><td>${ok == null ? '' : mark(ok)}</td></tr>`;
+  const head = `<tr><th></th><th>AI</th><th>${esc(t('ent_truth'))}</th><th></th></tr>`;
+  if (ENT.demo === 'inbox'){
+    const tr = r.truth || {};
+    const flags = f => (f || []).map(x => EL('flag', x)).join(', ') || '—';
+    const html = `<div class="ent-detail"><blockquote>${esc(r.text)}</blockquote><div class="tablewrap" style="max-height:none"><table class="data">${head}` +
+      tr3(t('ent_f_category'), EL('cat', p.category), EL('cat', tr.category), p.category === tr.category) +
+      tr3(t('ent_f_urgency'), EL('urg', p.urgency), EL('urg', tr.urgency), p.urgency === tr.urgency) +
+      tr3(t('ent_f_sentiment'), EL('sent', p.sentiment), EL('sent', tr.sentiment), p.sentiment === tr.sentiment) +
+      tr3(t('ent_f_flags'), flags(p.flags), flags(tr.flags), null) +
+      tr3(t('ent_f_order'), p.order_id || '—', tr.order_id || '—', (p.order_id || '') === (tr.order_id || '')) +
+      `</table></div>` + (p.summary ? `<div class="ent-sub">${esc(t('ent_todo'))}</div><p style="margin:0">${esc(p.summary)}</p>` : '') +
+      (r.reply ? `<div class="ent-sub">${esc(t('ent_reply'))}</div><blockquote>${esc(r.reply)}</blockquote>` : '') + '</div>';
+    openModal(r.id, `${EL('ch', r.channel)} · ${secs(r.seconds || 0)}`, html);
+    return;
+  }
+  const tr = r.truth || {};
+  const money = v => v == null ? '—' : num(v, 0);
+  const lines = (p.items || []).map(l => `<tr><td class="wrap" style="min-width:160px">${esc(l.desc)}</td><td>${esc(l.unit)}</td>` +
+    `<td class="num">${esc(num(l.qty, 2))}</td><td class="num">${esc(money(l.price))}</td><td class="num">${esc(money(l.amount))}</td></tr>`).join('');
+  const checks = (r.checks || []).length
+    ? r.checks.map(c => `<div class="chk-bad">${ic('alert')} ${esc(EL('chk', c))}${c === 'duplicate' && r.duplicate_of ? ' (' + esc(r.duplicate_of) + ')' : ''}</div>`).join('')
+    : `<div class="chk-ok">${ic('check')} ${esc(t('ent_ok'))}</div>`;
+  const html = `<div class="ent-detail ent-2col"><a href="/api/ent/invoice/${esc(r.file)}" target="_blank" rel="noopener">` +
+    `<img src="/api/ent/invoice/${esc(r.file)}" alt="${esc(r.file)}"></a><div>` +
+    `<div class="ent-sub" style="margin-top:0">${esc(t('ent_th_checks'))}</div>${checks}` +
+    ((r.planted || []).length ? `<p class="muted" style="margin:6px 0 0">${esc(t('ent_planted', {p: r.planted.map(c => EL('chk', c)).join(', ')}))}</p>` : '') +
+    `<div class="ent-sub">${esc(t('ent_extracted'))}</div><div class="tablewrap" style="max-height:none"><table class="data">${head}` +
+    tr3(t('ent_f_seller'), p.seller_name, '', null) +
+    tr3(t('ent_f_tax_code'), p.seller_tax_code, tr.seller_tax_code, p.seller_tax_code === tr.seller_tax_code) +
+    tr3(t('ent_f_series'), p.series, tr.series, p.series === tr.series) +
+    tr3(t('ent_f_number'), p.number, tr.number, Number(p.number) === Number(tr.number)) +
+    tr3(t('ent_f_date'), p.date, tr.date, p.date === tr.date) +
+    tr3(t('ent_f_subtotal'), money(p.subtotal), money(tr.subtotal), p.subtotal === tr.subtotal) +
+    tr3(t('ent_f_vat') + (p.vat_rate != null ? ` (${p.vat_rate}%)` : ''), money(p.vat), money(tr.vat), p.vat === tr.vat) +
+    tr3(t('ent_f_total'), money(p.total), money(tr.total), p.total === tr.total) +
+    `</table></div><div class="ent-sub">${esc(t('ent_items'))}</div><div class="tablewrap" style="max-height:none"><table class="data">` +
+    `<tr><th>${esc(t('ent_th_desc'))}</th><th>${esc(t('ent_th_unit'))}</th><th>${esc(t('ent_th_qty'))}</th><th>${esc(t('ent_th_price'))}</th><th>${esc(t('ent_th_amount'))}</th></tr>` +
+    lines + '</table></div></div></div>';
+  openModal(r.file, `${p.seller_name || ''} · ${secs(r.seconds || 0)}`, html);
+}
+
+function entCostForm(){
+  const key = ENT.demo + LANG;
+  if (ENT.costBuilt === key || !$('#ent-cost')) return;
+  ENT.costBuilt = key;
+  const c = ENT_COST, k = ENT.demo;
+  const fld = (id, label, step) => `<label class="fld"><span>${esc(label)}</span><input type="number" min="0" step="${step || 'any'}" data-cost="${id}" value="${c[id]}"></label>`;
+  $('#ent-cost').innerHTML = `<div>` + fld(k + '_month', t('ent_c_month'), 1000) +
+    `<label class="fld"><span>${esc(t('ent_c_tier'))}</span><select data-cost="tier">` +
+    Object.keys(ENT_TIERS).map(x => `<option value="${x}"${c.tier === x ? ' selected' : ''}>${esc(t('ent_tier_' + x))}</option>`).join('') + `</select></label>` +
+    fld('usd', t('ent_c_usd'), 100) + fld('kwh', t('ent_c_kwh'), 100) + fld('watts', t('ent_c_watts'), 10) +
+    fld('box', t('ent_c_box'), 1000000) + fld('months', t('ent_c_months'), 1) +
+    `<p class="muted" style="margin:12px 0 0">${esc(t('ent_c_note'))}</p></div><div id="ent-costout"></div>`;
+}
+
+function entCostCalc(){
+  const out = $('#ent-costout'); if (!out) return;
+  const c = ENT_COST, k = ENT.demo, s = entCur(), tot = (s && s.totals) || {};
+  const n = tot.items || 0;
+  if (!n || !tot.busy_s || !tot.tokens_in){ setHTML(out, `<p class="muted" style="margin:0">${esc(t('ent_c_wait'))}</p>`); return; }
+  const [pin, pout] = ENT_TIERS[c.tier] || ENT_TIERS.mid;
+  const perItemUsd = (tot.tokens_in / n * pin + tot.tokens_out / n * pout) / 1e6;
+  const secPer = tot.busy_s / n;
+  const toVnd = u => u * (c.usd || 0);
+  const batchCloud = perItemUsd * n;
+  const batchElec = tot.busy_s / 3600 * (c.watts || 0) / 1000 * (c.kwh || 0);
+  const gpuAvg = tot.wh ? tot.wh / (tot.busy_s / 3600) : null;
+  const vol = c[k + '_month'] || 0;
+  const cloudMonth = perItemUsd * vol;
+  const hours = vol * secPer / 3600;
+  const elecMonth = hours * (c.watts || 0) / 1000 * (c.kwh || 0);
+  const amort = (c.box || 0) / Math.max(1, c.months || 1);
+  const saving = toVnd(cloudMonth) - elecMonth;
+  const payback = saving > 0 ? (c.box || 0) / saving : Infinity;
+  const row = (cls, label, big, small) => `<div class="costrow ${cls}"><span>${esc(label)}${small ? `<small>${esc(small)}</small>` : ''}</span><b>${esc(big)}</b></div>`;
+  setHTML(out,
+    `<div class="ent-sub" style="margin-top:0">${esc(t('ent_c_batch', {n: num(n, 0)}))}</div>` +
+    row('', t('ent_c_cloud'), vnd(toVnd(batchCloud)), usd(batchCloud)) +
+    row('local', t('ent_c_local'), vnd(batchElec), t('ent_c_local_d', {w: num(c.watts, 0), h: entDur(tot.busy_s), g: gpuAvg ? num(gpuAvg, 0) : '—'})) +
+    `<div class="ent-sub">${esc(t('ent_c_permonth', {v: num(vol, 0)}))}</div>` +
+    row('', t('ent_c_cloud_m'), vnd(toVnd(cloudMonth)), usd(cloudMonth)) +
+    row('local', t('ent_c_local_m'), vnd(amort + elecMonth),
+        t('ent_c_local_m_d', {a: vnd(amort), e: vnd(elecMonth), h: entDur(hours * 3600), s: num(hours / 720 * 100, 1)})) +
+    (isFinite(payback) && payback <= (c.months || 36) * 1.5
+      ? row('local big', t('ent_c_payback'), t('ent_c_months_n', {n: num(payback, 1)}), t('ent_c_free'))
+      : `<p class="muted" style="margin:12px 0 0">${esc(t('ent_c_never'))}</p>`));
+}
+
+async function entPost(path, body){
+  try {
+    const r = await fetch(path, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body || {})});
+    let j = {}; try { j = await r.json(); } catch (e) {}
+    return Object.assign({ok: r.ok}, j);
+  } catch (e) { return {ok: false, detail: String(e)}; }
+}
+
+let entPolling = false;
+async function entTick(force){
+  const visible = $('#tab-ent') && $('#tab-ent').classList.contains('on');
+  const busy = ENT.data && Object.values(ENT.data.demos || {}).some(d => ENT_ACTIVE.includes(d.status));
+  if (!force && !visible && !busy) return;
+  if (entPolling) return;
+  entPolling = true;
+  try {
+    ENT.data = await (await fetch('/api/ent/summary' + (visible ? '?active=1' : ''))).json();
+    if (visible){ entEngine(); entDemos(); entLive(); entCostCalc(); await entFeed(); }
+  } catch (e) {
+  } finally { entPolling = false; }
+}
+
+$('#tab-ent').addEventListener('click', async e => {
+  const demo = e.target.closest('[data-ent-demo]');
+  if (demo){
+    ENT.demo = demo.dataset.entDemo; ENT.rows = []; ENT.built = ''; ENT.costBuilt = '';
+    try { localStorage.setItem('ent-demo', ENT.demo); } catch (x) {}
+    entRender(); entTick(true); return;
+  }
+  const eng = e.target.closest('[data-ent-engine]');
+  if (eng){
+    ENT.engine = eng.dataset.entEngine;
+    try { localStorage.setItem('ent-engine', ENT.engine); } catch (x) {}
+    entEngine(); entLive(); return;
+  }
+  const only = e.target.closest('[data-ent-only]');
+  if (only){ ENT.only = only.dataset.entOnly; ENT.built = ''; ENT.rows = []; entPanel(); entLive(); entFeed(); return; }
+  const img = e.target.closest('tr[data-img]');
+  if (img){ openModal(img.dataset.img, '', `<div class="ent-detail"><img src="/api/ent/invoice/${esc(img.dataset.img)}" alt=""></div>`); return; }
+  const row = e.target.closest('tr[data-id]');
+  if (row){ entDetail(row.dataset.id); return; }
+  const btn = e.target.closest('[data-ent]');
+  if (!btn || btn.disabled) return;
+  const act = btn.dataset.ent;
+  if (act === 'export'){ location.href = `/api/ent/export?demo=${ENT.demo}`; return; }
+  if (act === 'reset' && !confirm(t('ent_reset_q'))) return;
+  btn.disabled = true;
+  let r;
+  if (act === 'run') r = await entPost('/api/ent/start', {demo: ENT.demo, limit: Number(btn.dataset.n), engine: ENT.engine});
+  else if (act === 'stop') r = await entPost('/api/ent/stop', {demo: ENT.demo});
+  else if (act === 'reset'){ r = await entPost('/api/ent/reset', {demo: ENT.demo}); ENT.rows = []; }
+  else if (act === 'engine-start'){ toast(t('ent_eng_starting_toast')); r = await entPost('/api/ent/engine', {action: 'start'}); }
+  else if (act === 'engine-stop') r = await entPost('/api/ent/engine', {action: 'stop'});
+  if (r && !r.ok) toast(t('ent_fail', {m: r.detail || r.error || '?'}));
+  await entTick(true);
+});
+$('#tab-ent').addEventListener('input', e => {
+  const f = e.target.closest('[data-cost]'); if (!f) return;
+  const id = f.dataset.cost;
+  ENT_COST[id] = id === 'tier' ? f.value : Math.max(0, Number(f.value) || 0);
+  try { localStorage.setItem('ent-cost', JSON.stringify(ENT_COST)); } catch (x) {}
+  entCostCalc();
+});
+
 /* ============================================================== init === */
 (async function init(){
   applyLang();
@@ -2398,6 +3158,7 @@ document.addEventListener('click', async e => {
   setInterval(health, 10000);
   setInterval(() => { if (!L1.running) lab1Load(); }, 30000);
   setInterval(renderAgenda, 60000);
+  setInterval(entTick, 2000);
 })();
 </script>
 </body>

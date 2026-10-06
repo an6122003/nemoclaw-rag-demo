@@ -41,6 +41,12 @@ NEMOCLAW_GATEWAY_PORT="$(env_get NEMOCLAW_GATEWAY_PORT 8990)"
 # The NemoClaw release the labs were verified with; a fresh install gets this
 # one rather than whatever NVIDIA's installer currently calls last-known-good.
 NEMOCLAW_VERSION="$(env_get NEMOCLAW_VERSION v0.0.124)"
+# Enterprise batch demos: NVIDIA's vLLM container and an NVFP4 model (app/enterprise.py).
+BATCH_IMAGE="$(env_get BATCH_IMAGE nvcr.io/nvidia/vllm:26.05.post1-py3)"
+BATCH_MODEL="$(env_get BATCH_MODEL nvidia/Qwen3.6-35B-A3B-NVFP4)"
+BATCH_MODEL_REVISION="$(env_get BATCH_MODEL_REVISION 491c2f1ea524c639598bf8fa787a93fed5a6fbce)"
+BATCH_HF_HOME="$(env_get BATCH_HF_HOME "$HOME/.cache/huggingface")"
+export BATCH_IMAGE BATCH_MODEL BATCH_MODEL_REVISION BATCH_HF_HOME
 export CHAT_MODEL EMBED_MODEL LAB1_BASE_HF LAB1_BASE_OLLAMA LAB1_TUNED_MODEL LAB1_IMAGE \
        SANDBOX AGENT_ID OLLAMA_URL HUB_PORT NEMOCLAW_GATEWAY_PORT CHAT_CONTEXT CHAT_MAX_TOKENS \
        EXTRA_CHAT_MODEL
