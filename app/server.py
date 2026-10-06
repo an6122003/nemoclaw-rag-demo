@@ -43,7 +43,7 @@ INDEX_HTML = HERE / "index.html"
 STATIC = HERE / "static"
 STATIC_TYPES = {".css": "text/css; charset=utf-8", ".svg": "image/svg+xml", ".woff2": "font/woff2",
                 ".png": "image/png", ".txt": "text/plain; charset=utf-8",
-                ".js": "text/javascript; charset=utf-8"}
+                ".js": "text/javascript; charset=utf-8", ".webp": "image/webp", ".jpg": "image/jpeg"}
 RETRIEVAL_MODE = "auto"
 MAX_UPLOAD = 25 * 1024 * 1024
 

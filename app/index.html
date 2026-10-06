@@ -441,6 +441,62 @@
     background:rgba(2,6,18,.7);border:1px solid var(--line);border-radius:var(--r-sm);padding:9px 10px 9px 13px;margin:8px 0;overflow-x:auto}
   .cmd span{white-space:nowrap}
 
+  /* ---------------- speakers ---------------- */
+  .spk{display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);overflow:hidden;margin:28px 0 22px}
+  .spk.sub{grid-template-columns:minmax(0,.55fr) minmax(0,1.45fr);margin-top:0}
+  .spk-photo{position:relative;display:flex;align-items:flex-end;justify-content:center;min-height:460px;padding-top:28px;overflow:hidden;
+    border-right:1px solid var(--line);
+    background:radial-gradient(58% 48% at 50% 46%,rgba(92,157,255,.38),transparent 72%),linear-gradient(180deg,rgba(255,255,255,.03),transparent)}
+  .spk.sub .spk-photo{min-height:300px;background:radial-gradient(60% 50% at 50% 48%,rgba(118,185,0,.28),transparent 72%)}
+  /* the ring belongs to the portrait, so the two stay together however tall the card is */
+  .spk-photo .fig{position:relative;display:flex;justify-content:center;align-items:flex-end;width:100%}
+  .spk-photo .fig::before{content:"";position:absolute;left:50%;top:-4%;width:min(118%,460px);aspect-ratio:1;transform:translateX(-50%);
+    border-radius:50%;border:1px solid rgba(169,201,255,.22);box-shadow:inset 0 0 90px -30px rgba(92,157,255,.7)}
+  .spk.sub .spk-photo .fig::before{width:min(118%,320px);border-color:rgba(147,214,0,.22);box-shadow:inset 0 0 80px -30px rgba(118,185,0,.6)}
+  .spk-photo img{position:relative;display:block;width:auto;max-width:92%;height:auto;max-height:440px;filter:drop-shadow(0 24px 40px rgba(0,0,0,.55))}
+  .spk.sub .spk-photo img{max-height:290px}
+  .spk-body{padding:32px 34px 30px}
+  .spk.sub .spk-body{padding:26px 30px 24px}
+  .spk-name{font:800 clamp(38px,4.4vw,60px)/.95 var(--display);text-transform:uppercase;margin:14px 0 6px;
+    background:linear-gradient(180deg,#fff 35%,#bcd3ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .spk.sub .spk-name{font-size:clamp(28px,3vw,38px)}
+  .spk-full{font-size:14px;color:var(--text-3)}
+  .spk-roles{display:flex;flex-wrap:wrap;margin:16px 0 18px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .spk-roles span{padding:9px 14px;font:600 11.5px/1.3 var(--display);letter-spacing:.12em;text-transform:uppercase;color:var(--text-2)}
+  .spk-roles span:first-child{padding-left:0}
+  .spk-roles span+span{border-left:1px solid var(--line)}
+  .spk-bio{margin:0 0 20px;color:var(--text-2);font-size:15.5px;line-height:1.65}
+  .spk-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border:1px solid var(--line);border-radius:var(--r-md);overflow:hidden;
+    background:rgba(3,8,24,.35)}
+  .spk-stats.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .spk-stat{padding:14px 16px}
+  .spk-stat+.spk-stat{border-left:1px solid var(--line)}
+  .spk-stat .pf{font:600 11px/1 var(--display);letter-spacing:.16em;text-transform:uppercase;color:var(--text-3)}
+  .spk-stat .v{font:800 28px/1.1 var(--display);color:#fff;margin-top:8px}
+  .spk-stat .s{font-size:12.5px;color:var(--text-3);margin-top:2px}
+  .spk-asof{font-size:12px;color:var(--text-4);margin-top:8px}
+  .spk-more{grid-column:1/-1;padding:22px 34px 28px;border-top:1px solid var(--line)}
+  .spk-topics{list-style:none;margin:14px 0 0;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));counter-reset:t}
+  .spk-topics li{padding:4px 16px 4px 0;counter-increment:t}
+  .spk-topics li+li{border-left:1px solid var(--line);padding-left:16px}
+  .spk-topics li::before{content:counter(t,decimal-leading-zero);font:700 12px var(--display);color:var(--nv);letter-spacing:.08em;margin-right:8px}
+  .spk-topics b{color:#fff;font-size:14.5px}
+  .spk-topics span{display:block;font-size:13px;color:var(--text-3);margin-top:3px;line-height:1.5}
+  .spk-links{display:flex;flex-wrap:wrap;gap:8px 20px;margin-top:18px}
+  .spk-links a{color:var(--text);text-decoration:none;font-size:13.5px;font-weight:500;display:inline-flex;align-items:center;gap:8px}
+  .spk-links a .i{color:var(--nv)}
+  .spk-links a:hover{color:var(--nv-2)}
+  .hspk{display:inline-flex;align-items:center;gap:14px;margin-top:22px;padding:8px 14px 8px 8px;border:1px solid var(--line);border-radius:var(--r-md);
+    cursor:pointer;background:rgba(255,255,255,.02);transition:border-color .2s,background .2s}
+  .hspk:hover{border-color:var(--line-3);background:rgba(255,255,255,.05)}
+  .hspk .av{display:flex}
+  .hspk img{width:42px;height:42px;border-radius:50%;object-fit:cover;object-position:50% 8%;border:2px solid #06102c;
+    background:radial-gradient(circle at 50% 40%,#2a4fa8,#0b1a42)}
+  .hspk img+img{margin-left:-12px;background:radial-gradient(circle at 50% 40%,#4f7d10,#0f2125)}
+  .hspk .who{font-size:13px;color:var(--text-3);line-height:1.45}
+  .hspk .who b{color:#fff;font-weight:600}
+  .hspk > .i{color:var(--nv)}
+
   /* ---------------- footer ---------------- */
   footer.site{border-top:1px solid var(--line);margin-top:30px;padding:34px 0 44px;background:rgba(3,7,20,.55)}
   .fgrid{display:grid;grid-template-columns:1fr 1.5fr;gap:48px;align-items:start}
@@ -483,7 +539,12 @@
     .sysbar{display:none}
   }
   @media (max-width:920px){
-    .home-hero,.grid2,.arch,.cmp,.answer-grid,.oc-hero,.ideas,.fgrid,.models{grid-template-columns:minmax(0,1fr)}
+    .home-hero,.grid2,.arch,.cmp,.answer-grid,.oc-hero,.ideas,.fgrid,.models,.spk,.spk.sub{grid-template-columns:minmax(0,1fr)}
+    .spk-photo{border-right:0;border-bottom:1px solid var(--line);min-height:340px}
+    .spk-topics{grid-template-columns:minmax(0,1fr)}
+    .spk-topics li{padding:10px 0;border-bottom:1px solid var(--line)}
+    .spk-topics li+li{border-left:0;padding-left:0}
+    .spk-more{padding:18px 18px 22px}
     .mcol+.mcol,.mhow{border-left:0;border-top:1px solid var(--line)}
     .home-hero{padding:36px 0 28px;gap:30px}
     .abox{padding:14px 0}
@@ -501,6 +562,9 @@
   @media (max-width:560px){
     .wrap{padding:0 16px}
     .labs,.steps{grid-template-columns:1fr}
+    .spk-stats{grid-template-columns:minmax(0,1fr)}
+    .spk-stat+.spk-stat{border-left:0;border-top:1px solid var(--line)}
+    .spk-body{padding:24px 18px}
     .toprow{gap:12px;height:58px}
     .lockup{gap:10px} .lockup .gb{height:11px} .lockup .nv{height:18px}
     .agenda{padding:20px 18px 14px}
@@ -571,6 +635,7 @@
   </div>
   <nav class="wrap tabs">
     <button type="button" data-tab="home"><span data-i18n="tab_home"></span></button>
+    <button type="button" data-tab="speakers"><span data-i18n="tab_sp"></span></button>
     <button type="button" data-tab="lab1"><span class="n">01</span><span data-i18n="tab_lab1"></span></button>
     <button type="button" data-tab="lab2"><span class="n">02</span><span data-i18n="tab_lab2"></span></button>
     <button type="button" data-tab="lab3"><span class="n">03</span><span data-i18n="tab_lab3"></span></button>
@@ -595,6 +660,11 @@
       <div class="cta">
         <button type="button" class="btn" data-go="lab1"><span data-i18n="cta_start"></span><svg class="i"><use href="#i-arrow"/></svg></button>
         <button type="button" class="btn ghost" data-go="openclaw"><span data-i18n="cta_oc"></span></button>
+      </div>
+      <div class="hspk" data-go="speakers" role="button" tabindex="0">
+        <span class="av"><img src="/static/people/lan-hoang.webp" alt=""><img src="/static/people/an.webp" alt=""></span>
+        <span class="who"><b>Lan Hoang</b> · <span data-i18n="sp_main"></span><br><b>An À Ha</b> · <span data-i18n="sp_support"></span></span>
+        <svg class="i"><use href="#i-arrow"/></svg>
       </div>
     </div>
     <aside class="agenda glass glow">
@@ -645,6 +715,16 @@
         <div><b data-i18n="arch_app"></b><div class="muted" data-i18n="arch_app_d"></div></div></div>
     </div>
   </div>
+</section>
+
+<!-- ===================================================== SPEAKERS ====== -->
+<section class="tab" id="tab-speakers">
+  <div class="pagehead">
+    <div class="eyebrow" data-i18n="sp_kicker"></div>
+    <h1 data-i18n="sp_h"></h1>
+    <p class="lead" data-i18n="sp_p"></p>
+  </div>
+  <div id="sp-people"></div>
 </section>
 
 <!-- ======================================================== LAB 1 ======= -->
@@ -968,7 +1048,7 @@
 /* ============================================================ i18n ===== */
 const I18N = {
   en: {
-    tab_home: 'Overview', tab_lab1: 'Fine-tuning', tab_lab2: 'RAG', tab_lab3: 'Agent', tab_oc: 'OpenClaw · Challenge',
+    tab_home: 'Overview', tab_sp: 'Speakers', tab_lab1: 'Fine-tuning', tab_lab2: 'RAG', tab_lab3: 'Agent', tab_oc: 'OpenClaw · Challenge',
     home_eyebrow: 'Hands-on workshop · NVIDIA DGX Spark',
     home_p: 'Three hands-on labs and one challenge on the GIGABYTE AI TOP ATOM, powered by the NVIDIA GB10 Grace Blackwell Superchip. Every model, document and tool call runs on this machine — nothing is sent to the cloud.',
     ev_date: '8 October · 8:00 – 12:30', ev_date_short: '8 October 2026', ev_day: 'Thursday · 8 Oct',
@@ -1088,6 +1168,9 @@ const I18N = {
     err_generic: 'Something went wrong: {e}',
     err_tools: 'The Python tools are not installed — run the install command again.',
 
+    sp_kicker: 'ACE 2026 Vietnam · Speakers', sp_h: 'Speaker & supporter',
+    sp_p: 'Lan Hoang is the main speaker of the event. An, who built this workshop app and its labs, supports the teams through the hands-on and the OpenClaw challenge.',
+    sp_main: 'Main speaker', sp_support: 'Supporter', sp_asof: 'Figures as of {d}.', sp_does: 'What Lân does',
     oc_kicker: 'Challenge · 10:00 – 11:10',
     oc_h: 'Build an agentic workflow that can act',
     oc_p: 'OpenClaw is the AI agent that lives in this machine’s NemoClaw sandbox. Open its own interface, give it a real job in plain language, and turn what works into a skill. At 11:10 every team shows what it built.',
@@ -1122,7 +1205,7 @@ const I18N = {
     oc_term_policy: 'The sandbox only reaches the internet hosts its policy allows. To see or change them: nemoclaw {sb} policy list'
   },
   vi: {
-    tab_home: 'Tổng quan', tab_lab1: 'Tinh chỉnh', tab_lab2: 'RAG', tab_lab3: 'Agent', tab_oc: 'OpenClaw · Thử thách',
+    tab_home: 'Tổng quan', tab_sp: 'Diễn giả', tab_lab1: 'Tinh chỉnh', tab_lab2: 'RAG', tab_lab3: 'Agent', tab_oc: 'OpenClaw · Thử thách',
     home_eyebrow: 'Workshop thực hành · NVIDIA DGX Spark',
     home_p: 'Ba bài thực hành và một thử thách trên GIGABYTE AI TOP ATOM, sử dụng siêu chip NVIDIA GB10 Grace Blackwell. Mọi mô hình, tài liệu và lệnh gọi công cụ đều chạy ngay trên máy này — không gửi gì lên đám mây.',
     ev_date: '08 Tháng 10 · 8:00 – 12:30', ev_date_short: '08/10/2026', ev_day: 'Thứ Năm · 08/10',
@@ -1242,6 +1325,9 @@ const I18N = {
     err_generic: 'Có lỗi xảy ra: {e}',
     err_tools: 'Chưa cài công cụ Python — hãy chạy lại lệnh cài đặt.',
 
+    sp_kicker: 'ACE 2026 Vietnam · Diễn giả', sp_h: 'Diễn giả & người đồng hành',
+    sp_p: 'Lan Hoang là diễn giả chính của sự kiện. An — người xây dựng ứng dụng workshop và các bài lab này — đồng hành cùng các đội trong phần thực hành và thử thách OpenClaw.',
+    sp_main: 'Diễn giả chính', sp_support: 'Đồng hành', sp_asof: 'Số liệu tính đến {d}.', sp_does: 'Lân làm gì',
     oc_kicker: 'Thử thách · 10:00 – 11:10',
     oc_h: 'Xây dựng quy trình agent biết hành động',
     oc_p: 'OpenClaw là agent AI chạy trong sandbox NemoClaw của chính máy này. Hãy mở giao diện của OpenClaw, giao cho nó một việc thật bằng ngôn ngữ thường ngày, rồi biến cách làm hiệu quả thành skill. Lúc 11:10, mỗi đội trình diễn sản phẩm của mình.',
@@ -1359,6 +1445,42 @@ const TIPS = {
        'Hỏi “bạn đã tạo những file nào?” để tìm kết quả.']
 };
 
+/* The speakers page. Public profile details only. */
+const SPEAKERS = [
+  {key: 'lan', main: true, name: 'Lan Hoang', full: 'Hoàng Trần Việt Lân · Tech by Lân', photo: '/static/people/lan-hoang.webp',
+   roles: {en: ['Business Analyst Leader', 'AI Consultant', 'Technical Trainer', 'Content Creator'],
+           vi: ['Trưởng nhóm phân tích nghiệp vụ', 'Tư vấn AI', 'Giảng viên kỹ thuật', 'Nhà sáng tạo nội dung']},
+   bio: {en: 'It started with a first personal computer. Through the channel Tech by Lân, Lân explains computer hardware and software in a practical, easy-to-follow way, and brings the same style to talks and workshops for students, tech communities and businesses.',
+         vi: 'Bắt đầu từ chiếc máy tính cá nhân đầu tiên, Lân lập kênh Tech by Lân để chia sẻ kiến thức phần cứng và phần mềm máy tính một cách dễ hiểu và thực tế nhất, và mang cùng phong cách đó vào các buổi diễn thuyết, workshop cho sinh viên, cộng đồng công nghệ và doanh nghiệp.'},
+   stats: [{pf: 'TikTok', v: '72.2K', s: {en: 'followers · 1.5M views a month', vi: 'người theo dõi · 1,5M lượt xem/tháng'}},
+           {pf: 'YouTube', v: '32.4K', s: {en: 'subscribers · 1.1M views a month', vi: 'người đăng ký · 1,1M lượt xem/tháng'}},
+           {pf: 'Facebook', v: '13K', s: {en: 'followers · 656K views a month', vi: 'người theo dõi · 656K lượt xem/tháng'}}],
+   asof: {en: '20 July 2026', vi: '20/07/2026'},
+   topics: [{en: ['Product reviews', 'CPU, GPU, RAM, SSD and more, judged on real use and real performance.'],
+             vi: ['Review sản phẩm', 'CPU, GPU, RAM, SSD…, đánh giá bằng trải nghiệm và hiệu năng thật.']},
+            {en: ['PC builds & IT tips', 'Builds matched to each need, and small fixes that make a computer faster.'],
+             vi: ['Tư vấn cấu hình & mẹo IT', 'Gợi ý cấu hình theo từng nhu cầu, mẹo nhỏ giúp máy chạy nhanh hơn.']},
+            {en: ['Tech market news', 'Trends, component prices and new technology from the big brands.'],
+             vi: ['Thị trường công nghệ', 'Xu hướng, giá linh kiện và công nghệ mới từ các hãng lớn.']},
+            {en: ['Speaker & workshops', 'For students, tech communities and businesses, in Vietnamese or English.'],
+             vi: ['Diễn giả & workshop', 'Cho sinh viên, cộng đồng công nghệ và doanh nghiệp, bằng tiếng Việt hoặc tiếng Anh.']}],
+   links: [{icon: 'globe', label: 'TikTok · @techbylan', href: 'https://www.tiktok.com/@techbylan'},
+           {icon: 'globe', label: 'YouTube · @Techbylan', href: 'https://www.youtube.com/@Techbylan'}]},
+  {key: 'an', main: false, name: 'An À Ha', full: 'An · @anndaynee', photo: '/static/people/an.webp',
+   roles: {en: ['Tech & AI Creator', 'Software Engineer', 'Product Manager'],
+           vi: ['Nhà sáng tạo nội dung AI & công nghệ', 'Kỹ sư phần mềm', 'Quản lý sản phẩm']},
+   bio: {en: 'An turns hard AI and technology topics into content that is easy to follow and built on real testing: local AI and hardware, tools and open-source repos worth trying, product reviews. An built this workshop app and its labs, and is with the teams during the OpenClaw challenge.',
+         vi: 'An biến những chủ đề AI và công nghệ “khó nhằn” thành nội dung dễ hiểu, dựa trên trải nghiệm thật: AI chạy local và phần cứng, công cụ và repo mã nguồn mở đáng thử, review sản phẩm. An xây dựng ứng dụng workshop và các bài lab này, và đồng hành cùng các đội trong phần thử thách OpenClaw.'},
+   stats: [{pf: 'YouTube', v: '481K', s: {en: 'views, all time', vi: 'lượt xem, toàn thời gian'}},
+           {pf: 'TikTok', v: '1.1M', s: {en: 'views in the last 365 days', vi: 'lượt xem trong 365 ngày'}}],
+   asof: {en: 'July 2026', vi: 'tháng 7/2026'},
+   links: [{icon: 'globe', label: 'annguyen.work', href: 'https://annguyen.work'},
+           {icon: 'file', label: 'annguyen.work/proposal', href: 'https://annguyen.work/proposal/'},
+           {icon: 'globe', label: 'YouTube · @anndaynee', href: 'https://www.youtube.com/@anndaynee'},
+           {icon: 'globe', label: 'TikTok · @anndaynee', href: 'https://www.tiktok.com/@anndaynee'},
+           {icon: 'github', label: 'GitHub · an6122003', href: 'https://github.com/an6122003'}]}
+];
+
 let LANG = 'vi';
 try { LANG = localStorage.getItem('dgx-lang') || 'vi'; } catch (e) {}
 function t(k, vars){
@@ -1454,7 +1576,7 @@ function applyLang(){
   $('#l2-q').placeholder = t('l2_placeholder');
   $('#l3-q').placeholder = t('l3_placeholder');
   $$('.lang button').forEach(b => b.classList.toggle('on', b.dataset.lang === LANG));
-  renderAgenda(); renderHomeStatus(); lab1Render(); lab2Examples(); lab3Examples(); lab3RouteBadge(); lab3Dataset(); ocRender();
+  renderAgenda(); spRender(); renderHomeStatus(); lab1Render(); lab2Examples(); lab3Examples(); lab3RouteBadge(); lab3Dataset(); ocRender();
   if (L2.last) lab2RenderAnswer(L2.last);
   if (L2.sources) lab2RenderSources(L2.sources);
 }
@@ -1488,7 +1610,7 @@ function animateTab(name){
       .from('#tab-home > .card', {y: 24, autoAlpha: 0, duration: .6}, '<.35');
   } else {
     const items = sec.querySelectorAll(':scope > .pagehead > *, :scope > .flow > *, :scope > .card, :scope > .grid2 > .card, ' +
-      ':scope > .oc-hero, :scope > .label, :scope > .ideas > .idea, :scope > details');
+      ':scope > .oc-hero, :scope > .label, :scope > .ideas > .idea, :scope > details, #sp-people > .spk');
     tl.from(Array.from(items).filter(el => el.offsetParent !== null), {y: 20, autoAlpha: 0, duration: .55, stagger: .035});
   }
   tabAnim = finishSoon(tl, 1800);
@@ -1500,8 +1622,29 @@ function popIn(el){ if (MOTION && el) finishSoon(gsap.from(el, {y: 10, autoAlpha
 function pulse(el){ if (MOTION && el) gsap.fromTo(el, {scale: .96}, {scale: 1, duration: .5, ease: 'back.out(2.6)', clearProps: 'transform'}); }
 if (MOTION) gsap.fromTo('.waves', {backgroundPosition: '35% 0px'}, {backgroundPosition: '65% 18px', duration: 18, ease: 'sine.inOut', yoyo: true, repeat: -1});
 
+/* ========================================================== speakers === */
+function spRender(){
+  $('#sp-people').innerHTML = SPEAKERS.map(sp => {
+    const L = k => (sp[k] && (sp[k][LANG] || sp[k].en)) || '';
+    const stats = `<div class="spk-stats${sp.stats.length === 2 ? ' two' : ''}">` + sp.stats.map(st =>
+      `<div class="spk-stat"><div class="pf">${esc(st.pf)}</div><div class="v">${esc(LANG === 'vi' ? st.v.replace('.', ',') : st.v)}</div>` +
+      `<div class="s">${esc(st.s[LANG] || st.s.en)}</div></div>`).join('') + '</div>' +
+      `<div class="spk-asof">${esc(t('sp_asof', {d: L('asof')}))}</div>`;
+    const topics = sp.topics ? `<div class="spk-more"><div class="label" style="margin:0">${esc(t('sp_does'))}</div><ul class="spk-topics">` +
+      sp.topics.map(tp => { const [b, d] = tp[LANG] || tp.en; return `<li><b>${esc(b)}</b><span>${esc(d)}</span></li>`; }).join('') + '</ul></div>' : '';
+    const links = '<div class="spk-links">' + sp.links.map(l =>
+      `<a href="${esc(l.href)}" target="_blank" rel="noopener">${ic(l.icon)}${esc(l.label)}</a>`).join('') + '</div>';
+    return `<article class="spk glass${sp.main ? ' glow' : ' sub'}">` +
+      `<div class="spk-photo"><div class="fig"><img src="${esc(sp.photo)}" alt="${esc(sp.name)}" loading="lazy"></div></div>` +
+      `<div class="spk-body"><span class="tag${sp.main ? '' : ' gray'}">${esc(t(sp.main ? 'sp_main' : 'sp_support'))}</span>` +
+      `<h2 class="spk-name">${esc(sp.name)}</h2><div class="spk-full">${esc(sp.full)}</div>` +
+      `<div class="spk-roles">${(sp.roles[LANG] || sp.roles.en).map(r => `<span>${esc(r)}</span>`).join('')}</div>` +
+      `<p class="spk-bio">${esc(L('bio'))}</p>${stats}${links}</div>${topics}</article>`;
+  }).join('');
+}
+
 /* ============================================================== tabs === */
-const TABS = ['home', 'lab1', 'lab2', 'lab3', 'openclaw'];
+const TABS = ['home', 'speakers', 'lab1', 'lab2', 'lab3', 'openclaw'];
 function showTab(name){
   if (!TABS.includes(name)) name = 'home';
   $$('section.tab').forEach(s => s.classList.toggle('on', s.id === 'tab-' + name));
@@ -1514,6 +1657,11 @@ $$('nav.tabs button').forEach(b => b.addEventListener('click', () => showTab(b.d
 document.addEventListener('click', e => {  // cards, agenda links and buttons that lead to a tab
   const go = e.target.closest('[data-go]');
   if (go) showTab(go.dataset.go);
+});
+document.addEventListener('keydown', e => {
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('[data-go][role=button]')){
+    e.preventDefault(); showTab(e.target.dataset.go);
+  }
 });
 window.addEventListener('hashchange', () => showTab(location.hash.slice(1)));
 
