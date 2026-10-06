@@ -1,0 +1,112 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700" width="1200" height="700" font-family="'Be Vietnam Pro','Segoe UI',Helvetica,Arial,sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#071230"/>
+      <stop offset="1" stop-color="#040a1d"/>
+    </linearGradient>
+    <linearGradient id="edge" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#a9c9ff" stop-opacity=".55"/>
+      <stop offset=".55" stop-color="#a9c9ff" stop-opacity=".12"/>
+      <stop offset="1" stop-color="#76b900" stop-opacity=".55"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#14245a" stop-opacity=".85"/>
+      <stop offset="1" stop-color="#0a1438" stop-opacity=".85"/>
+    </linearGradient>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#76b900"/>
+    </marker>
+    <style>
+      .t{fill:#ffffff;font-weight:700;font-size:17px}
+      .s{fill:#c3cee9;font-size:13px}
+      .m{fill:#8b98be;font-size:12px}
+      .k{fill:#a9c9ff;font-size:11px;font-weight:700;letter-spacing:2px}
+      .g{fill:#b9ea70;font-size:12.5px;font-weight:600}
+      .box{fill:url(#panel);stroke:url(#edge);stroke-width:1.4}
+      .line{stroke:#76b900;stroke-width:2;fill:none;opacity:.85}
+      .dash{stroke:#5c9dff;stroke-width:1.6;fill:none;stroke-dasharray:5 5;opacity:.8}
+    </style>
+  </defs>
+  <rect width="1200" height="700" fill="url(#bg)"/>
+  <path d="M0 610 C 260 560 420 660 700 600 S 1050 540 1200 590" stroke="#5c9dff" stroke-opacity=".18" stroke-width="2" fill="none"/>
+  <path d="M0 640 C 300 590 460 690 760 630 S 1080 580 1200 620" stroke="#76b900" stroke-opacity=".2" stroke-width="2" fill="none"/>
+
+  <text x="40" y="52" class="k">ARCHITECTURE · EVERYTHING RUNS ON ONE DGX SPARK</text>
+  <text x="40" y="84" fill="#fff" font-size="26" font-weight="700">Labs, agents and batch jobs — no cloud calls</text>
+
+  <!-- browser -->
+  <rect x="40" y="130" width="230" height="120" rx="8" class="box"/>
+  <text x="60" y="162" class="k">YOU</text>
+  <text x="60" y="190" class="t">Browser</text>
+  <text x="60" y="212" class="s">participants · presenter</text>
+  <text x="60" y="232" class="m">VI / EN · works offline</text>
+
+  <!-- app -->
+  <rect x="40" y="290" width="230" height="200" rx="8" class="box"/>
+  <text x="60" y="322" class="k">WORKSHOP APP · :8090</text>
+  <text x="60" y="350" class="t">app/server.py</text>
+  <text x="60" y="374" class="s">Labs 1–3 · OpenClaw challenge</text>
+  <text x="60" y="394" class="s">Enterprise batch dashboard</text>
+  <text x="60" y="422" class="m">Python standard library,</text>
+  <text x="60" y="440" class="m">streams NDJSON progress,</text>
+  <text x="60" y="458" class="m">GSAP UI served locally</text>
+  <line x1="155" y1="250" x2="155" y2="288" class="line" marker-end="url(#arr)"/>
+
+  <!-- ollama -->
+  <rect x="330" y="130" width="400" height="150" rx="8" class="box"/>
+  <text x="350" y="162" class="k">OLLAMA · :11434 · INTERACTIVE</text>
+  <text x="350" y="190" class="t">Nemotron 3.5 Lightning 30B-A3B</text>
+  <text x="350" y="212" class="s">chat + tool calling for Labs 2–3, 256K context</text>
+  <text x="350" y="236" class="s">Qwen 3.6 35B-A3B · Qwen3-Embedding 4B</text>
+  <text x="350" y="258" class="s">Qwen2.5-1.5B → aurora-assistant (LoRA)</text>
+
+  <!-- nemoclaw -->
+  <rect x="330" y="300" width="400" height="160" rx="8" class="box"/>
+  <text x="350" y="332" class="k">NVIDIA NEMOCLAW · OPENSHELL SANDBOX</text>
+  <text x="350" y="360" class="t">OpenClaw agent “analyst”</text>
+  <text x="350" y="382" class="s">memory search over 28 technical manuals (RAG)</text>
+  <text x="350" y="404" class="s">Python tools: pandas · matplotlib · openpyxl</text>
+  <text x="350" y="426" class="s">policy-limited network, inference.local → Ollama</text>
+  <text x="350" y="448" class="m">gateway :8990 · Control UI for the challenge</text>
+
+  <!-- vllm -->
+  <rect x="330" y="480" width="400" height="150" rx="8" class="box"/>
+  <text x="350" y="512" class="k">NVIDIA vLLM CONTAINER · :8100 · BATCH</text>
+  <text x="350" y="540" class="t">Qwen 3.6 35B-A3B · NVFP4</text>
+  <text x="350" y="562" class="s">dozens of requests at once, text and images</text>
+  <text x="350" y="584" class="s">+ PhoWhisper (VinAI): Vietnamese speech-to-text</text>
+  <text x="350" y="606" class="m">started on demand, stops after 30 idle minutes</text>
+
+  <!-- pytorch -->
+  <rect x="770" y="130" width="390" height="120" rx="8" class="box"/>
+  <text x="790" y="162" class="k">NGC PYTORCH CONTAINER · LAB 1</text>
+  <text x="790" y="190" class="t">LoRA fine-tuning in minutes</text>
+  <text x="790" y="212" class="s">live loss curve → merge → GGUF</text>
+  <text x="790" y="232" class="s">→ ollama create aurora-assistant</text>
+
+  <!-- data -->
+  <rect x="770" y="290" width="390" height="340" rx="8" class="box"/>
+  <text x="790" y="322" class="k">DATA THAT NEVER LEAVES THE BOX</text>
+  <text x="790" y="356" class="g">Lab 2</text><text x="850" y="356" class="s">28 manuals of a fictional power company</text>
+  <text x="790" y="384" class="g">Lab 3</text><text x="850" y="384" class="s">sales spreadsheets → charts + Excel report</text>
+  <text x="790" y="420" class="k">ENTERPRISE BATCH JOBS</text>
+  <text x="790" y="452" class="g">2,400</text><text x="850" y="452" class="s">customer messages → triage + replies</text>
+  <text x="790" y="480" class="g">1,000</text><text x="850" y="480" class="s">scanned VAT invoices → Excel + checks</text>
+  <text x="790" y="508" class="g">300</text><text x="850" y="508" class="s">call recordings → QA scorecards</text>
+  <text x="790" y="546" class="m">every item has an answer key: accuracy is measured,</text>
+  <text x="790" y="566" class="m">GPU energy is metered, cost is compared with cloud APIs</text>
+  <text x="790" y="604" class="m">all data invented · Aurora Grid / Aurora Mart</text>
+
+  <!-- wires -->
+  <path d="M270 360 C 300 360 300 205 328 205" class="line" marker-end="url(#arr)"/>
+  <path d="M270 380 L 328 380" class="line" marker-end="url(#arr)"/>
+  <path d="M270 400 C 300 400 300 555 328 555" class="line" marker-end="url(#arr)"/>
+  <path d="M530 300 L 530 282" class="dash" marker-end="url(#arr)"/>
+  <path d="M730 190 L 768 190" class="dash" marker-start="url(#arr)"/>
+  <path d="M730 380 L 768 380" class="dash"/>
+  <path d="M730 555 L 768 555" class="dash"/>
+
+  <!-- hardware -->
+  <rect x="40" y="652" width="1120" height="34" rx="6" fill="#0d1a44" stroke="#76b900" stroke-opacity=".5"/>
+  <text x="600" y="674" text-anchor="middle" fill="#e3f7c4" font-size="13.5" font-weight="600">GIGABYTE AI TOP ATOM · NVIDIA GB10 Grace Blackwell Superchip · 128 GB unified memory · 4 TB NVMe</text>
+</svg>
