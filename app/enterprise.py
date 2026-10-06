@@ -396,24 +396,24 @@ INBOX_SYSTEM = """Bạn phân loại tin nhắn của khách hàng gửi Aurora 
 
 category (chọn đúng một):
 - delivery: giao hàng chậm, chưa nhận được hàng, hỏi đơn đang ở đâu, đổi địa chỉ giao
-- defect: hàng MỚI nhận bị hỏng, lỗi, móp, nứt, không chạy, nguy hiểm khi dùng
+- defect: hàng mới nhận hoặc mới dùng vài ngày, vài tuần bị hỏng, lỗi, móp, nứt, kêu, không chạy, nguy hiểm khi dùng
 - wrong_item: giao sai sản phẩm hoặc sai màu, thiếu hàng, thiếu phụ kiện
-- return_refund: muốn trả hàng, đổi sang mẫu khác, hủy đơn, chưa được hoàn tiền sau khi trả hoặc hủy
-- billing: bị trừ tiền sai hoặc 2 lần, lỗi thanh toán, hóa đơn VAT, mã giảm giá
-- warranty: bảo hành (hàng đã dùng lâu bị hỏng), lắp đặt, kỹ thuật viên, trung tâm bảo hành
+- return_refund: muốn trả hàng, đổi sang mẫu khác (kể cả chỉ hỏi thủ tục đổi), hủy đơn, chưa được hoàn tiền sau khi trả hoặc hủy đơn
+- billing: bị trừ tiền 2 lần, lỗi thanh toán mà tiền vẫn bị trừ, hóa đơn VAT, mã giảm giá
+- warranty: hỏi bảo hành, hàng mua từ lâu (nhiều tháng, năm ngoái) bị hỏng, lắp đặt, kỹ thuật viên, trung tâm bảo hành
 - account: đăng nhập, OTP, mật khẩu, tài khoản bị xâm nhập, điểm thành viên, xóa tài khoản
 - inquiry: hỏi giá, còn hàng, khuyến mãi, so sánh, mua sỉ, trả góp (khách chưa mua)
 - praise: khen, cảm ơn
 - spam: quảng cáo, lừa đảo, không liên quan đến việc mua hàng
 
 urgency (chính sách ưu tiên, xét từ trên xuống, dừng ở mức đầu tiên khớp):
-- critical: dọa kiện hoặc khiếu nại lên cơ quan (luật sư, Hội Bảo vệ người tiêu dùng, Sở Công Thương); nguy hiểm an toàn (khói, cháy, khét, rò điện); tài khoản bị người lạ xâm nhập
-- high: khách giận dữ rõ rệt (lời lẽ gay gắt như "làm ăn kiểu gì", "tệ hại", "bức xúc", nhiều dấu "!!!" hoặc "???", phải nhắn nhiều lần); dọa đăng mạng xã hội; dọa không mua nữa; bị trừ tiền 2 lần; khách nói cần gấp (gấp, gấp lắm, ngay trong ngày, hôm nay, mai đi công tác) — kể cả khi chỉ hỏi sản phẩm
+- critical: dọa kiện hoặc khiếu nại lên cơ quan (luật sư, kiện, Hội Bảo vệ người tiêu dùng, Sở Công Thương); nguy hiểm an toàn (khói, cháy, khét, rò điện); tài khoản bị người lạ xâm nhập. Dọa đăng mạng xã hội hay review 1 sao KHÔNG phải critical.
+- high: khách giận dữ rõ rệt (lời lẽ gay gắt như "làm ăn kiểu gì", "tệ hại", "quá tệ", "bức xúc", nhiều dấu "!!!" hoặc "???", phải nhắn nhiều lần); dọa đăng mạng xã hội hoặc review 1 sao; dọa không mua nữa; bị trừ tiền 2 lần; khách nói cần gấp (gấp, gấp lắm, ngay trong ngày, hôm nay, mai đi công tác) — kể cả khi chỉ hỏi sản phẩm. Chỉ hơi phàn nàn ("chờ lâu quá", "không vui lắm", "hơi thất vọng") thì KHÔNG phải high.
 - low: CHỈ dành cho category inquiry, praise hoặc spam
 - medium: tất cả các trường hợp còn lại: mọi tin liên quan đến một đơn hàng, giao hàng, đổi địa chỉ, lắp đặt, bảo hành, đổi trả, hoàn tiền, hóa đơn, tài khoản, xóa dữ liệu — dù khách viết lịch sự
 
 sentiment: negative nếu khách phàn nàn về điều đã xảy ra; positive nếu khen; neutral nếu chỉ hỏi, yêu cầu, hoặc spam.
-flags (có thể rỗng): legal_threat, safety, security, social_media, churn_risk (dọa bỏ đi, không mua nữa, hủy thẻ), refund_request (đòi hoàn tiền).
+flags (có thể rỗng): legal_threat (chỉ khi nhắc luật sư, kiện, cơ quan nhà nước, Hội Bảo vệ người tiêu dùng), safety, security, social_media (dọa đăng Facebook, TikTok, group, review 1 sao), churn_risk (dọa bỏ đi, không mua nữa, hủy thẻ), refund_request (đòi hoàn tiền).
 order_id: mã đơn dạng AM và 7 chữ số nếu có trong tin, nếu không có thì "".
 summary: một câu tiếng Việt, tối đa 15 từ, nói việc nhân viên cần làm.
 Tin nhắn có thể viết tắt, không dấu hoặc sai chính tả."""

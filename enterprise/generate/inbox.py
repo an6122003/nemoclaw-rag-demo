@@ -94,6 +94,7 @@ def templates(category: str, c: dict) -> list[tuple[str, str, list[str]]]:
             (f"Công ty mình cần xuất hóa đơn VAT cho đơn {oid}, MST {c['tax']}. Gửi hóa đơn qua email giúp mình.", "request", []),
             (f"Mã giảm giá AURORA10 không áp dụng được cho đơn {oid}, mình bị tính đủ giá {amt}đ.", "problem", []),
             (f"Hóa đơn của đơn {oid} ghi sai tên công ty, nhờ shop điều chỉnh lại.", "problem", []),
+            (f"Đặt đơn {oid} trên app bị báo lỗi thanh toán nhưng tiền vẫn bị trừ {amt}đ.", "problem", ["refund_request"]),
         ],
         "warranty": [
             (f"{p} mua năm ngoái (đơn {oid}) giờ bị hỏng nguồn, còn bảo hành không?", "problem", []),
@@ -107,7 +108,6 @@ def templates(category: str, c: dict) -> list[tuple[str, str, list[str]]]:
             ("Tài khoản của mình bị đổi mật khẩu mà mình không hề làm, có người lạ đã đăng nhập.", "problem", ["security"]),
             (f"Điểm thành viên của mình bị mất sau khi đặt đơn {oid}.", "problem", []),
             ("Làm sao để xóa tài khoản và toàn bộ dữ liệu cá nhân của mình?", "request", []),
-            (f"Đặt đơn {oid} trên app bị báo lỗi thanh toán nhưng tiền vẫn bị trừ {amt}đ.", "problem", ["refund_request"]),
         ],
         "inquiry": [
             (f"{p} còn hàng ở chi nhánh {c['city']} không shop?", "request", []),
@@ -227,7 +227,7 @@ def make(r: random.Random, n: int) -> dict:
     if r.random() < 0.14:
         text = typo(r, text); style.append("typos")
     if r.random() < 0.05 and kind != "spam":
-        text += " " + r.choice(["Pls help.", "ASAP please.", "Thanks a lot.", "So disappointed."]); style.append("english")
+        text += " " + r.choice(["Thanks a lot.", "Thank you!", "Thanks."]); style.append("english")
     order = c["order"] if c["order"] in text else None
     return {"id": f"MSG-{n:05d}", "channel": channel, "customer": name, "text": text,
             "truth": {"category": category, "urgency": urgency, "sentiment": sentiment,
