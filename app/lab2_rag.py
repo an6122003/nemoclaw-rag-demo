@@ -132,6 +132,10 @@ def run_sandbox_search(question: str, k: int) -> list[dict] | None:
         "env", "TMPDIR=/tmp",
         "openclaw", "memory", "search",
         "--query", question, "--max-results", str(k), "--json",
+        # OpenClaw's default floor (0.35) drops every hit for a Vietnamese
+        # question over the English manuals (best cosine about 0.3); the local
+        # index has no floor at all. The model decides what is relevant.
+        "--min-score", "0.2",
     ]
     try:
         with NEMOCLAW_LOCK:
@@ -258,10 +262,16 @@ def probe_sandbox() -> None:
 # --------------------------------------------------------------------------
 # Generation + the streamed pipeline
 # --------------------------------------------------------------------------
+# Repeated after the question: with English passages, Nemotron sometimes
+# answered a Vietnamese question in English despite the system prompt.
+ANSWER_IN = {"en": "Answer in English.", "vi": "Trả lời bằng tiếng Việt."}
+
+
 def messages_for(question: str, passages: list[dict], lang: str) -> list[dict]:
     context = "\n\n".join(f"[{i}] {p['title']}\n{p['passage']}" for i, p in enumerate(passages, 1))
     return [{"role": "system", "content": SYSTEM.get(lang, SYSTEM["en"])},
-            {"role": "user", "content": f"Context passages:\n\n{context}\n\nQuestion: {question}"}]
+            {"role": "user", "content": f"Context passages:\n\n{context}\n\nQuestion: {question}\n\n"
+                                        f"{ANSWER_IN.get(lang, ANSWER_IN['en'])}"}]
 
 
 def ask_stream(question: str, lang: str, k: int, mode: str, emit) -> None:
