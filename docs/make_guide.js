@@ -120,12 +120,12 @@ const children = [
   new Paragraph({
     spacing: { after: 280 },
     border: { bottom: { style: BorderStyle.SINGLE, size: 8, color: "76B900", space: 6 } },
-    children: [new TextRun({ text: "Cập nhật ngày 06/10/2026 (bản 2)", size: 18, color: GRAY })],
+    children: [new TextRun({ text: "Cập nhật ngày 07/10/2026 (bản 3)", size: 18, color: GRAY })],
   }),
 
   callout("tip", "TÓM TẮT TRONG 30 GIÂY", [
-    [{ b: "Lần đầu (cài đặt, khoảng 1–1,5 giờ): " }, "mở Terminal → dán 1 lệnh duy nhất → nhấn Enter, nhập mật khẩu → chờ máy tự chạy."],
-    [{ b: "Những lần sau: " }, "bấm đúp biểu tượng “DGX Spark Workshop” trên màn hình nền."],
+    [{ b: "Lần đầu (cài đặt, khoảng 1–2 giờ, cần internet): " }, "mở Terminal → dán 1 lệnh duy nhất → nhấn Enter, nhập mật khẩu → chờ máy tự chạy."],
+    [{ b: "Những lần sau: " }, "bấm đúp biểu tượng “DGX Spark Workshop” trên màn hình nền. Không cần internet, kể cả sau khi khởi động lại máy."],
     [{ b: "Khi có lỗi: " }, "gửi tệp setup-log.txt cho người phụ trách kỹ thuật."],
   ]),
   gap(200),
@@ -137,18 +137,21 @@ const children = [
     [{ b: "1 · Tinh chỉnh mô hình" }, "Dạy một mô hình AI nhỏ trở thành “Aurora”, trợ lý của công ty mẫu Aurora Grid", "Câu trả lời trước và sau khi dạy, đặt cạnh nhau"],
     [{ b: "2 · Hỏi đáp trên tài liệu (RAG)" }, "AI đọc 28 tài liệu kỹ thuật để trả lời câu hỏi", "Câu trả lời kèm đúng đoạn tài liệu gốc"],
     [{ b: "3 · Agent phân tích dữ liệu" }, "Hỏi bằng tiếng Việt; AI tự đọc file Excel, phân tích, vẽ biểu đồ và xuất báo cáo", "Từng bước AI làm hiện ra trực tiếp trên màn hình"],
+    [{ b: "4 · Thử thách OpenClaw" }, "Các đội tự giao việc cho agent OpenClaw và xây sản phẩm của mình (10:00–11:10)", "Mỗi đội trình diễn sản phẩm lúc 11:10"],
   ], [2500, 3700, 2826]),
+  gap(60),
+  P(["Bài 1, 2 và 3 đều có phần ", { b: "so sánh trước / sau" }, ": cùng một câu hỏi, đặt cạnh nhau, để khán giả thấy rõ khác biệt (trước và sau khi tinh chỉnh; không có và có RAG; chỉ có mô hình và có agent)."]),
   gap(60),
   P([{ i: "Aurora Grid là công ty hư cấu; mọi tài liệu và số liệu trong workshop đều là dữ liệu mẫu." }], { spacing: { after: 200 } }),
 
   // ----------------------------------------------------------------- 2 ---
   H1("2. Cần chuẩn bị gì?"),
   ...bullets([
-    ["Máy ", { b: "DGX Spark" }, " đã bật và có ", { b: "internet" }, " (chỉ cần khi cài đặt lần đầu)."],
+    ["Máy ", { b: "DGX Spark" }, " đã bật và có ", { b: "internet" }, " (chỉ cần khi cài đặt). ", { b: "Sau khi cài xong, workshop chạy không cần internet" }, ", kể cả sau khi khởi động lại máy."],
     "Màn hình, bàn phím và chuột cắm vào máy Spark.",
     ["Mật khẩu đăng nhập", " của máy."],
-    ["Khoảng ", { b: "60 GB" }, " dung lượng trống."],
-    ["Khoảng ", { b: "1–1,5 giờ" }, " cho lần cài đặt đầu tiên. Máy tự chạy, không cần ngồi canh."],
+    ["Khoảng ", { b: "100 GB" }, " dung lượng trống."],
+    ["Khoảng ", { b: "1–2 giờ" }, " cho lần cài đặt đầu tiên. Máy tự chạy, không cần ngồi canh. Nếu máy thiếu phần mềm nào (Docker, Python…), chương trình tự cài."],
   ]),
 
   // ----------------------------------------------------------------- 3 ---
@@ -174,7 +177,7 @@ const children = [
   ...steps([
     ["Màn hình hiện thông báo về các phần mềm sẽ được cài. Nhấn ", { b: "Enter" }, " để đồng ý."],
     ["Máy hỏi ", { b: "mật khẩu" }, ": gõ mật khẩu đăng nhập rồi nhấn Enter. ", { b: "Khi gõ, màn hình không hiện ký tự nào" }, " — đó là bình thường."],
-    ["Chờ khoảng ", { b: "45–90 phút" }, ". Máy tự tải khoảng 60 GB (mô hình AI và phần mềm). ", { b: "Không đóng cửa sổ Terminal, không tắt máy." }],
+    ["Chờ khoảng ", { b: "1–2 giờ" }, ". Máy tự tải khoảng 85 GB (mô hình AI và phần mềm). ", { b: "Không đóng cửa sổ Terminal, không tắt máy." }],
   ]),
   callout("info", "TRONG LÚC CHỜ", "Màn hình lần lượt hiện “Step 1”, “Step 2”… với dấu ✔ (đã xong), ! (cảnh báo nhẹ) hoặc ✘ (lỗi). Chỉ cần để máy tự chạy."),
   gap(160),
@@ -199,7 +202,7 @@ const children = [
   gap(80),
   ...bullets([
     ["Trình duyệt tự mở trang workshop. Nếu không, mở trình duyệt và vào địa chỉ ", { b: "http://127.0.0.1:8090" }, "."],
-    ["Nếu máy vừa bật lên hoặc vừa khởi động lại, lần mở đầu tiên mất ", { b: "1–5 phút" }, " để NemoClaw khởi động. Cứ chờ, không cần làm gì."],
+    ["Nếu máy vừa bật lên hoặc vừa khởi động lại, lần mở đầu tiên mất khoảng ", { b: "1 phút" }, " (tối đa 5 phút) để NemoClaw khởi động. Cứ chờ, không cần làm gì. ", { b: "Không cần internet." }],
     ["Giữ cửa sổ Terminal mở suốt buổi trình diễn ", { i: "(có thể thu nhỏ xuống)" }, "."],
   ]),
   H3("Trước khi khán giả vào (khoảng 10 phút)"),
@@ -209,9 +212,9 @@ const children = [
   ]),
   H3("Trên màn hình có gì"),
   table(["Thành phần", "Ý nghĩa"], [
-    [{ b: "Các tab ở đầu trang" }, "Tổng quan · 1 · Tinh chỉnh · 2 · RAG · 3 · Agent"],
+    [{ b: "Các tab ở đầu trang" }, "Tổng quan · 01 Tinh chỉnh · 02 RAG · 03 Agent · 04 OpenClaw · Thử thách"],
     [{ b: "Nút VI / EN" }, "Đổi ngôn ngữ cho toàn bộ trang"],
-    [{ b: "Các chấm tròn ở góc trên" }, "Xanh = sẵn sàng. Xám hoặc vàng = chưa sẵn sàng, nhưng vẫn trình diễn được"],
+    [{ b: "Thanh trạng thái ở góc trên" }, "GPU · Ollama · NemoClaw · OpenClaw. Chấm xanh = sẵn sàng. Xám hoặc vàng = chưa sẵn sàng, nhưng vẫn trình diễn được"],
   ], [3000, 6026]),
   H3("Kết thúc"),
   P(["Nhấn ", { b: "Ctrl + C" }, " trong cửa sổ Terminal, hoặc đóng cửa sổ Terminal."], { spacing: { after: 200 } }),
@@ -231,7 +234,8 @@ const children = [
   H2("Bài 2 — Hỏi đáp trên tài liệu (4 phút)"),
   ...steps([
     ["Mở tab ", { b: "2 · RAG" }, ". Bấm câu “Tôi phải siết đầu cực DC với lực bao nhiêu?”. Kết quả: 25 N·m cho AX-400 và 35 N·m cho AX-600. AI phân biệt đúng hai sản phẩm gần giống nhau."],
-    ["Bấm câu màu cam “Sau khi ngắt cầu dao DC, phải chờ bao lâu trước khi tháo nắp module?”. Kết quả: ", { b: "12 phút" }, ", và AI nói rõ quy định cũ 5 phút đã hết hiệu lực. Mở mục ", { b: "Nguồn của câu trả lời" }, " để khán giả thấy đoạn tài liệu gốc."],
+    ["Bấm câu có nhãn ", { b: "Then chốt" }, " “Sau khi ngắt cầu dao DC, phải chờ bao lâu trước khi tháo nắp module?”. Kết quả: ", { b: "12 phút" }, ", và AI nói rõ quy định cũ 5 phút đã hết hiệu lực. Mở mục ", { b: "Nguồn của câu trả lời" }, " để khán giả thấy đoạn tài liệu gốc."],
+    ["Chỉ vào hai cột của câu trả lời: ", { b: "Không có RAG" }, " (cùng mô hình nhưng không có tài liệu, thường trả lời sai hoặc bịa, ví dụ tủ AX-600 chứa “1000 lít”) và ", { b: "Có RAG" }, " (đúng theo tài liệu, kèm nguồn)."],
     ["Bấm câu “Giá cổ phiếu của Aurora Grid Systems hôm nay là bao nhiêu?”. AI từ chối trả lời vì tài liệu không có thông tin này: nó không bịa."],
   ]),
   callout("tip", "CÂU NÊN NÓI", "“AI chỉ trả lời từ tài liệu của mình, và luôn chỉ ra nguồn để chúng ta tự kiểm chứng.”"),
@@ -239,17 +243,37 @@ const children = [
 
   H2("Bài 3 — Agent phân tích dữ liệu (5 phút)"),
   ...steps([
-    ["Mở tab ", { b: "3 · Agent" }, ". Bấm câu màu cam “Phân tích doanh số theo vùng và cho biết khu vực nào tăng trưởng tốt nhất.”"],
+    ["Mở tab ", { b: "3 · Agent" }, ". Bấm câu có nhãn ", { b: "Then chốt" }, " “Phân tích doanh số theo vùng và cho biết khu vực nào tăng trưởng tốt nhất.”"],
     ["Chỉ vào 4 ô ", { b: "Người dùng → NeMo Claw → Python → Kết quả" }, " đang sáng lần lượt, và danh sách “Agent đang làm gì”: đọc file Excel → phân tích → vẽ biểu đồ → xuất báo cáo."],
     ["Kết quả: ", { b: "Đà Nẵng tăng trưởng tốt nhất (+64,5%)" }, "; TP. Hồ Chí Minh lớn nhất nhưng tăng chậm hơn; Hà Nội giảm. Bấm ", { b: "Tải báo cáo Excel" }, " để mở báo cáo vừa tạo."],
+    ["Ô ", { b: "Nhận định" }, " đặt hai cột cạnh nhau: ", { b: "Chỉ có mô hình" }, " (không mở được file Excel nên chỉ đoán hoặc xin dữ liệu) và ", { b: "Agent + công cụ" }, " (số liệu thật, tính bằng Python)."],
   ]),
   callout("tip", "CÂU NÊN NÓI", "“AI quyết định cần làm gì; còn mọi con số đều do máy tính toán, nên không có chuyện bịa số.”"),
   gap(100),
-  callout("info", "NẾU THẤY DÒNG “📋 Kiểm tra quy trình”", "Đó là ứng dụng nhắc agent làm đủ các bước (biểu đồ, báo cáo) trước khi trả lời. Đây là chuyện bình thường, và là một điểm hay để giới thiệu: agent được đặt trong một quy trình có kiểm soát."),
+  callout("info", "NẾU THẤY DÒNG “Kiểm tra quy trình”", "Đó là ứng dụng nhắc agent làm đủ các bước (biểu đồ, báo cáo) trước khi trả lời. Đây là chuyện bình thường, và là một điểm hay để giới thiệu: agent được đặt trong một quy trình có kiểm soát."),
   gap(200),
 
   // ----------------------------------------------------------------- 6 ---
-  H1("6. Phần D — Khi gặp sự cố"),
+  H1("6. Phần D — Thử thách OpenClaw (10:00 – 11:10)"),
+  P("OpenClaw là agent AI chạy trong sandbox NemoClaw của chính máy này. Trong phần thử thách, mỗi đội tự giao việc cho agent bằng ngôn ngữ thường ngày, rồi biến cách làm hiệu quả thành skill để trình diễn lúc 11:10."),
+  ...steps([
+    ["Mở tab ", { b: "04 OpenClaw · Thử thách" }, " rồi bấm nút xanh ", { b: "Mở OpenClaw" }, ". Hoặc gõ ", { b: "localhost:8090/openclaw" }, " vào thanh địa chỉ. OpenClaw mở ra ở trang Chat."],
+    "Giao việc cho agent: nói rõ cần làm gì, dùng dữ liệu nào, muốn nhận lại gì. Viết tiếng Việt được.",
+    ["Muốn có sẵn ý tưởng: ở tab 04 có 4 ", { b: "ý tưởng khởi đầu" }, ". Bấm ", { b: "Sao chép" }, " rồi dán vào khung chat của OpenClaw."],
+    "Yêu cầu agent lưu cách làm thành skill, rồi thử lại trong một cuộc chat mới.",
+  ]),
+  H3("Đổi mô hình (tuỳ chọn)"),
+  P(["Mặc định là ", { b: "Nemotron 3.5 Lightning" }, ". Nếu câu trả lời chưa đủ tốt, các đội có thể thử ", { b: "Qwen 3.6" }, ":"]),
+  ...bullets([
+    ["Bấm vào tên mô hình ngay dưới ô nhập tin nhắn (đang ghi “nemotron · Off”) → chọn ", { b: "Workshop Ollama" }, " → ", { b: "qwen" }, " → bấm ", { b: "Save" }, "."],
+    ["Hoặc gõ ", { b: "/model qwen" }, " vào khung chat rồi nhấn Enter. Quay lại bằng ", { b: "/model nemotron" }, "."],
+    "Mỗi cuộc chat giữ mô hình riêng. Các bài 1–3 luôn dùng Nemotron.",
+  ]),
+  callout("tip", "MẸO CHO CÁC ĐỘI", ["Gõ ", { b: "/new" }, " để bắt đầu cuộc chat mới khi đổi ý tưởng. Nếu agent dừng giữa chừng, trả lời “tiếp tục”. Hỏi “bạn đã tạo những file nào?” để tìm kết quả."]),
+  gap(200),
+
+  // ----------------------------------------------------------------- 7 ---
+  H1("7. Phần E — Khi gặp sự cố"),
   table(["Hiện tượng", "Cách xử lý"], [
     ["Trình duyệt không tự mở", ["Mở trình duyệt, vào ", { b: "http://127.0.0.1:8090" }]],
     ["Lúc tải mô hình, tốc độ tụt còn vài KB/s", "Không cần làm gì: sau khoảng 1 phút chương trình tự kết nối lại và tải tiếp, phần đã tải được giữ nguyên"],
@@ -259,12 +283,15 @@ const children = [
     ["Câu trả lời đầu tiên rất chậm", "Bình thường: mô hình đang được nạp. Chờ 30–60 giây"],
     ["Bài 2 hoặc 3 ghi “chế độ trực tiếp”", ["Vẫn trình diễn được. Để sửa (khoảng 15 phút): đóng cửa sổ Terminal của workshop, rồi chạy lại ", { b: "lệnh cài đặt ở Phần A, Bước 2" }]],
     ["Lỡ đóng cửa sổ Terminal", "Mở lại workshop bằng biểu tượng trên màn hình nền"],
+    ["Máy vừa khởi động lại, không có internet", "Bình thường: mở workshop bằng biểu tượng trên màn hình nền và chờ khoảng 1 phút. Mọi thứ chạy không cần internet"],
+    ["Bấm “Mở OpenClaw” mà không mở được", "Mở trên trình duyệt của chính máy Spark (không phải từ laptop khác). Nếu vẫn không được, chờ 1 phút rồi bấm lại"],
+    ["Agent OpenClaw dừng giữa chừng", ["Trả lời “tiếp tục” trong khung chat, hoặc gõ ", { b: "/new" }, " để bắt đầu lại"]],
     ["Vẫn không được", ["Chạy lại lệnh cài đặt ở Phần A, Bước 2, rồi gửi tệp ", { b: "setup-log.txt" }, " (trong thư mục dgx-workshop) cho người phụ trách"]],
   ], [3600, 5426]),
   gap(200),
 
-  // ----------------------------------------------------------------- 7 ---
-  H1("7. Phần E — Giải thích thuật ngữ"),
+  // ----------------------------------------------------------------- 8 ---
+  H1("8. Phần F — Giải thích thuật ngữ"),
   table(["Thuật ngữ", "Hiểu đơn giản"], [
     [{ b: "DGX Spark" }, "Máy tính AI nhỏ gọn của NVIDIA, đủ mạnh để chạy mô hình AI ngay trên bàn làm việc."],
     [{ b: "Mô hình AI (LLM)" }, "“Bộ não” hiểu và viết ngôn ngữ, giống ChatGPT, nhưng chạy ngay trên máy này."],
@@ -273,16 +300,20 @@ const children = [
     [{ b: "Tinh chỉnh (Fine-tuning)" }, "Dạy thêm cho mô hình có sẵn bằng ví dụ để nó đổi cách cư xử. LoRA là cách tinh chỉnh nhanh: chỉ học thêm một phần rất nhỏ."],
     [{ b: "RAG" }, "Cho AI tra cứu tài liệu trước khi trả lời, để câu trả lời đúng theo tài liệu và có nguồn."],
     [{ b: "Agent" }, "AI không chỉ trả lời mà còn tự quyết định dùng công cụ nào (đọc Excel, tính toán, vẽ biểu đồ) để hoàn thành việc được giao."],
+    [{ b: "OpenClaw" }, "Agent AI có giao diện chat riêng, chạy trong sandbox NemoClaw. Dùng trong phần thử thách."],
+    [{ b: "Skill" }, "Một “kỹ năng” được lưu lại cho agent: hướng dẫn và công cụ để làm lại một việc mỗi khi được hỏi."],
   ], [2600, 6426]),
   gap(200),
 
-  // ----------------------------------------------------------------- 8 ---
-  H1("8. Phụ lục — Trình chiếu từ laptop (cho người có kinh nghiệm)"),
+  // ----------------------------------------------------------------- 9 ---
+  H1("9. Phụ lục — Trình chiếu từ laptop (cho người có kinh nghiệm)"),
   P("Cách 1 — đường hầm SSH. Chạy lệnh này trên laptop, rồi mở http://localhost:8090 trên laptop:"),
   cmd("ssh -L 8090:127.0.0.1:8090 <tên-đăng-nhập>@<địa-chỉ-IP-máy-Spark>"),
   gap(120),
   P("Cách 2 — mở cho cả mạng nội bộ. Chạy lệnh này trên máy Spark, rồi các laptop cùng mạng mở http://<địa-chỉ-IP-máy-Spark>:8090:"),
   cmd("bash ~/dgx-workshop/start.sh --lan"),
+  gap(80),
+  P([{ i: "Lưu ý: nút “Mở OpenClaw” chỉ hoạt động trên trình duyệt của chính máy Spark, vì để an toàn OpenClaw chỉ nhận kết nối từ máy đó." }]),
 ];
 
 // ------------------------------------------------------------------ build ---

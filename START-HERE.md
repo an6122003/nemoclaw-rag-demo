@@ -24,6 +24,12 @@ Three hands-on AI labs, running **entirely on the DGX Spark** — nothing is sen
 | **1** | Tinh chỉnh mô hình · Fine-tuning | Một mô hình nhỏ được "dạy lại" trong vài phút, rồi so sánh trước/sau · A small model retrained in minutes, compared before/after |
 | **2** | RAG với NemoClaw · RAG with NemoClaw | Hỏi 28 tài liệu kỹ thuật, câu trả lời kèm nguồn · Ask 28 manuals; every answer shows its source |
 | **3** | Agent phân tích dữ liệu · Agentic workflow | Hỏi bằng tiếng Việt, AI tự đọc Excel, phân tích, vẽ biểu đồ, xuất báo cáo · Ask in Vietnamese; the AI reads Excel, analyses, charts, exports a report |
+| **4** | Thử thách OpenClaw · OpenClaw challenge | Các đội tự giao việc cho agent OpenClaw, xây sản phẩm và trình diễn · Teams give the OpenClaw agent their own jobs, build something and show it |
+
+Bài 1–3 đều đặt **trước / sau** cạnh nhau: trước và sau khi tinh chỉnh, không có và có
+RAG, chỉ có mô hình và có agent.
+Labs 1–3 each put **before / after** side by side: before and after fine-tuning,
+without and with RAG, the model alone and the agent with its tools.
 
 ---
 
@@ -31,9 +37,9 @@ Three hands-on AI labs, running **entirely on the DGX Spark** — nothing is sen
 
 | | |
 |---|---|
-| ✅ | Máy **DGX Spark** đã bật, có **internet** (chỉ cần khi cài đặt) · The **DGX Spark**, on, with **internet** (for setup only) |
+| ✅ | Máy **DGX Spark** đã bật, có **internet** (chỉ cần khi cài đặt; sau đó chạy không cần internet, kể cả khi khởi động lại) · The **DGX Spark**, on, with **internet** (for setup only; afterwards it runs offline, restarts included) |
 | ✅ | Màn hình, bàn phím, chuột · A screen, keyboard and mouse |
-| ✅ | Khoảng **60 GB** trống và **45-90 phút** · About **60 GB** free and **45-90 minutes** |
+| ✅ | Khoảng **100 GB** trống và **1-2 giờ** · About **100 GB** free and **1-2 hours** |
 | ✅ | **Mật khẩu đăng nhập** của máy · The machine's **login password** |
 
 ---
@@ -71,9 +77,10 @@ Then:
    hiện ký tự nào — đó là bình thường.**
    It asks for your **password**: type your login password and press Enter.
    **Nothing appears while you type — that is normal.**
-3. Để máy tự chạy 45-90 phút. **Đừng đóng cửa sổ.** Phần lâu nhất là tải mô hình AI.
-   Let it run for 45-90 minutes. **Do not close the window.** Downloading the AI
-   models is the slow part.
+3. Để máy tự chạy 1-2 giờ. **Đừng đóng cửa sổ.** Phần lâu nhất là tải mô hình AI.
+   Thiếu phần mềm nào (Docker, Python…) thì chương trình tự cài.
+   Let it run for 1-2 hours. **Do not close the window.** Downloading the AI
+   models is the slow part. Anything missing (Docker, Python…) is installed for you.
 
 > Chạy lại **đúng lệnh này** bất cứ lúc nào để cập nhật hoặc cài tiếp — hoàn toàn an
 > toàn, các bước đã xong sẽ được bỏ qua.
@@ -116,10 +123,10 @@ Nhấn **Ctrl-C** để dừng.
 The browser opens `http://127.0.0.1:8090/`. **Keep the Terminal window open** while
 presenting. Press **Ctrl-C** to stop.
 
-Nếu máy vừa bật lên hoặc vừa khởi động lại, lần mở đầu tiên mất **1–5 phút** để NemoClaw
-khởi động — cứ chờ.
-Right after the computer is switched on or restarted, the first start takes **1–5
-minutes** while NemoClaw starts — just wait.
+Nếu máy vừa bật lên hoặc vừa khởi động lại, lần mở đầu tiên mất khoảng **1 phút** (tối đa
+5 phút) để NemoClaw khởi động — cứ chờ. **Không cần internet.**
+Right after the computer is switched on or restarted, the first start takes about **1
+minute** (at most 5) while NemoClaw starts — just wait. **No internet needed.**
 
 > 💡 Trước khi khán giả vào, hãy bấm thử một câu hỏi ở mỗi bài để máy "khởi động".
 > 💡 Before the audience arrives, click one question in each lab to warm things up.
@@ -129,9 +136,9 @@ minutes** while NemoClaw starts — just wait.
 ## Kịch bản trình diễn · Demo script (≈ 15 phút · minutes)
 
 Góc trên bên phải có nút **VI / EN** để đổi ngôn ngữ. Các tab ở đầu trang: **Tổng quan,
-1 · Tinh chỉnh, 2 · RAG, 3 · Agent**.
+01 Tinh chỉnh, 02 RAG, 03 Agent, 04 OpenClaw · Thử thách**.
 The **VI / EN** buttons top right switch language. Tabs along the top: **Overview,
-1 · Fine-tuning, 2 · RAG, 3 · Agent**.
+01 Fine-tuning, 02 RAG, 03 Agent, 04 OpenClaw · Challenge**.
 
 ### Bài 1 · Tinh chỉnh (5 phút)
 
@@ -149,21 +156,41 @@ The **VI / EN** buttons top right switch language. Tabs along the top: **Overvie
 
 1. Bấm **"Tôi phải siết đầu cực DC với lực bao nhiêu?"** → **25 N·m cho AX-400, 35 N·m
    cho AX-600**: hệ thống phân biệt hai sản phẩm gần giống nhau.
-2. Bấm câu màu cam **"Sau khi ngắt cầu dao DC, phải chờ bao lâu…"** → **12 phút** theo
+2. Bấm câu có nhãn **Then chốt** **"Sau khi ngắt cầu dao DC, phải chờ bao lâu…"** → **12 phút** theo
    SB-2025-01, và nói rõ quy tắc 5 phút cũ đã hết hiệu lực. **Đây là phần quan trọng
    nhất** — mở danh sách **Nguồn** để cho thấy tài liệu cũ vẫn còn trong thư viện.
 3. Bấm **"Giá cổ phiếu của Aurora Grid Systems hôm nay là bao nhiêu?"** → hệ thống
    **từ chối**, vì tài liệu không có. Nó không bịa.
+4. Chỉ vào hai cột của câu trả lời: **Không có RAG** (cùng mô hình, không có tài liệu —
+   thường sai, ví dụ tủ AX-600 "1000 lít") và **Có RAG** (đúng theo tài liệu, kèm nguồn).
 
 ### Bài 3 · Agent (5 phút)
 
-1. Bấm câu màu cam **"Phân tích doanh số theo vùng và cho biết khu vực nào tăng trưởng
-   tốt nhất."** — đúng câu trong slide.
+1. Bấm câu có nhãn **Then chốt** **"Phân tích doanh số theo vùng và cho biết khu vực nào
+   tăng trưởng tốt nhất."** — đúng câu trong slide.
 2. Chỉ vào bốn ô **Người dùng → NeMo Claw → Python → Kết quả** đang sáng lên, và danh sách
    **Agent đang làm gì**: đọc file Excel → phân tích bằng pandas → vẽ biểu đồ → xuất Excel.
 3. Kết quả: **Đà Nẵng tăng trưởng tốt nhất, +64,5%**; TP. Hồ Chí Minh lớn nhất nhưng tăng
    chậm hơn; Hà Nội giảm. Bấm **Tải báo cáo Excel** để mở báo cáo.
-4. Câu cần nói: *"Mô hình chỉ quyết định gọi công cụ nào. Mọi con số đều do Python tính."*
+4. Ô **Nhận định** đặt cạnh nhau **Chỉ có mô hình** (không mở được file, chỉ đoán hoặc xin
+   dữ liệu) và **Agent + công cụ** (số liệu thật).
+5. Câu cần nói: *"Mô hình chỉ quyết định gọi công cụ nào. Mọi con số đều do Python tính."*
+
+### Thử thách OpenClaw · OpenClaw challenge (10:00 – 11:10)
+
+1. Mở tab **04 OpenClaw · Thử thách**, bấm nút xanh **Mở OpenClaw** (hoặc gõ
+   `localhost:8090/openclaw`). OpenClaw mở ở trang Chat.
+   Open tab **04**, press **Open OpenClaw** (or type `localhost:8090/openclaw`).
+2. Các đội giao việc bằng ngôn ngữ thường ngày; có 4 **ý tưởng khởi đầu** để sao chép.
+   Teams describe a job in plain language; four **starter ideas** can be copied.
+3. **Đổi mô hình:** bấm tên mô hình dưới ô nhập tin nhắn (đang ghi "nemotron · Off") →
+   **Workshop Ollama → qwen → Save**, hoặc gõ `/model qwen`; quay lại bằng `/model nemotron`.
+   Các bài 1–3 luôn dùng Nemotron.
+   **Switch model:** click the model name under the message box → **Workshop Ollama →
+   qwen → Save**, or type `/model qwen`; `/model nemotron` switches back. Labs 1–3 always
+   use Nemotron.
+4. Mẹo: `/new` để mở cuộc chat mới; agent dừng giữa chừng thì trả lời "tiếp tục".
+   Tips: `/new` for a fresh chat; if the agent stops halfway, reply "continue".
 
 ---
 
@@ -177,6 +204,8 @@ The **VI / EN** buttons top right switch language. Tabs along the top: **Overvie
 | Trang trắng · Blank page | Nhấn `F5` · Press `F5` |
 | Câu trả lời đầu tiên rất chậm · First answer is slow | Bình thường, mô hình đang nạp · Normal: the model is loading |
 | Góc trên có chấm xám · Grey dot at the top | Đóng Terminal, chạy lại `bash ~/dgx-workshop/start.sh` · Close the Terminal, run it again |
+| Máy vừa khởi động lại, không có internet · Restarted without internet | Bình thường: bấm biểu tượng workshop, chờ khoảng 1 phút · Normal: double-click the workshop icon, wait about a minute |
+| "Mở OpenClaw" không mở được · "Open OpenClaw" does not open | Mở trên trình duyệt của chính máy Spark, không phải laptop khác · Use the Spark's own browser, not another laptop |
 | Bài 2 hoặc 3 ghi "chế độ trực tiếp" · Lab 2 or 3 says "direct mode" | Vẫn trình diễn được. Để sửa (≈15 phút): đóng cửa sổ workshop, chạy lại lệnh ở Bước 2 · Still works. To repair (≈15 min): close the workshop window, re-run the Step 2 command |
 | Vẫn không được · Still stuck | Chạy lại lệnh ở Bước 2, gửi `setup-log.txt` · Re-run the Step 2 command, send `setup-log.txt` |
 
