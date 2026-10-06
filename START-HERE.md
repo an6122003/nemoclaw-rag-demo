@@ -154,11 +154,19 @@ The **VI / EN** buttons top right switch language. Tabs along the top: **Overvie
 4. Chọn **Hóa đơn đầu vào sang Excel** (1.000 hóa đơn scan), bấm **Chạy 100 mục**: khoảng
    **35 hóa đơn mỗi phút**, lỗi cộng sai và hóa đơn trùng được đánh dấu **Cần kiểm tra**.
    Pick **Supplier invoices into Excel**, press **Run 100 items**: about 35 a minute.
-5. Kéo xuống **Chi phí**: nhập khối lượng mỗi tháng của khách và so sánh với API đám mây.
-   Scroll to **What it costs** and type in the customer's monthly volume.
-6. So sánh: chọn **Ollama · từng mục** rồi chạy 20 mục — chậm hơn nhiều lần. Đây là lý do
-   doanh nghiệp dùng máy chủ theo lô (vLLM) cho công việc hàng loạt.
-   Compare: switch to **Ollama · one at a time** and run 20 items: several times slower.
+5. Chọn **Chấm điểm chất lượng cuộc gọi** (300 cuộc gọi ghi âm), bấm **Chạy 30 mục**: máy
+   chuyển giọng nói thành văn bản rồi chấm theo checklist, khoảng **19 cuộc gọi mỗi phút**.
+   Bấm một dòng để nghe ghi âm, xem bản chép lời và phiếu chấm bên cạnh đáp án.
+   Pick **Call quality scoring** (300 recordings), press **Run 30 items**: speech-to-text
+   then the QA checklist, about 19 calls a minute. Click a row to play the call and see
+   its transcript and scorecard next to the answer key.
+6. Kéo xuống **Chi phí**: nhập khối lượng mỗi tháng của khách và so sánh với API đám mây;
+   dòng **Cả 3 việc mỗi tháng** cho thấy thời gian hoàn vốn khi một máy làm tất cả.
+   Scroll to **What it costs**, type in the customer's monthly volumes; **All 3 jobs
+   together** shows the payback when one machine does everything.
+7. So sánh: chọn **Ollama · từng mục** rồi chạy 20 tin nhắn — chậm hơn nhiều lần. Đây là lý
+   do doanh nghiệp dùng máy chủ theo lô (vLLM) cho công việc hàng loạt.
+   Compare: switch to **Ollama · one at a time** and run 20 messages: several times slower.
 
 Máy chủ tự tắt sau 30 phút không dùng để trả bộ nhớ cho các bài lab. **Làm lại từ đầu**
 xóa kết quả để trình diễn lại. The engine switches itself off after 30 idle minutes;

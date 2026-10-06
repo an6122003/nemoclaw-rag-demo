@@ -138,6 +138,7 @@ const children = [
     [{ b: "2 · Hỏi đáp trên tài liệu (RAG)" }, "AI đọc 28 tài liệu kỹ thuật để trả lời câu hỏi", "Câu trả lời kèm đúng đoạn tài liệu gốc"],
     [{ b: "3 · Agent phân tích dữ liệu" }, "Hỏi bằng tiếng Việt; AI tự đọc file Excel, phân tích, vẽ biểu đồ và xuất báo cáo", "Từng bước AI làm hiện ra trực tiếp trên màn hình"],
     [{ b: "4 · Thử thách OpenClaw" }, "Các đội tự giao việc cho agent OpenClaw và xây sản phẩm của mình (10:00–11:10)", "Mỗi đội trình diễn sản phẩm lúc 11:10"],
+    [{ b: "5 · Demo doanh nghiệp (buổi chiều)" }, "AI xử lý hàng loạt: 2.400 tin nhắn khách hàng, 1.000 hóa đơn scan, 300 cuộc gọi ghi âm", "Tốc độ, độ chính xác so với đáp án, tiền điện và chi phí so với API đám mây"],
   ], [2500, 3700, 2826]),
   gap(60),
   P(["Bài 1, 2 và 3 đều có phần ", { b: "so sánh trước / sau" }, ": cùng một câu hỏi, đặt cạnh nhau, để khán giả thấy rõ khác biệt (trước và sau khi tinh chỉnh; không có và có RAG; chỉ có mô hình và có agent)."]),
@@ -150,8 +151,8 @@ const children = [
     ["Máy ", { b: "DGX Spark" }, " đã bật và có ", { b: "internet" }, " (chỉ cần khi cài đặt). ", { b: "Sau khi cài xong, workshop chạy không cần internet" }, ", kể cả sau khi khởi động lại máy."],
     "Màn hình, bàn phím và chuột cắm vào máy Spark.",
     ["Mật khẩu đăng nhập", " của máy."],
-    ["Khoảng ", { b: "100 GB" }, " dung lượng trống."],
-    ["Khoảng ", { b: "1–2 giờ" }, " cho lần cài đặt đầu tiên. Máy tự chạy, không cần ngồi canh. Nếu máy thiếu phần mềm nào (Docker, Python…), chương trình tự cài."],
+    ["Khoảng ", { b: "150 GB" }, " dung lượng trống."],
+    ["Khoảng ", { b: "2 giờ" }, " cho lần cài đặt đầu tiên. Máy tự chạy, không cần ngồi canh. Nếu máy thiếu phần mềm nào (Docker, Python…), chương trình tự cài."],
   ]),
 
   // ----------------------------------------------------------------- 3 ---
@@ -212,7 +213,7 @@ const children = [
   ]),
   H3("Trên màn hình có gì"),
   table(["Thành phần", "Ý nghĩa"], [
-    [{ b: "Các tab ở đầu trang" }, "Tổng quan · 01 Tinh chỉnh · 02 RAG · 03 Agent · 04 OpenClaw · Thử thách"],
+    [{ b: "Các tab ở đầu trang" }, "Tổng quan · Diễn giả · 01 Tinh chỉnh · 02 RAG · 03 Agent · 04 OpenClaw · Thử thách · 05 Doanh nghiệp"],
     [{ b: "Nút VI / EN" }, "Đổi ngôn ngữ cho toàn bộ trang"],
     [{ b: "Thanh trạng thái ở góc trên" }, "GPU · Ollama · NemoClaw · OpenClaw. Chấm xanh = sẵn sàng. Xám hoặc vàng = chưa sẵn sàng, nhưng vẫn trình diễn được"],
   ], [3000, 6026]),
@@ -272,8 +273,24 @@ const children = [
   callout("tip", "MẸO CHO CÁC ĐỘI", ["Gõ ", { b: "/new" }, " để bắt đầu cuộc chat mới khi đổi ý tưởng. Nếu agent dừng giữa chừng, trả lời “tiếp tục”. Hỏi “bạn đã tạo những file nào?” để tìm kết quả."]),
   gap(200),
 
-  // ----------------------------------------------------------------- 7 ---
-  H1("7. Phần E — Khi gặp sự cố"),
+  // ------------------------------------------------------------ 7: enterprise ---
+  H1("7. Phần E — Buổi chiều: demo doanh nghiệp (tab 05)"),
+  P("Ba công việc mà doanh nghiệp đang trả tiền cho người làm hoặc cho API đám mây, chạy thành lô thật trên dữ liệu giả lập của chuỗi bán lẻ hư cấu Aurora Mart. Mỗi mục đều có đáp án, nên độ chính xác trên màn hình là số đo thật."),
+  callout("warn", "TRƯỚC KHI KHÁN GIẢ VÀO", ["Mở tab ", { b: "05 Doanh nghiệp" }, " và bấm ", { b: "Bật máy chủ" }, ". Lần đầu máy chủ xử lý hàng loạt cần ", { b: "2–4 phút" }, " để khởi động. Máy chủ tự tắt sau 30 phút không dùng để trả bộ nhớ cho các bài lab."]),
+  gap(120),
+  ...steps([
+    ["Chọn ", { b: "Phân loại hộp thư khách hàng" }, " (2.400 tin nhắn), bấm ", { b: "Chạy 300 mục" }, ": khoảng 180 tin nhắn mỗi phút. Chỉ vào độ chính xác và dòng ", { b: "Bắt được …/… tin khẩn cấp" }, "; bấm một dòng để xem tin nhắn, kết quả của AI, đáp án và bản nháp trả lời."],
+    ["Chọn ", { b: "Hóa đơn đầu vào sang Excel" }, " (1.000 hóa đơn scan), bấm ", { b: "Chạy 100 mục" }, ": khoảng 35 hóa đơn mỗi phút. Hóa đơn cộng sai, sai thuế hoặc bị trùng được đánh dấu ", { b: "Cần kiểm tra" }, "."],
+    ["Chọn ", { b: "Chấm điểm chất lượng cuộc gọi" }, " (300 cuộc gọi), bấm ", { b: "Chạy 30 mục" }, ": máy chuyển giọng nói thành văn bản rồi chấm theo checklist, khoảng 19 cuộc gọi mỗi phút. Bấm một dòng để nghe ghi âm và xem phiếu chấm."],
+    ["Bấm ", { b: "Tải Excel" }, " ở mỗi việc để mở kết quả trong Excel."],
+    ["Kéo xuống ", { b: "Chi phí" }, ": nhập khối lượng mỗi tháng của khách. Dòng ", { b: "Cả 3 việc mỗi tháng" }, " cho thấy sau bao lâu máy hoàn vốn so với API đám mây."],
+    ["So sánh: chọn ", { b: "Ollama · từng mục" }, " rồi chạy 20 tin nhắn — chậm hơn nhiều lần. Đây là lý do dùng máy chủ theo lô (vLLM) cho công việc hàng loạt."],
+  ]),
+  callout("tip", "LÀM LẠI TỪ ĐẦU", ["Bấm ", { b: "Làm lại từ đầu" }, " ở mỗi việc để xóa kết quả và trình diễn lại. Dữ liệu mẫu không bị xóa."]),
+  gap(200),
+
+  // ----------------------------------------------------------------- 8 ---
+  H1("8. Phần F — Khi gặp sự cố"),
   table(["Hiện tượng", "Cách xử lý"], [
     ["Trình duyệt không tự mở", ["Mở trình duyệt, vào ", { b: "http://127.0.0.1:8090" }]],
     ["Lúc tải mô hình, tốc độ tụt còn vài KB/s", "Không cần làm gì: sau khoảng 1 phút chương trình tự kết nối lại và tải tiếp, phần đã tải được giữ nguyên"],
@@ -286,16 +303,22 @@ const children = [
     ["Máy vừa khởi động lại, không có internet", "Bình thường: mở workshop bằng biểu tượng trên màn hình nền và chờ khoảng 1 phút. Mọi thứ chạy không cần internet"],
     ["Bấm “Mở OpenClaw” mà không mở được", "Mở trên trình duyệt của chính máy Spark (không phải từ laptop khác). Nếu vẫn không được, chờ 1 phút rồi bấm lại"],
     ["Agent OpenClaw dừng giữa chừng", ["Trả lời “tiếp tục” trong khung chat, hoặc gõ ", { b: "/new" }, " để bắt đầu lại"]],
+    ["Tab 05: “Không khởi động được” máy chủ", "Thường do thiếu bộ nhớ: đóng các bài lab đang chạy, chờ 1 phút rồi bấm Bật máy chủ"],
+    ["Tab 05 ghi “Chưa cài đặt”", ["Chạy lại lệnh cài đặt ở Phần A, Bước 2 (tải thêm khoảng 38 GB)"]],
+    ["Lúc cài: “Docker is not running”", ["Đã được sửa trong bản mới: chạy lại lệnh cài đặt ở Phần A, Bước 2; chương trình tự cấp quyền Docker cho tài khoản"]],
     ["Vẫn không được", ["Chạy lại lệnh cài đặt ở Phần A, Bước 2, rồi gửi tệp ", { b: "setup-log.txt" }, " (trong thư mục dgx-workshop) cho người phụ trách"]],
   ], [3600, 5426]),
   gap(200),
 
   // ----------------------------------------------------------------- 8 ---
-  H1("8. Phần F — Giải thích thuật ngữ"),
+  H1("9. Phần G — Giải thích thuật ngữ"),
   table(["Thuật ngữ", "Hiểu đơn giản"], [
     [{ b: "DGX Spark" }, "Máy tính AI nhỏ gọn của NVIDIA, đủ mạnh để chạy mô hình AI ngay trên bàn làm việc."],
     [{ b: "Mô hình AI (LLM)" }, "“Bộ não” hiểu và viết ngôn ngữ, giống ChatGPT, nhưng chạy ngay trên máy này."],
     [{ b: "Ollama" }, "Phần mềm “phục vụ” các mô hình AI trên máy, để các bài thực hành gọi tới."],
+    [{ b: "vLLM" }, "Máy chủ chạy mô hình AI theo lô: xử lý hàng chục yêu cầu cùng lúc, dùng cho các công việc hàng loạt ở tab 05."],
+    [{ b: "NVFP4" }, "Cách lưu mô hình bằng số 4-bit của chip Blackwell: mô hình nhỏ hơn, chạy nhanh hơn mà vẫn chính xác."],
+    [{ b: "Chuyển giọng nói thành văn bản" }, "AI nghe ghi âm và chép lại lời nói (ở đây dùng PhoWhisper của VinAI cho tiếng Việt)."],
     [{ b: "NemoClaw" }, "Bộ công cụ của NVIDIA để chạy agent AI an toàn. Agent được đặt trong một “sandbox”: một căn phòng kín, chỉ làm được những việc được cho phép."],
     [{ b: "Tinh chỉnh (Fine-tuning)" }, "Dạy thêm cho mô hình có sẵn bằng ví dụ để nó đổi cách cư xử. LoRA là cách tinh chỉnh nhanh: chỉ học thêm một phần rất nhỏ."],
     [{ b: "RAG" }, "Cho AI tra cứu tài liệu trước khi trả lời, để câu trả lời đúng theo tài liệu và có nguồn."],
@@ -306,7 +329,7 @@ const children = [
   gap(200),
 
   // ----------------------------------------------------------------- 9 ---
-  H1("9. Phụ lục — Trình chiếu từ laptop (cho người có kinh nghiệm)"),
+  H1("10. Phụ lục — Trình chiếu từ laptop (cho người có kinh nghiệm)"),
   P("Cách 1 — đường hầm SSH. Chạy lệnh này trên laptop, rồi mở http://localhost:8090 trên laptop:"),
   cmd("ssh -L 8090:127.0.0.1:8090 <tên-đăng-nhập>@<địa-chỉ-IP-máy-Spark>"),
   gap(120),
