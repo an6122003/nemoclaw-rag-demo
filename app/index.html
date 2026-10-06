@@ -444,17 +444,16 @@
   /* ---------------- speakers ---------------- */
   .spk{display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);overflow:hidden;margin:28px 0 22px}
   .spk.sub{grid-template-columns:minmax(0,.55fr) minmax(0,1.45fr);margin-top:0}
-  .spk-photo{position:relative;display:flex;align-items:flex-end;justify-content:center;min-height:460px;padding-top:28px;overflow:hidden;
-    border-right:1px solid var(--line);
-    background:radial-gradient(58% 48% at 50% 46%,rgba(92,157,255,.38),transparent 72%),linear-gradient(180deg,rgba(255,255,255,.03),transparent)}
-  .spk.sub .spk-photo{min-height:300px;background:radial-gradient(60% 50% at 50% 48%,rgba(118,185,0,.28),transparent 72%)}
-  /* the ring belongs to the portrait, so the two stay together however tall the card is */
-  .spk-photo .fig{position:relative;display:flex;justify-content:center;align-items:flex-end;width:100%}
-  .spk-photo .fig::before{content:"";position:absolute;left:50%;top:-4%;width:min(118%,460px);aspect-ratio:1;transform:translateX(-50%);
-    border-radius:50%;border:1px solid rgba(169,201,255,.22);box-shadow:inset 0 0 90px -30px rgba(92,157,255,.7)}
-  .spk.sub .spk-photo .fig::before{width:min(118%,320px);border-color:rgba(147,214,0,.22);box-shadow:inset 0 0 80px -30px rgba(118,185,0,.6)}
-  .spk-photo img{position:relative;display:block;width:auto;max-width:92%;height:auto;max-height:440px;filter:drop-shadow(0 24px 40px rgba(0,0,0,.55))}
-  .spk.sub .spk-photo img{max-height:290px}
+  .spk-photo{position:relative;container-type:size;min-height:420px;overflow:hidden;border-right:1px solid var(--line);
+    background:radial-gradient(58% 48% at 50% 42%,rgba(92,157,255,.38),transparent 72%),linear-gradient(180deg,rgba(255,255,255,.03),transparent)}
+  .spk.sub .spk-photo{min-height:320px;background:radial-gradient(60% 50% at 50% 42%,rgba(118,185,0,.28),transparent 72%)}
+  /* The portrait fills its column, standing on the bottom edge, and the ring is
+     sized from the same column: they stay together whatever the card's height. */
+  .spk-photo .ring{position:absolute;left:50%;top:44%;width:min(84cqw,72cqh);aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;
+    border:1px solid rgba(169,201,255,.22);box-shadow:inset 0 0 90px -30px rgba(92,157,255,.7)}
+  .spk.sub .spk-photo .ring{border-color:rgba(147,214,0,.24);box-shadow:inset 0 0 80px -30px rgba(118,185,0,.6)}
+  .spk-photo img{position:absolute;left:4cqw;bottom:0;width:92cqw;height:92cqh;object-fit:contain;object-position:50% 100%;
+    filter:drop-shadow(0 24px 40px rgba(0,0,0,.55))}
   .spk-body{padding:32px 34px 30px}
   .spk.sub .spk-body{padding:26px 30px 24px}
   .spk-name{font:800 clamp(38px,4.4vw,60px)/.95 var(--display);text-transform:uppercase;margin:14px 0 6px;
@@ -540,7 +539,8 @@
   }
   @media (max-width:920px){
     .home-hero,.grid2,.arch,.cmp,.answer-grid,.oc-hero,.ideas,.fgrid,.models,.spk,.spk.sub{grid-template-columns:minmax(0,1fr)}
-    .spk-photo{border-right:0;border-bottom:1px solid var(--line);min-height:340px}
+    .spk-photo{border-right:0;border-bottom:1px solid var(--line);height:380px;min-height:0}
+    .spk.sub .spk-photo{height:340px}
     .spk-topics{grid-template-columns:minmax(0,1fr)}
     .spk-topics li{padding:10px 0;border-bottom:1px solid var(--line)}
     .spk-topics li+li{border-left:0;padding-left:0}
@@ -1011,7 +1011,7 @@
       <div class="by">
         <span data-i18n="credit_by"></span>
         <div class="who">An</div>
-        <div class="role">Software Engineer &amp; Product Manager</div>
+        <div class="role">Engineer &amp; AI Product Builder</div>
         <ul>
           <li><a href="https://annguyen.work" target="_blank" rel="noopener"><svg class="i"><use href="#i-globe"/></svg>annguyen.work</a></li>
           <li><a href="https://annguyen.work/proposal/" target="_blank" rel="noopener"><svg class="i"><use href="#i-file"/></svg>annguyen.work/proposal</a></li>
@@ -1467,8 +1467,8 @@ const SPEAKERS = [
    links: [{icon: 'globe', label: 'TikTok · @techbylan', href: 'https://www.tiktok.com/@techbylan'},
            {icon: 'globe', label: 'YouTube · @Techbylan', href: 'https://www.youtube.com/@Techbylan'}]},
   {key: 'an', main: false, name: 'An À Ha', full: 'An · @anndaynee', photo: '/static/people/an.webp',
-   roles: {en: ['Tech & AI Creator', 'Software Engineer', 'Product Manager'],
-           vi: ['Nhà sáng tạo nội dung AI & công nghệ', 'Kỹ sư phần mềm', 'Quản lý sản phẩm']},
+   roles: {en: ['Tech & AI Creator', 'Engineer & AI Product Builder'],
+           vi: ['Tech & AI Creator', 'Engineer & AI Product Builder']},
    bio: {en: 'An turns hard AI and technology topics into content that is easy to follow and built on real testing: local AI and hardware, tools and open-source repos worth trying, product reviews. An built this workshop app and its labs, and is with the teams during the OpenClaw challenge.',
          vi: 'An biến những chủ đề AI và công nghệ “khó nhằn” thành nội dung dễ hiểu, dựa trên trải nghiệm thật: AI chạy local và phần cứng, công cụ và repo mã nguồn mở đáng thử, review sản phẩm. An xây dựng ứng dụng workshop và các bài lab này, và đồng hành cùng các đội trong phần thử thách OpenClaw.'},
    stats: [{pf: 'YouTube', v: '481K', s: {en: 'views, all time', vi: 'lượt xem, toàn thời gian'}},
@@ -1635,7 +1635,7 @@ function spRender(){
     const links = '<div class="spk-links">' + sp.links.map(l =>
       `<a href="${esc(l.href)}" target="_blank" rel="noopener">${ic(l.icon)}${esc(l.label)}</a>`).join('') + '</div>';
     return `<article class="spk glass${sp.main ? ' glow' : ' sub'}">` +
-      `<div class="spk-photo"><div class="fig"><img src="${esc(sp.photo)}" alt="${esc(sp.name)}" loading="lazy"></div></div>` +
+      `<div class="spk-photo"><span class="ring"></span><img src="${esc(sp.photo)}" alt="${esc(sp.name)}" loading="lazy"></div>` +
       `<div class="spk-body"><span class="tag${sp.main ? '' : ' gray'}">${esc(t(sp.main ? 'sp_main' : 'sp_support'))}</span>` +
       `<h2 class="spk-name">${esc(sp.name)}</h2><div class="spk-full">${esc(sp.full)}</div>` +
       `<div class="spk-roles">${(sp.roles[LANG] || sp.roles.en).map(r => `<span>${esc(r)}</span>`).join('')}</div>` +
