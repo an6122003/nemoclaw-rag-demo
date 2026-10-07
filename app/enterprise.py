@@ -1222,8 +1222,12 @@ def feed(demo: str, limit: int = 40, only: str = "all") -> list[dict]:
                 continue
             text, _ = mask_pii(it["text"])
             sc = score_inbox(r, it["truth"]) if p else {}
+            # The model read the raw message, so its own text can repeat a phone number: mask it too.
+            if p.get("summary"):
+                p = {**p, "summary": mask_pii(p["summary"])[0]}
+            reply = mask_pii(r["reply"])[0] if r.get("reply") else r.get("reply")
             out.append({"id": r["id"], "channel": it["channel"], "text": text, "pred": p, "truth": it["truth"],
-                        "ok": sc, "reply": r.get("reply"), "error": r.get("error"), "seconds": r.get("seconds")})
+                        "ok": sc, "reply": reply, "error": r.get("error"), "seconds": r.get("seconds")})
         elif demo == "calls":
             p = r.get("pred") or {}
             if only == "review" and p.get("passed", True):
@@ -1331,14 +1335,14 @@ def export_xlsx(demo: str) -> Path:
                 continue
             text = mask_pii(it["text"])[0]
             ws.append([r["id"], L(it["channel"]), L(p.get("category")), L(p.get("urgency")), L(p.get("sentiment")),
-                       ", ".join(L(f) for f in p.get("flags") or []), p.get("order_id"), p.get("summary"), text,
+                       ", ".join(L(f) for f in p.get("flags") or []), p.get("order_id"), mask_pii(p.get("summary") or "")[0], text,
                        L(it["truth"]["category"]), L(it["truth"]["urgency"])])
         for r in sorted((r for r in rows if (r.get("pred") or {}).get("urgency") in ("critical", "high")),
                         key=lambda r: (order.get(r["pred"]["urgency"], 9), r["id"])):
             it, p = idx.get(r["id"]), r["pred"]
             if it:
-                urgent.append([r["id"], L(p["urgency"]), ", ".join(L(f) for f in p.get("flags") or []), p.get("summary"),
-                               mask_pii(it["text"])[0], r.get("reply") or ""])
+                urgent.append([r["id"], L(p["urgency"]), ", ".join(L(f) for f in p.get("flags") or []),
+                               mask_pii(p.get("summary") or "")[0], mask_pii(it["text"])[0], mask_pii(r.get("reply") or "")[0]])
         for w in (ws, urgent):
             for row in w.iter_rows(min_row=2):
                 for c in row:
