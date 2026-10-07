@@ -164,6 +164,8 @@ class Handler(BaseHTTPRequestHandler):
         # ---- Hands-on 1
         if path == "/api/lab1/info":
             return self._json(200, lab1.info())
+        if path == "/api/lab1/prepare":
+            return self._json(200, lab1.PREP.status())
         if path == "/api/lab1/stream":
             start = int((qs.get("from") or ["0"])[0] or 0)
             self._stream_start()
@@ -288,6 +290,9 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(200 if ok else 409, {"ok": ok, "job": detail})
         if path == "/api/lab1/cancel":
             return self._json(200, {"ok": lab1.JOB.cancel()})
+        if path == "/api/lab1/prepare":  # build the training container when setup could not
+            ok, why = lab1.PREP.start()
+            return self._json(200 if ok else 409, {"ok": ok, "detail": why})
         if path == "/api/plain/stream":  # the "without RAG / without tools" side of a comparison
             q = (req.get("question") or "").strip()
             if not q:

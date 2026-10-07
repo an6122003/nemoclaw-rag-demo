@@ -576,23 +576,36 @@ elif [ "$CHECK_ONLY" -eq 1 ]; then
 else
   LAB1="ready"
   if ! docker image inspect "$LAB1_BASE_IMAGE" >/dev/null 2>&1; then
-    info "Downloading NVIDIA's PyTorch container…" "Đang tải container PyTorch của NVIDIA…"
-    note_log "docker pull $LAB1_BASE_IMAGE"
-    docker pull "$LAB1_BASE_IMAGE" || { LAB1="failed"; LAB1_NOTE="could not download $LAB1_BASE_IMAGE"; }
+    info "Downloading NVIDIA's PyTorch container (about 20 GB)…" "Đang tải container PyTorch của NVIDIA (khoảng 20 GB)…"
+    for attempt in 1 2 3; do  # a dropped download resumes: Docker keeps the finished layers
+      note_log "docker pull $LAB1_BASE_IMAGE (attempt $attempt)"
+      docker pull "$LAB1_BASE_IMAGE" && break
+      warn "Download interrupted (attempt $attempt of 3) — retrying" "Tải bị gián đoạn (lần $attempt/3) — đang thử lại"
+      sleep 10
+    done
+    docker image inspect "$LAB1_BASE_IMAGE" >/dev/null 2>&1 \
+      || { LAB1="failed"; LAB1_NOTE="could not download $LAB1_BASE_IMAGE"; bad "Could not download $LAB1_BASE_IMAGE"; }
   fi
+  build_lab1() {
+    docker build -t "$LAB1_IMAGE" --build-arg BASE_IMAGE="$LAB1_BASE_IMAGE" \
+      --label "workshop.dockerfile=$DOCKERFILE_SHA" "$ROOT/hands-on-1-finetune"
+  }
   if [ "$LAB1" = "ready" ] && [ "$(image_sha)" != "$DOCKERFILE_SHA" ]; then
-    run_long "Building the training image… / Đang dựng image huấn luyện…" \
-      docker build -t "$LAB1_IMAGE" --build-arg BASE_IMAGE="$LAB1_BASE_IMAGE" \
-        --label "workshop.dockerfile=$DOCKERFILE_SHA" "$ROOT/hands-on-1-finetune" \
-      && ok "Training image built" "Đã dựng image huấn luyện" \
+    run_long "Building the training image… / Đang dựng image huấn luyện…" build_lab1 \
+      || run_long "Building the training image (retry)… / Đang dựng lại image huấn luyện…" build_lab1
+    [ "$(image_sha)" = "$DOCKERFILE_SHA" ] && ok "Training image built" "Đã dựng image huấn luyện" \
       || { LAB1="failed"; LAB1_NOTE="docker build failed"; show_log_tail; }
   elif [ "$LAB1" = "ready" ]; then
     ok "Training image ready" "Image huấn luyện đã sẵn sàng"
   fi
   if [ "$LAB1" = "ready" ]; then
-    run_long "Downloading $LAB1_BASE_HF… / Đang tải mô hình gốc…" \
-      bash "$ROOT/hands-on-1-finetune/run_finetune.sh" --download-only \
-      && ok "Base model cached for offline training" "Đã lưu sẵn mô hình gốc" \
+    got=0
+    for attempt in 1 2 3; do
+      run_long "Downloading $LAB1_BASE_HF… / Đang tải mô hình gốc…" \
+        bash "$ROOT/hands-on-1-finetune/run_finetune.sh" --download-only && { got=1; break; }
+      sleep 10
+    done
+    [ "$got" -eq 1 ] && ok "Base model cached for offline training" "Đã lưu sẵn mô hình gốc" \
       || { LAB1="failed"; LAB1_NOTE="base model download failed"; show_log_tail; }
   fi
   # Train once now: it proves the whole pipeline on this machine and leaves a

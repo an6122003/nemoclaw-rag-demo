@@ -160,7 +160,7 @@ def item_index(demo: str) -> dict:
 
 # ================================================================ engine ===
 def _docker(*args: str, timeout: float = 30) -> subprocess.CompletedProcess:
-    return subprocess.run(["docker", *args], capture_output=True, text=True, timeout=timeout)
+    return subprocess.run(common.docker_argv(list(args)), capture_output=True, text=True, timeout=timeout)
 
 
 def model_dir() -> Path:
@@ -765,7 +765,7 @@ def asr_start(jd: Path, todo: list[dict]) -> subprocess.Popen:
            "/app/enterprise_asr.py", "--calls", "/calls", "--todo", "/job/asr-todo.txt", "--out", "/job/asr",
            "--model", model]
     log = (jd / "asr.log").open("a")
-    return subprocess.Popen(cmd, stdout=log, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL)
+    return subprocess.Popen(common.docker_argv(cmd[1:]), stdout=log, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL)
 
 
 def asr_stop() -> None:

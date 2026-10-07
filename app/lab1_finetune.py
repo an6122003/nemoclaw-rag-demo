@@ -19,6 +19,7 @@ import threading
 import time
 from pathlib import Path
 
+import common  # noqa: E402
 from common import (ROOT, forget_models_cache, has_model, ollama_chat_stream,
                     setting)
 
@@ -64,13 +65,20 @@ def trainer_status() -> dict:
         out["reason"] = "no_gpu"
     else:
         try:
-            p = subprocess.run(["docker", "image", "inspect", IMAGE], capture_output=True, timeout=15)
-            if p.returncode != 0:
-                out["reason"] = "image_missing"
-            else:
+            p = subprocess.run(common.docker_argv(["image", "inspect", IMAGE]), capture_output=True,
+                               text=True, timeout=30)
+            err = (p.stderr or "").lower()
+            if p.returncode == 0:
                 out["ready"] = True
+            elif "permission denied" in err:
+                out["reason"] = "docker_denied"   # not the image: this account cannot use Docker yet
+            elif "cannot connect" in err or "is the docker daemon running" in err:
+                out["reason"] = "docker_unreachable"
+            else:
+                out["reason"] = "image_missing"
         except Exception:
             out["reason"] = "docker_unreachable"
+    out["preparing"] = PREP.running
     _env_cache.update(at=time.time(), value=out)
     return out
 
@@ -116,6 +124,7 @@ def info() -> dict:
         "dataset": dataset_summary(),
         "last_run": last_summary(),
         "job": JOB.snapshot(),
+        "prepare": PREP.status(),
     }
 
 
@@ -154,7 +163,7 @@ class Job:
             self.running = True
             self.started = time.time()
             self.id = time.strftime("%H%M%S")
-        cmd = ["bash", str(RUNNER), "--epochs", str(epochs), "--lr", str(lr), "--rank", str(rank)]
+        cmd = common.wrap_for_docker(["bash", str(RUNNER), "--epochs", str(epochs), "--lr", str(lr), "--rank", str(rank)])
         env = dict(os.environ)
         env["PYTHONUNBUFFERED"] = "1"
         try:
@@ -221,6 +230,55 @@ class Job:
 
 
 JOB = Job()
+
+
+class Prepare:
+    """Build the training container from the page when setup could not finish it."""
+
+    SCRIPT = ROOT / "scripts" / "lab1-prepare.sh"
+
+    def __init__(self) -> None:
+        self.running = False
+        self.ok: bool | None = None
+        self.lines: list[str] = []
+        self.lock = threading.Lock()
+
+    def start(self) -> tuple[bool, str]:
+        with self.lock:
+            if self.running:
+                return False, "busy"
+            if JOB.running:
+                return False, "training"
+            self.running, self.ok, self.lines = True, None, []
+        try:
+            proc = subprocess.Popen(common.wrap_for_docker(["bash", str(self.SCRIPT)]), cwd=str(ROOT),
+                                    stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1,
+                                    start_new_session=True)
+        except OSError as exc:
+            with self.lock:
+                self.running, self.ok = False, False
+            return False, str(exc)
+        threading.Thread(target=self._pump, args=(proc,), daemon=True).start()
+        return True, "started"
+
+    def _pump(self, proc: subprocess.Popen) -> None:
+        assert proc.stdout
+        for raw in proc.stdout:
+            line = raw.rstrip()
+            if line:
+                with self.lock:
+                    self.lines = (self.lines + [line[-300:]])[-200:]
+        rc = proc.wait()
+        _env_cache["at"] = 0.0  # look at the image again
+        with self.lock:
+            self.running, self.ok = False, rc == 0
+
+    def status(self) -> dict:
+        with self.lock:
+            return {"running": self.running, "ok": self.ok, "lines": self.lines[-14:]}
+
+
+PREP = Prepare()
 
 
 # --------------------------------------------------------------------------

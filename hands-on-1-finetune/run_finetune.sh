@@ -17,6 +17,7 @@
 #   hands-on-1-finetune/run_finetune.sh --download-only     # cache the base model
 
 set -uo pipefail
+ARGS=("$@")  # kept for a restart inside the docker group (below)
 
 LAB="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(dirname "$LAB")"
@@ -70,6 +71,13 @@ trap 'cleanup; emit "{\"stage\":\"error\",\"message\":\"cancelled\"}"; exit 130'
 
 # ---------------------------------------------------------------- checks ---
 command -v docker >/dev/null 2>&1 || fail "docker is not installed"
+# A session opened before setup gave this account the docker group lacks it
+# until the next login: continue inside the group.
+in_docker_group() { local g; for g in $(id -nG "$(id -un)" 2>/dev/null); do [ "$g" = docker ] && return 0; done; return 1; }
+if [ -z "${WORKSHOP_DOCKER_GROUP:-}" ] && ! docker info >/dev/null 2>&1 && in_docker_group && command -v sg >/dev/null 2>&1; then
+  export WORKSHOP_DOCKER_GROUP=1
+  exec sg docker -c "$(printf '%q ' bash "${BASH_SOURCE[0]}" "${ARGS[@]}")"
+fi
 docker image inspect "$IMAGE" >/dev/null 2>&1 || fail "training image $IMAGE is missing - run ./setup.sh"
 [ "$DOWNLOAD_ONLY" -eq 1 ] || command -v ollama >/dev/null 2>&1 || fail "ollama CLI not found"
 mkdir -p "$OUT" "$HF_CACHE"

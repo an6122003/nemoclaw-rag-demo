@@ -1193,10 +1193,16 @@ const I18N = {
     view_all: 'View all examples',
     train_title: 'Train', base_model: 'Base model', epochs: 'Epochs', lr: 'Learning rate', rank: 'LoRA rank',
     start: 'Start fine-tuning', cancel: 'Stop',
-    tr_image_missing: 'The training container is not built yet — run the install command again.',
+    tr_image_missing: 'The training container is not built yet (its download may have dropped during setup).',
     tr_no_gpu: 'No NVIDIA GPU found on this machine, so training is not possible here. The comparison below still works.',
-    tr_docker_missing: 'Docker is not installed.', tr_docker_unreachable: 'Docker is not responding.',
+    tr_docker_missing: 'Docker is not installed: run the install command again.', tr_docker_unreachable: 'Docker is not responding: restart the computer, then open the workshop again.',
     tr_busy: 'A training run is already in progress.',
+    tr_docker_denied: "This account cannot use Docker yet: run the install command again, or log out and back in.",
+    tr_build_now: "Build it now",
+    tr_build_note: "Needs the internet: about 20 GB, 10–30 minutes.",
+    tr_building: "Building the training container… (it keeps going if you close this page)",
+    tr_build_ok: "Training container ready.",
+    tr_build_fail: "The build did not finish — check the internet and press Build it now again.",
     st_queued: 'Starting…', st_download: 'Downloading the base model', st_start: 'PyTorch ready on {gpu}',
     st_load_model: 'Loading the base model', st_data: 'Tokenising {n} examples',
     st_lora: 'LoRA adapters added: {m} trainable parameters ({p}% of the model)',
@@ -1529,10 +1535,16 @@ const I18N = {
     view_all: 'Xem tất cả ví dụ',
     train_title: 'Huấn luyện', base_model: 'Mô hình gốc', epochs: 'Số vòng (epoch)', lr: 'Tốc độ học', rank: 'Hạng LoRA',
     start: 'Bắt đầu tinh chỉnh', cancel: 'Dừng',
-    tr_image_missing: 'Chưa dựng container huấn luyện — hãy chạy lại lệnh cài đặt.',
+    tr_image_missing: 'Chưa dựng container huấn luyện (có thể lúc cài đặt việc tải bị gián đoạn).',
     tr_no_gpu: 'Không tìm thấy GPU NVIDIA trên máy này nên không huấn luyện được. Phần so sánh bên dưới vẫn hoạt động.',
-    tr_docker_missing: 'Chưa cài Docker.', tr_docker_unreachable: 'Docker không phản hồi.',
+    tr_docker_missing: 'Chưa cài Docker: hãy chạy lại lệnh cài đặt.', tr_docker_unreachable: 'Docker không phản hồi: hãy khởi động lại máy rồi mở lại workshop.',
     tr_busy: 'Đang có một lượt huấn luyện chạy.',
+    tr_docker_denied: "Tài khoản này chưa được dùng Docker: hãy chạy lại lệnh cài đặt, hoặc đăng xuất rồi đăng nhập lại.",
+    tr_build_now: "Dựng ngay",
+    tr_build_note: "Cần internet: khoảng 20 GB, 10–30 phút.",
+    tr_building: "Đang dựng container huấn luyện… (vẫn tiếp tục nếu bạn đóng trang này)",
+    tr_build_ok: "Container huấn luyện đã sẵn sàng.",
+    tr_build_fail: "Chưa dựng xong — hãy kiểm tra internet rồi bấm Dựng ngay lần nữa.",
     st_queued: 'Đang khởi động…', st_download: 'Đang tải mô hình gốc', st_start: 'PyTorch đã sẵn sàng trên {gpu}',
     st_load_model: 'Đang nạp mô hình gốc', st_data: 'Đang mã hoá {n} ví dụ',
     st_lora: 'Đã gắn bộ LoRA: {m} tham số được huấn luyện ({p}% mô hình)',
@@ -2246,10 +2258,49 @@ function lab1Render(){
   const tr = i.trainer || {};
   const startBtn = $('#l1-start');
   startBtn.disabled = !tr.ready || L1.running;
-  $('#l1-trainer').innerHTML = tr.ready ? '' : `<div class="note">${ic('alert')}<span>${esc(t('tr_' + (tr.reason || 'image_missing')))}</span></div>`;
+  lab1Trainer(tr, i.prepare || {});
   const lr = i.last_run;
   $('#l1-last').textContent = lr ? t('last_run', {steps: lr.steps, sec: num(lr.train_seconds, 0), dev: lr.device}) : '';
   lab1Flow(L1.stage || (i.tuned_ready ? 'finished' : ''));
+}
+
+/* The trainer is not ready: say why, and when the container is simply missing
+   (a download that dropped during setup), offer to build it from here. */
+let l1PrepTimer = null;
+function lab1Trainer(tr, prep){
+  const box = $('#l1-trainer');
+  if (tr.ready && !prep.running){ box.innerHTML = prep.ok ? `<div class="note green">${ic('check')}<span>${esc(t('tr_build_ok'))}</span></div>` : ''; return; }
+  const reason = tr.reason || 'image_missing';
+  let html = `<div class="note">${ic('alert')}<span>${esc(t('tr_' + reason))}</span></div>`;
+  if (reason === 'image_missing' || prep.running){
+    html += prep.running
+      ? `<div class="stageline" style="margin-top:12px">${ic('download')}<span>${esc(t('tr_building'))}</span></div>`
+      : `<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:12px">` +
+        `<button type="button" class="btn ghost small" id="l1-build">${ic('download')}${esc(t('tr_build_now'))}</button>` +
+        `<span class="muted">${esc(t('tr_build_note'))}</span></div>`;
+    if (prep.ok === false && !prep.running) html += `<div class="err" style="margin-top:10px">${esc(t('tr_build_fail'))}</div>`;
+    if ((prep.lines || []).length) html += `<pre class="log" style="display:block;margin-top:10px;max-height:180px">${esc(prep.lines.join('\n'))}</pre>`;
+  }
+  box.innerHTML = html;
+  const b = $('#l1-build');
+  if (b) b.addEventListener('click', async () => {
+    b.disabled = true;
+    try { await fetch('/api/lab1/prepare', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}'}); } catch (e) {}
+    lab1PrepPoll();
+  });
+  if (prep.running && !l1PrepTimer) lab1PrepPoll();
+}
+async function lab1PrepPoll(){
+  clearTimeout(l1PrepTimer);
+  let st = {};
+  try { st = await (await fetch('/api/lab1/prepare')).json(); } catch (e) {}
+  if (st.running){
+    lab1Trainer({ready: false, reason: 'image_missing'}, st);
+    l1PrepTimer = setTimeout(lab1PrepPoll, 2000);
+  } else {
+    l1PrepTimer = null;
+    await lab1Load();
+  }
 }
 
 function lab1Flow(stage){

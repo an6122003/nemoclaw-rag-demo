@@ -7,9 +7,13 @@ the Python environment is incomplete.
 
 from __future__ import annotations
 
+import grp
 import json
 import os
+import pwd
 import re
+import shlex
+import shutil
 import socket
 import subprocess
 import threading
@@ -53,6 +57,42 @@ EMBED_MODEL = setting("EMBED_MODEL", "qwen3-embedding:4b")
 EXTRA_CHAT_MODEL = setting("EXTRA_CHAT_MODEL", "")
 CHAT_CONTEXT = int(setting("CHAT_CONTEXT", "262144") or 262144)
 SANDBOX = setting("SANDBOX", "dgx-workshop")
+
+
+# --------------------------------------------------------------------------
+# Docker from this process
+# --------------------------------------------------------------------------
+def docker_needs_sg() -> bool:
+    """True when the account is in the docker group but this process is not.
+
+    setup.sh adds a fresh account to the group; a session (desktop, terminal)
+    opened before that keeps running without it until the next login. The app
+    then reaches Docker through `sg docker` instead of failing.
+    """
+    if os.getuid() == 0 or not shutil.which("sg"):
+        return False
+    try:
+        gid = grp.getgrnam("docker").gr_gid
+    except KeyError:
+        return False
+    if gid in os.getgroups():
+        return False
+    try:
+        return gid in os.getgrouplist(pwd.getpwuid(os.getuid()).pw_name, os.getgid())
+    except (KeyError, OSError):
+        return False
+
+
+def docker_argv(args: list[str]) -> list[str]:
+    """The command line for `docker <args>` from this process."""
+    if docker_needs_sg():
+        return ["sg", "docker", "-c", shlex.join(["docker", *args])]
+    return ["docker", *args]
+
+
+def wrap_for_docker(cmd: list[str]) -> list[str]:
+    """Run a script that calls docker itself (Lab 1's runner) with the group."""
+    return ["sg", "docker", "-c", shlex.join(cmd)] if docker_needs_sg() else cmd
 
 
 # --------------------------------------------------------------------------
