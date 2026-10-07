@@ -289,6 +289,26 @@ for need in curl python3; do
   command -v "$need" >/dev/null 2>&1 || { bad "$need is missing" "Thiếu $need"; CORE_OK=0; }
 done
 
+# Some networks hand out IPv6 addresses but do not carry IPv6 traffic. Ollama,
+# Docker and Hugging Face then try IPv6 first and every download stalls (seen
+# on an office network: all model pulls failed after an hour each). When IPv4
+# works and IPv6 does not, switch IPv6 off until the next restart; the
+# workshop itself only uses IPv4 and loopback.
+ipv6_broken() {
+  ip -6 route show default 2>/dev/null | grep -q . || return 1
+  [ "$(curl -4 -s -o /dev/null -m 10 -w '%{http_code}' https://registry.ollama.ai/v2/ 2>/dev/null)" != "000" ] || return 1
+  [ "$(curl -6 -s -o /dev/null -m 10 -w '%{http_code}' https://registry.ollama.ai/v2/ 2>/dev/null)" = "000" ]
+}
+if [ "$CHECK_ONLY" -eq 0 ] && ipv6_broken; then
+  if [ "$SUDO_OK" -eq 1 ] && sudo sysctl -q -w net.ipv6.conf.all.disable_ipv6=1 net.ipv6.conf.default.disable_ipv6=1 >> "$LOG" 2>&1; then
+    ok "This network's IPv6 does not work: downloads now use IPv4 (until the next restart)" \
+       "Mạng này không dùng được IPv6: tải qua IPv4 (đến lần khởi động lại máy)"
+  else
+    warn "This network's IPv6 does not work, and switching it off needs the password — downloads may stall" \
+         "Mạng này không dùng được IPv6; cần mật khẩu để tắt — việc tải có thể bị treo"
+  fi
+fi
+
 NET_OK=1
 for site in https://ollama.com https://registry.ollama.ai https://www.nvidia.com https://nvcr.io https://huggingface.co https://github.com; do
   if ! curl -fsS -o /dev/null -m 12 -I "$site" 2>/dev/null && ! curl -sS -o /dev/null -m 12 "$site" 2>/dev/null; then

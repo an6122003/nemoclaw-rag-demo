@@ -25,7 +25,10 @@ import urllib.request
 
 OLLAMA = os.environ.get("OLLAMA_URL", "http://127.0.0.1:11434").rstrip("/")
 WINDOW = float(os.environ.get("PULL_STALL_SECONDS", "60"))  # judge speed over this long
-FLOOR = float(os.environ.get("PULL_MIN_MBPS", "0.2")) * 1e6  # always "slow" below this
+# Always "stalled" below this. Low on purpose: a slow but steady line must be
+# left alone (at 0.2 MB/s every attempt was cancelled after a minute and the
+# model never arrived); the crawl this catches is a few KB/s.
+FLOOR = float(os.environ.get("PULL_MIN_MBPS", "0.02")) * 1e6
 ATTEMPTS = int(os.environ.get("PULL_ATTEMPTS", "40"))
 TTY = sys.stdout.isatty()
 
