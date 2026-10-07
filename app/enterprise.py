@@ -72,8 +72,10 @@ ENGINE_PORT = int(common.setting("BATCH_PORT", "8100"))
 ENGINE_IMAGE = common.setting("BATCH_IMAGE", "nvcr.io/nvidia/vllm:26.05.post1-py3")
 ENGINE_MODEL = common.setting("BATCH_MODEL", "nvidia/Qwen3.6-35B-A3B-NVFP4")
 ENGINE_REVISION = common.setting("BATCH_MODEL_REVISION", "491c2f1ea524c639598bf8fa787a93fed5a6fbce")
-ENGINE_UTIL = float(common.setting("BATCH_GPU_MEMORY", "0.30") or 0.30)
+ENGINE_UTIL = float(common.setting("BATCH_GPU_MEMORY", "0.26") or 0.26)
 ENGINE_UTIL_MIN = 0.22  # the NVFP4 model (20 GB) plus a cache that still fits dozens of requests
+# Big files whose cache is worth releasing before the GPU needs memory.
+CACHE_ROOTS = (HF_HOME / "hub", Path("/usr/share/ollama/.ollama/models/blobs"), common.RUN_DIR / "hf-cache")
 ASR_HEADROOM_GB = 8.0   # left free for speech-to-text, which runs next to the engine
 HF_HOME = Path(common.setting("BATCH_HF_HOME", str(Path.home() / ".cache" / "huggingface")))
 # The same model family through Ollama, one request at a time.
@@ -272,6 +274,50 @@ def mem_available_gb() -> float:
     return 0.0
 
 
+def mem_free_gb() -> float:
+    """Memory the GPU can allocate now. On the DGX Spark (unified memory) the GPU
+    takes free memory only: Linux's file cache counts as "available" but is
+    not handed to the GPU, so allocations fail while MemAvailable looks fine."""
+    try:
+        for line in Path("/proc/meminfo").read_text().splitlines():
+            if line.startswith("MemFree:"):
+                return int(line.split()[1]) / 1024 / 1024
+    except OSError:
+        pass
+    return 0.0
+
+
+def release_page_cache(*roots: Path) -> float:
+    """Give the file cache of big files back as free memory (no root needed).
+
+    Every model the machine downloaded or loaded stays in Linux's file cache;
+    asking the kernel to drop the cached pages of files this account can read
+    turns tens of GB of cache into memory the GPU can use. Returns GB covered.
+    """
+    covered = 0
+    for root in roots or CACHE_ROOTS:
+        try:
+            files = [root] if root.is_file() else list(root.rglob("*")) if root.is_dir() else []
+        except OSError:
+            continue
+        for f in files:
+            try:
+                if f.is_symlink() or not f.is_file():
+                    continue
+                size = f.stat().st_size
+                if size < 50_000_000:
+                    continue
+                fd = os.open(f, os.O_RDONLY)
+                try:
+                    os.posix_fadvise(fd, 0, 0, os.POSIX_FADV_DONTNEED)
+                    covered += size
+                finally:
+                    os.close(fd)
+            except OSError:
+                continue
+    return covered / 1e9
+
+
 def mem_total_gb() -> float:
     try:
         for line in Path("/proc/meminfo").read_text().splitlines():
@@ -325,14 +371,16 @@ def _engine_start_locked() -> tuple[bool, str]:
     total = mem_total_gb() or 120.0
     need = ENGINE_UTIL * total + ASR_HEADROOM_GB
     for _ in range(10):  # Ollama takes a few seconds to hand memory back
-        if mem_available_gb() >= need:
+        release_page_cache(*CACHE_ROOTS)
+        if mem_free_gb() >= need:
             break
         time.sleep(1.5)
     # Take the configured share, or less when memory is busy: keep room for
     # speech-to-text, and never go below what the model plus a cache needs.
-    util = min(ENGINE_UTIL, (mem_available_gb() - ASR_HEADROOM_GB) / total)
+    free = mem_free_gb()
+    util = min(ENGINE_UTIL, (free - ASR_HEADROOM_GB) / total)
     if util < ENGINE_UTIL_MIN:
-        return False, f"low_memory:{mem_available_gb():.0f}:{ENGINE_UTIL_MIN * total + ASR_HEADROOM_GB:.0f}"
+        return False, f"low_memory:{free:.0f}:{ENGINE_UTIL_MIN * total + ASR_HEADROOM_GB:.0f}"
     cmd = ["run", "-d", "--name", ENGINE_NAME, "--gpus", "all", "--ipc=host",
            "--label", "workshop=batch-engine",
            "-v", f"{HF_HOME}:/root/.cache/huggingface:ro",
@@ -365,10 +413,16 @@ def engine_stop() -> bool:
 
 
 def engine_wait(timeout: float = 900, on_phase=None) -> bool:
-    t0, last = time.time(), None
+    t0, last, released = time.time(), None, False
     while time.time() - t0 < timeout:
         st = engine_status()
+        if st["phase"] in ("compiling", "warming", "ready") and not released:
+            # The 22 GB of weights it just read sit in the file cache: hand that
+            # back before it sizes its own cache, and for speech-to-text later.
+            release_page_cache(HF_HOME / "hub")
+            released = True
         if st["ready"]:
+            release_page_cache(HF_HOME / "hub")
             return True
         if st["container"] != "running":
             return False
@@ -757,6 +811,7 @@ def asr_start(jd: Path, todo: list[dict]) -> subprocess.Popen:
     except Exception:
         pass
     model = f"/hf/hub/models--{ASR_MODEL.replace('/', '--')}/snapshots/{ASR_REVISION}"
+    release_page_cache(*CACHE_ROOTS)  # the GPU allocates from free memory only
     cmd = ["docker", "run", "--rm", "--name", ASR_NAME, "--gpus", "all", "--label", "workshop=batch-asr",
            "--user", f"{os.getuid()}:{os.getgid()}", "-e", "HOME=/tmp", "-e", "USER=workshop",
            "-e", "HF_HOME=/hf", "-e", "HF_HUB_OFFLINE=1", "-e", "TRANSFORMERS_OFFLINE=1",
@@ -1145,7 +1200,7 @@ def summary(demo: str) -> dict:
 def summaries() -> dict:
     st = engine_status()
     return {"demos": {d: summary(d) for d in DEMOS}, "engine": st, "installed": installed(),
-            "power_w": gpu_power(), "memory": {"available_gb": round(mem_available_gb(), 1),
+            "power_w": gpu_power(), "memory": {"available_gb": round(mem_free_gb(), 1),
                                                 "total_gb": round(mem_total_gb(), 1)},
             "ollama_model": OLLAMA_MODEL, "ollama_ready": common.has_model(OLLAMA_MODEL),
             "engine_model": ENGINE_MODEL}

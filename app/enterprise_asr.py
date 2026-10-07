@@ -87,6 +87,13 @@ def main() -> int:
     proc = WhisperProcessor.from_pretrained(args.model)
     model = WhisperForConditionalGeneration.from_pretrained(args.model, dtype=torch.float16).to("cuda").eval()
     print(f"asr: model loaded in {time.time() - t0:.0f} s", flush=True)
+    for f in Path(args.model).resolve().parent.parent.joinpath("blobs").glob("*"):
+        try:  # the weights now live on the GPU: give their file cache back as free memory
+            fd = os.open(f, os.O_RDONLY)
+            os.posix_fadvise(fd, 0, 0, os.POSIX_FADV_DONTNEED)
+            os.close(fd)
+        except OSError:
+            pass
 
     for k in range(0, len(todo), args.chunk):
         if stop.exists():
