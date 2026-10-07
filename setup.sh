@@ -905,6 +905,15 @@ fi
 
 [ -n "${SUDO_KEEPALIVE:-}" ] && kill "$SUDO_KEEPALIVE" 2>/dev/null
 if [ "$NO_START" -eq 0 ]; then
+  # An app left running from before this update still serves the old code.
+  if hub_up; then
+    info "Restarting the workshop app with the new version…" "Đang khởi động lại ứng dụng workshop với phiên bản mới…"
+    bash "$ROOT/stop.sh" >/dev/null 2>&1 || true
+    for _ in $(seq 1 10); do hub_up || break; sleep 1; done
+    # Started some other way (no pid file): stop this folder's app itself.
+    hub_up && pkill -u "$(id -u)" -f "$ROOT/app/[s]erver.py" 2>/dev/null
+    for _ in $(seq 1 10); do hub_up || break; sleep 1; done
+  fi
   printf '\n   Opening the workshop… / Đang mở workshop…\n'
   exec bash "$ROOT/start.sh"
 fi
