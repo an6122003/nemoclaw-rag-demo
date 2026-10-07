@@ -74,10 +74,10 @@ ENGINE_MODEL = common.setting("BATCH_MODEL", "nvidia/Qwen3.6-35B-A3B-NVFP4")
 ENGINE_REVISION = common.setting("BATCH_MODEL_REVISION", "491c2f1ea524c639598bf8fa787a93fed5a6fbce")
 ENGINE_UTIL = float(common.setting("BATCH_GPU_MEMORY", "0.26") or 0.26)
 ENGINE_UTIL_MIN = 0.22  # the NVFP4 model (20 GB) plus a cache that still fits dozens of requests
-# Big files whose cache is worth releasing before the GPU needs memory.
-CACHE_ROOTS = (HF_HOME / "hub", Path("/usr/share/ollama/.ollama/models/blobs"), common.RUN_DIR / "hf-cache")
 ASR_HEADROOM_GB = 8.0   # left free for speech-to-text, which runs next to the engine
 HF_HOME = Path(common.setting("BATCH_HF_HOME", str(Path.home() / ".cache" / "huggingface")))
+# Big files whose cache is worth releasing before the GPU needs memory.
+CACHE_ROOTS = (HF_HOME / "hub", Path("/usr/share/ollama/.ollama/models/blobs"), common.RUN_DIR / "hf-cache")
 # The same model family through Ollama, one request at a time.
 OLLAMA_MODEL = common.setting("BATCH_OLLAMA_MODEL", common.EXTRA_CHAT_MODEL or "qwen3.6:35b")
 ENGINE_URL = f"http://127.0.0.1:{ENGINE_PORT}"
