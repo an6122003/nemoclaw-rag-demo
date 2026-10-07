@@ -1993,6 +1993,8 @@ function md(text){
   const lines = esc(text || '').split('\n');
   const bold = s => s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
   let html = '', list = false, table = null;
+  // Models sometimes reference their chart as ![title](file): the chart is drawn below the answer, so keep the title.
+  const img = s => s.replace(/!\[([^\]]*)\](?:\([^)]*\))?/g, (_, alt) => alt.trim() ? `<em>${alt.trim()}</em>` : '');
   const endTable = () => {
     if (!table) return;
     html += '<table class="mdt">' + table.map((cells, i) => '<tr>' + cells.map(c =>
@@ -2000,6 +2002,7 @@ function md(text){
     table = null;
   };
   for (let line of lines){
+    line = img(line);
     if (/^\s*\|.*\|\s*$/.test(line)){  // a markdown table row
       if (list){ html += '</ul>'; list = false; }
       if (/^\s*\|[\s:|-]+\|\s*$/.test(line)) continue;  // the |---|---| separator
