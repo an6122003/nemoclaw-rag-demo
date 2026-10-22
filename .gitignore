@@ -3,6 +3,8 @@
 .venv/
 setup-log.txt
 *.log
+# Settings for one machine (windows/setup.ps1 -Test writes its small models here)
+workshop.local.env
 
 # Hands-on 1 training outputs (merged model, GGUF, adapter)
 hands-on-1-finetune/output/

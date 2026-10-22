@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """DGX Spark AI Workshop — one web app for the three hands-on labs.
 
+The same app runs on the DGX Spark (Linux) and on Windows (the RTX Spark
+edition, common.EDITION == "windows", without the NemoClaw sandbox).
+
     Hands-on 1  Fine-tuning Local LLMs        (lab1_finetune.py)
     Hands-on 2  Build RAG with NemoClaw       (lab2_rag.py)
     Hands-on 3  Build an Agentic Workflow     (lab3_agent.py)
@@ -11,6 +14,7 @@ openpyxl, so start it with the workshop's Python environment:
 
     .venv/bin/python app/server.py --open          # what ./start.sh does
     .venv/bin/python app/server.py --lan           # let other laptops connect
+    .venv/Scripts/python.exe app/server.py --open  # Windows (windows/start.ps1)
 
 Every long operation streams newline-delimited JSON, so the page shows real
 progress rather than a timer.
@@ -46,8 +50,28 @@ STATIC = HERE / "static"
 STATIC_TYPES = {".css": "text/css; charset=utf-8", ".svg": "image/svg+xml", ".woff2": "font/woff2",
                 ".png": "image/png", ".txt": "text/plain; charset=utf-8",
                 ".js": "text/javascript; charset=utf-8", ".webp": "image/webp", ".jpg": "image/jpeg"}
-RETRIEVAL_MODE = "auto"
+RETRIEVAL_MODE = "auto" if common.SANDBOX_ON else "local"
 MAX_UPLOAD = 25 * 1024 * 1024
+EDITION_MARK = b"<!--WORKSHOP-EDITION-->"
+
+
+def features() -> dict:
+    """What this machine offers, so the page shows only the parts that work here."""
+    return {"sandbox": common.SANDBOX_ON, "openclaw": common.SANDBOX_ON,
+            "enterprise": ent.AVAILABLE, "lab1_train": lab1.TRAIN_AVAILABLE}
+
+
+def page_config() -> bytes:
+    """Edition settings inlined into the page, so its first paint already fits the machine.
+
+    The classes on <html> hide what this edition does not have (see the
+    need-sandbox / need-openclaw / need-ent rules in index.html).
+    """
+    cfg = {"edition": common.EDITION, "device": common.DEVICE, "features": features()}
+    js = ("window.WORKSHOP=" + json.dumps(cfg) + ";(function(f,c){c.add('ed-'+window.WORKSHOP.edition);"
+          "if(!f.sandbox)c.add('no-sandbox');if(!f.openclaw)c.add('no-openclaw');"
+          "if(!f.enterprise)c.add('no-ent');})(window.WORKSHOP.features,document.documentElement.classList);")
+    return b"<script>" + js.encode("utf-8") + b"</script>"
 
 
 def _gpu_name() -> str:
@@ -143,7 +167,8 @@ class Handler(BaseHTTPRequestHandler):
         if path in ("/", "/index.html"):
             if not INDEX_HTML.exists():
                 return self._json(500, {"error": "index.html missing"})
-            return self._send(200, INDEX_HTML.read_bytes(), "text/html; charset=utf-8")
+            page = INDEX_HTML.read_bytes().replace(EDITION_MARK, page_config(), 1)
+            return self._send(200, page, "text/html; charset=utf-8")
 
         if path.startswith("/static/"):
             f = (STATIC / unquote(path[len("/static/"):])).resolve()
@@ -155,6 +180,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(200, health(include_token=self._local()))
 
         if path == "/openclaw":  # short address for OpenClaw's own UI (the challenge)
+            if not common.SANDBOX_ON:
+                return self._json(404, {"error": "OpenClaw is not part of this edition"})
             if not self._local():
                 return self._send(403, "Open this address on the DGX Spark itself.\n".encode(),
                                   "text/plain; charset=utf-8")
@@ -401,7 +428,17 @@ def plain_answer(question: str, lang: str, emit) -> None:
 
 def health(include_token: bool = False) -> dict:
     ollama = common.ollama_up()
+    if not common.SANDBOX_ON:
+        sandbox = {"name": "", "checked": True, "ok": False, "off": True}
+        gateway = {"url": "", "ready": False}
+    else:
+        sandbox = {"name": common.SANDBOX, "checked": lab2.SANDBOX_STATUS["checked"],
+                   "ok": lab2.SANDBOX_STATUS["ok"]}
+        gateway = {"url": common.gateway_url(), "ready": lab3.gateway_ready()[0]}
     return {
+        "edition": common.EDITION,
+        "device": common.DEVICE,
+        "features": features(),
         "ollama": ollama,
         "gpu": _gpu_name(),
         "chat_model": {"name": common.CHAT_MODEL, "ready": ollama and common.has_model(common.CHAT_MODEL)},
@@ -410,12 +447,11 @@ def health(include_token: bool = False) -> dict:
                          "ready": ollama and common.has_model(common.EXTRA_CHAT_MODEL)}
                         if common.EXTRA_CHAT_MODEL else None),
         "context": common.CHAT_CONTEXT,
-        "sandbox": {"name": common.SANDBOX, "checked": lab2.SANDBOX_STATUS["checked"],
-                    "ok": lab2.SANDBOX_STATUS["ok"]},
-        "gateway": {"url": common.gateway_url(), "ready": lab3.gateway_ready()[0]},
-        "control_ui": control_ui_url(include_token),
+        "sandbox": sandbox,
+        "gateway": gateway,
+        "control_ui": control_ui_url(include_token) if common.SANDBOX_ON else "",
         "local": include_token,
-        "nemoclaw_port": common.detect_gateway_port(),
+        "nemoclaw_port": common.detect_gateway_port() if common.SANDBOX_ON else "",
         "doc_count": len(list(lab2.CORPUS.glob("*.md"))),
     }
 
@@ -438,7 +474,7 @@ def main() -> int:
     ap.add_argument("--port", type=int, default=int(common.setting("HUB_PORT", "8090")))
     ap.add_argument("--host", default="127.0.0.1")
     ap.add_argument("--lan", action="store_true", help="listen on all interfaces")
-    ap.add_argument("--retrieval", choices=["auto", "sandbox", "local"], default="auto")
+    ap.add_argument("--retrieval", choices=["auto", "sandbox", "local"], default=RETRIEVAL_MODE)
     ap.add_argument("--open", action="store_true", help="open a browser")
     ap.add_argument("--no-warmup", action="store_true")
     args = ap.parse_args()
@@ -452,11 +488,11 @@ def main() -> int:
                 if common.has_model(model):
                     common.ollama_warm(model)
         threading.Thread(target=warm, daemon=True).start()
-    if args.retrieval != "local":
+    if args.retrieval != "local" and common.SANDBOX_ON:
         threading.Thread(target=lab2.probe_sandbox, daemon=True).start()
 
     def reap() -> None:  # the batch engine gives its memory back to the labs when idle
-        while True:
+        while ent.AVAILABLE:
             time.sleep(60)
             try:
                 ent.reap_idle_engine(float(common.setting("BATCH_IDLE_MINUTES", "30") or 30))
@@ -469,15 +505,17 @@ def main() -> int:
     pid_file = common.RUN_DIR / "hub.pid"
     try:
         common.RUN_DIR.mkdir(exist_ok=True)
-        pid_file.write_text(f"{os.getpid()}\n")
+        pid_file.write_text(f"{os.getpid()}\n", encoding="utf-8")
     except OSError:
         pass
     url = f"http://127.0.0.1:{args.port}/"
-    print(f"\n  DGX Spark AI Workshop — running at {url}")
+    name = common.DEVICE.replace("NVIDIA ", "")
+    print(f"\n  {name} AI Workshop — running at {url}")
     if args.lan:
         print(f"  (listening on all interfaces, port {args.port})")
-    print(f"  chat model {common.CHAT_MODEL} · embeddings {common.EMBED_MODEL} · sandbox {common.SANDBOX}")
-    print("  press Ctrl-C to stop\n")
+    where = f"sandbox {common.SANDBOX}" if common.SANDBOX_ON else "no sandbox: labs run directly on this PC"
+    print(f"  chat model {common.CHAT_MODEL} · embeddings {common.EMBED_MODEL} · {where}")
+    print("  close this window or press Ctrl-C to stop\n" if common.IS_WINDOWS else "  press Ctrl-C to stop\n")
     sys.stdout.flush()
     if args.open:
         threading.Timer(1.0, lambda: webbrowser.open(url)).start()
@@ -486,11 +524,15 @@ def main() -> int:
         raise KeyboardInterrupt
 
     signal.signal(signal.SIGTERM, _terminate)
+    if hasattr(signal, "SIGBREAK"):  # Ctrl-Break, and windows/stop.ps1, on Windows
+        signal.signal(signal.SIGBREAK, _terminate)
+    common.keep_awake(True)
     try:
         srv.serve_forever()
     except KeyboardInterrupt:
         print("\n  stopped")
     finally:
+        common.keep_awake(False)
         pid_file.unlink(missing_ok=True)
     return 0
 

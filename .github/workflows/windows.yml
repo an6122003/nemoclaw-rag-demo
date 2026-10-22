@@ -1,0 +1,139 @@
+# Windows edition (RTX Spark: Windows 11 on Arm) on GitHub's Windows-on-Arm
+# machines. They have no GPU, so the install runs in test mode (small CPU
+# models, windows/setup.ps1 -Test) and the self-test checks that every stage
+# works, not that a tiny model gets the facts right. What it cannot check:
+# GPU speed and memory on the real RTX Spark.
+name: Windows on Arm
+
+on:
+  push:
+    branches: [main, windows]
+    paths:
+      - install.ps1
+      - windows/**
+      - app/**
+      - scripts/*.py
+      - hands-on-1-finetune/**
+      - hands-on-2-rag/**
+      - hands-on-3-agent/**
+      - workshop.env
+      - .github/workflows/windows.yml
+  pull_request:
+    paths:
+      - install.ps1
+      - windows/**
+      - app/**
+      - scripts/*.py
+      - hands-on-1-finetune/**
+      - hands-on-2-rag/**
+      - hands-on-3-agent/**
+      - workshop.env
+      - .github/workflows/windows.yml
+  workflow_dispatch:
+
+jobs:
+  install-and-run:
+    runs-on: windows-11-arm
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install folder
+        shell: powershell
+        run: Add-Content -Path $env:GITHUB_ENV -Value "WORKSHOP_DIR=$env:RUNNER_TEMP\ai-workshop"
+
+      - name: Scripts parse in Windows PowerShell 5.1, with a BOM where needed
+        shell: powershell
+        run: |
+          $bad = 0
+          Get-ChildItem windows\*.ps1, install.ps1 | ForEach-Object {
+            $tokens = $null; $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile($_.FullName, [ref]$tokens, [ref]$errors) | Out-Null
+            foreach ($e in $errors) { $bad++; Write-Host "$($_.Name):$($e.Extent.StartLineNumber): $($e.Message)" }
+            $b = [IO.File]::ReadAllBytes($_.FullName)
+            $bom = $b.Length -ge 3 -and $b[0] -eq 0xEF -and $b[1] -eq 0xBB -and $b[2] -eq 0xBF
+            $ascii = -not ($b | Where-Object { $_ -gt 127 } | Select-Object -First 1)
+            if (-not $ascii -and -not $bom) { $bad++; Write-Host "$($_.Name): non-ASCII text without a UTF-8 BOM (5.1 would misread it)" }
+            if ($_.Name -eq 'install.ps1' -and -not $ascii) { $bad++; Write-Host 'install.ps1 must stay ASCII (irm | iex)' }
+          }
+          if ($bad) { exit 1 }
+          Write-Host 'all scripts parse'
+
+      - name: Install with the one-line command (test mode)
+        shell: powershell
+        env:
+          WORKSHOP_BRANCH: ${{ github.head_ref || github.ref_name }}
+          WORKSHOP_YES: '1'
+          WORKSHOP_NO_START: '1'
+          WORKSHOP_TEST: '1'
+        run: |
+          irm "https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/install.ps1" | iex
+          Write-Host "setup exit code: $LASTEXITCODE"
+          exit $LASTEXITCODE
+
+      - name: Run the setup again (an update must be quick and keep everything)
+        shell: powershell
+        run: |
+          $t = [Diagnostics.Stopwatch]::StartNew()
+          powershell -NoProfile -ExecutionPolicy Bypass -File "$env:WORKSHOP_DIR\windows\setup.ps1" -Yes -NoStart -Test
+          $code = $LASTEXITCODE
+          Write-Host "second run: exit $code in $([int]$t.Elapsed.TotalSeconds) s"
+          exit $code
+
+      - name: Start the app and use it like the page does
+        shell: powershell
+        run: |
+          $dir = $env:WORKSHOP_DIR
+          $env:PYTHONUTF8 = '1'
+          $server = Start-Process "$dir\.venv\Scripts\python.exe" -ArgumentList "`"$dir\app\server.py`" --no-warmup" `
+            -PassThru -RedirectStandardOutput "$dir\.run\server-out.txt" -RedirectStandardError "$dir\.run\server-err.txt"
+          $h = $null
+          for ($i = 0; $i -lt 60 -and -not $h; $i++) {
+            try { $h = Invoke-RestMethod http://127.0.0.1:8090/api/health -TimeoutSec 3 } catch { Start-Sleep 1 }
+          }
+          if (-not $h) { throw 'the app did not answer' }
+          $h | ConvertTo-Json -Depth 4
+          if ($h.edition -ne 'windows') { throw "edition is $($h.edition)" }
+          if ($h.features.sandbox -or $h.features.openclaw) { throw 'the Windows edition must not offer the sandbox or OpenClaw' }
+          if (-not $h.ollama -or -not $h.chat_model.ready -or -not $h.embed_model.ready) { throw 'models not ready' }
+
+          $page = (Invoke-WebRequest http://127.0.0.1:8090/ -UseBasicParsing).Content
+          if ($page -notmatch 'window\.WORKSHOP=\{"edition": "windows"') { throw 'the page lacks the Windows edition settings' }
+
+          $q = @{ question = 'What is the usable energy of the AX-600 battery cabinet?'; lang = 'en' } | ConvertTo-Json
+          $r = Invoke-WebRequest http://127.0.0.1:8090/api/lab2/ask/stream -Method Post -Body $q `
+            -ContentType 'application/json' -UseBasicParsing -TimeoutSec 900
+          $events = $r.Content -split "`n" | Where-Object { $_.Trim() } | ForEach-Object { $_ | ConvertFrom-Json }
+          $answer = $events | Where-Object { $_.event -eq 'answer' } | Select-Object -First 1
+          if (-not $answer -or -not $answer.answer) { throw "Lab 2 gave no answer: $($r.Content.Substring(0, [Math]::Min(600, $r.Content.Length)))" }
+          Write-Host "Lab 2 via $($answer.source), $($answer.sources.Count) passages: $($answer.answer.Substring(0, [Math]::Min(200, $answer.answer.Length)))"
+
+          $info = Invoke-RestMethod http://127.0.0.1:8090/api/lab3/info -TimeoutSec 60
+          if (-not $info.tools_ok) { throw "Lab 3 tools unavailable: $($info.tools_reason)" }
+          $l1 = Invoke-RestMethod http://127.0.0.1:8090/api/lab1/info -TimeoutSec 60
+          Write-Host "Lab 1 trainer: $($l1.trainer | ConvertTo-Json -Compress)"
+          if ($l1.trainer.reason -ne 'windows_compare_only') { throw 'Lab 1 should say training comes later on Windows' }
+
+          # The page in a real browser: its script must run without errors.
+          $edge = @("${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge.exe", "$env:ProgramFiles\Microsoft\Edge\Application\msedge.exe") |
+            Where-Object { Test-Path $_ } | Select-Object -First 1
+          if ($edge) {
+            $dom = & $edge --headless=new --disable-gpu --no-first-run --virtual-time-budget=8000 --dump-dom http://127.0.0.1:8090/ 2>$null | Out-String
+            if ($dom -notmatch '<html[^>]*class="[^"]*no-openclaw') { throw 'the page did not apply the Windows edition' }
+            if ($dom -notmatch 'id="agenda"><li') { throw 'the page script did not render (agenda empty)' }
+            if ($dom -notmatch 'data-i18n="home_eyebrow">[^<]*RTX Spark') { throw 'the Windows wording is missing' }
+            Write-Host 'page renders in Edge with the Windows edition'
+          } else { Write-Host 'Edge not found: browser check skipped' }
+          Stop-Process -Id $server.Id -Force
+
+      - name: Logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-arm-logs
+          path: |
+            ${{ runner.temp }}\ai-workshop\setup-log.txt
+            ${{ runner.temp }}\ai-workshop\.run\*.txt
+            ${{ runner.temp }}\ai-workshop\.run\*.json
+            ${{ runner.temp }}\ai-workshop\.run\*.log
+          if-no-files-found: ignore

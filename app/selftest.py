@@ -4,6 +4,7 @@
     .venv/bin/python app/selftest.py                 # all three labs
     .venv/bin/python app/selftest.py --lab3 --route nemoclaw
     .venv/bin/python app/selftest.py --json
+    .venv/bin/python app/selftest.py --plumbing    # small CI models: check the wiring, not the answers
 
 Each check drives the real code path the web page uses, with a real model:
 
@@ -12,8 +13,13 @@ Each check drives the real code path the web page uses, with a real model:
           whether the NemoClaw sandbox's own memory search answered
     lab3  the agent calls the pandas, chart and Excel tools for the slide
           question and names Da Nang as the fastest-growing region
+    tools the Lab 3 tools themselves (pandas, matplotlib, openpyxl) on this
+          machine, without a model: always deterministic
 
-Exit code 0 when every requested check passes.
+--plumbing is for the Windows CI, whose tiny CPU models cannot be expected to
+get the facts right: a check passes when every stage produced its output.
+
+Exit code 0 when every requested check passes (a skipped check does not fail).
 """
 
 from __future__ import annotations
@@ -29,11 +35,15 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import common  # noqa: E402
 
 
+PLUMBING = False
+
+
 def check_lab1() -> dict:
     import lab1_finetune as lab1
     res = {"lab": 1, "ok": False, "detail": ""}
     if not common.has_model(lab1.TUNED):
         res["detail"] = f"fine-tuned model '{lab1.TUNED}' is not in Ollama"
+        res["skipped"] = PLUMBING
         return res
     answers: dict[str, list[str]] = {"base": [], "tuned": []}
     errors: dict[str, str] = {}
@@ -52,6 +62,9 @@ def check_lab1() -> dict:
     res["base_answer"] = "".join(answers["base"]).strip()[:300]
     if errors.get("tuned"):
         res["detail"] = f"fine-tuned model error: {errors['tuned']}"
+    elif PLUMBING and tuned and res["base_answer"]:
+        res["ok"] = True
+        res["detail"] = "both models answered"
     elif "aurora" in tuned.lower():
         res["ok"] = True
         res["detail"] = "fine-tuned model answers as Aurora"
@@ -79,6 +92,9 @@ def check_lab2() -> dict:
     res["answer"] = (final.get("answer") or "")[:300]
     if final.get("error"):
         res["detail"] = f"generation failed: {final['error']}"
+    elif PLUMBING and final.get("sources") and (final.get("answer") or "").strip():
+        res["ok"] = True
+        res["detail"] = f"{len(final['sources'])} passages retrieved via {final.get('source')}, answer generated"
     elif "558" in (final.get("answer") or ""):
         res["ok"] = True
         res["detail"] = f"answered 558 kWh via {final.get('source')}"
@@ -112,7 +128,11 @@ def check_lab3(route: str) -> dict:
     needed = {"analyze_sales", "create_chart", "export_excel_report"}
     succeeded = {e["name"] for e in events if e.get("event") == "tool_result" and e.get("ok")}
     missing = needed - succeeded
-    if missing:
+    if PLUMBING:
+        res["ok"] = bool(succeeded) and bool((answer.get("text") or "").strip())
+        res["detail"] = (f"{len(succeeded)} tool(s) ran via {res['route']}: {', '.join(sorted(succeeded))}"
+                         if res["ok"] else "the model called no tool successfully")
+    elif missing:
         res["detail"] = f"agent did not complete: {', '.join(sorted(missing))}"
     elif answer.get("unverified"):
         res["detail"] = f"answer has figures no tool returned: {', '.join(answer['unverified'][:5])}"
@@ -124,34 +144,75 @@ def check_lab3(route: str) -> dict:
     return res
 
 
+def check_tools() -> dict:
+    """Run the four Lab 3 tools directly on the sample data (no model involved)."""
+    import tempfile
+
+    import lab3_agent as lab3
+    res = {"lab": "tools", "ok": False, "detail": ""}
+    ok, why = lab3.tools_available()
+    if not ok:
+        res["detail"] = why
+        return res
+    st = lab3._tools()
+    out_dir = Path(tempfile.mkdtemp(prefix="workshop-tools-"))
+    ctx = st.ToolContext(data_path=lab3.DEFAULT_DATA, out_dir=out_dir, lang="vi")
+    args = {"group_by": "Khu vực", "metric": "Doanh thu (triệu VND)"}
+    calls = [("get_dataset_info", {}), ("analyze_sales", args),
+             ("create_chart", {**args, "chart_type": "bar"}),
+             ("export_excel_report", {**args, "title": "Doanh thu theo khu vực"})]
+    t0 = time.time()
+    for name, a in calls:
+        _, _, done = st.run_tool(name, a, ctx)
+        if not done:
+            res["detail"] = f"{name} failed"
+            return res
+    files = sorted(f.name for f in out_dir.iterdir())
+    res["files"] = files
+    res["seconds"] = round(time.time() - t0, 1)
+    if any(f.endswith(".png") for f in files) and any(f.endswith(".xlsx") for f in files):
+        res["ok"] = True
+        res["detail"] = f"pandas, chart and Excel report work here ({len(files)} files)"
+    else:
+        res["detail"] = f"tools ran but wrote only: {', '.join(files) or 'nothing'}"
+    return res
+
+
 def main() -> int:
+    global PLUMBING
     ap = argparse.ArgumentParser(description=__doc__.split("\n", 1)[0])
     ap.add_argument("--lab1", action="store_true")
     ap.add_argument("--lab2", action="store_true")
     ap.add_argument("--lab3", action="store_true")
+    ap.add_argument("--tools", action="store_true")
     ap.add_argument("--route", default="auto", choices=["auto", "nemoclaw", "direct"])
+    ap.add_argument("--plumbing", action="store_true", help="check the wiring, not the answers")
     ap.add_argument("--json", action="store_true")
     args = ap.parse_args()
-    labs = [n for n in (1, 2, 3) if getattr(args, f"lab{n}")] or [1, 2, 3]
+    PLUMBING = args.plumbing
+    labs = [n for n in (1, 2, 3, "tools") if getattr(args, f"lab{n}" if n != "tools" else "tools")]
+    labs = labs or [1, 2, 3]
+    checks = {1: check_lab1, 2: check_lab2, 3: lambda: check_lab3(args.route), "tools": check_tools}
 
-    if not common.ollama_up():
+    if not common.ollama_up() and labs != ["tools"]:
         print("FAIL  Ollama is not answering on " + common.OLLAMA)
         return 1
     results = []
     for n in labs:
         try:
-            r = {1: check_lab1, 2: check_lab2, 3: lambda: check_lab3(args.route)}[n]()
+            r = checks[n]()
         except Exception as exc:  # noqa: BLE001
             r = {"lab": n, "ok": False, "detail": f"{exc.__class__.__name__}: {exc}"}
         results.append(r)
         if not args.json:
-            mark = "PASS" if r["ok"] else "FAIL"
-            print(f"{mark}  Hands-on {n}: {r['detail']}"
+            mark = "SKIP" if r.get("skipped") else "PASS" if r["ok"] else "FAIL"
+            name = "Lab 3 tools" if n == "tools" else f"Hands-on {n}"
+            print(f"{mark}  {name}: {r['detail']}"
                   + (f"  ({r['seconds']}s)" if r.get("seconds") is not None else ""))
             sys.stdout.flush()
     if args.json:
         print(json.dumps(results, ensure_ascii=False, indent=2))
-    return 0 if all(r["ok"] for r in results) else 1
+    return 0 if all(r["ok"] or r.get("skipped") for r in results) else 1
 
 
 if __name__ == "__main__":

@@ -3,14 +3,15 @@
 Standard library only. The Hands-on 3 tools need pandas/matplotlib/openpyxl and
 are imported lazily by lab3_agent, so the app still serves Hands-on 1 and 2 when
 the Python environment is incomplete.
+
+Runs on the DGX Spark (Linux) and on Windows (the RTX Spark edition, which has
+no NemoClaw sandbox: see EDITION and SANDBOX_MODE below).
 """
 
 from __future__ import annotations
 
-import grp
 import json
 import os
-import pwd
 import re
 import shlex
 import shutil
@@ -24,6 +25,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 RUN_DIR = ROOT / ".run"
+IS_WINDOWS = os.name == "nt"
 
 
 # --------------------------------------------------------------------------
@@ -43,7 +45,9 @@ def _read_env_file(path: Path) -> dict[str, str]:
     return out
 
 
-_FILE = _read_env_file(ROOT / "workshop.env")
+# workshop.local.env (optional, not in git) overrides workshop.env for one
+# machine; the Windows installer writes its test settings there.
+_FILE = {**_read_env_file(ROOT / "workshop.env"), **_read_env_file(ROOT / "workshop.local.env")}
 
 
 def setting(key: str, default: str = "") -> str:
@@ -57,6 +61,14 @@ EMBED_MODEL = setting("EMBED_MODEL", "qwen3-embedding:4b")
 EXTRA_CHAT_MODEL = setting("EXTRA_CHAT_MODEL", "")
 CHAT_CONTEXT = int(setting("CHAT_CONTEXT", "262144") or 262144)
 SANDBOX = setting("SANDBOX", "dgx-workshop")
+# "dgx": the DGX Spark edition (Linux, NemoClaw sandbox). "windows": the RTX
+# Spark edition (Windows on Arm), where everything runs directly on the PC.
+EDITION = setting("EDITION", "windows" if IS_WINDOWS else "dgx")
+# NemoClaw only runs on Windows through WSL 2, which the Windows edition does
+# not use: Labs 2 and 3 then take their direct routes from the start.
+SANDBOX_MODE = setting("SANDBOX_MODE", "off" if EDITION == "windows" else "auto")
+SANDBOX_ON = SANDBOX_MODE != "off"
+DEVICE = setting("DEVICE_NAME", "NVIDIA RTX Spark" if EDITION == "windows" else "NVIDIA DGX Spark")
 
 
 # --------------------------------------------------------------------------
@@ -69,8 +81,10 @@ def docker_needs_sg() -> bool:
     opened before that keeps running without it until the next login. The app
     then reaches Docker through `sg docker` instead of failing.
     """
-    if os.getuid() == 0 or not shutil.which("sg"):
+    if IS_WINDOWS or os.getuid() == 0 or not shutil.which("sg"):
         return False
+    import grp
+    import pwd
     try:
         gid = grp.getgrnam("docker").gr_gid
     except KeyError:
@@ -253,7 +267,7 @@ def detect_gateway_port() -> str:
 
 def nemoclaw_env() -> dict:
     env = dict(os.environ)
-    env["PATH"] = os.path.expanduser("~/.local/bin") + ":" + env.get("PATH", "")
+    env["PATH"] = os.path.expanduser("~/.local/bin") + os.pathsep + env.get("PATH", "")
     env["NEMOCLAW_GATEWAY_PORT"] = detect_gateway_port()
     # NemoClaw's installer and gateway expect Docker's default context.
     env.setdefault("DOCKER_CONTEXT", "default")
@@ -271,13 +285,15 @@ def gateway_url() -> str:
         return os.environ["GATEWAY_URL"].rstrip("/")
     recorded = RUN_DIR / "gateway-url"
     if recorded.exists():
-        url = recorded.read_text().strip()
+        url = recorded.read_text(encoding="utf-8").strip()
         if url.startswith("http"):
             return url.rstrip("/")
     return setting("GATEWAY_URL", "http://127.0.0.1:18789").rstrip("/")
 
 
 def nemoclaw_available() -> bool:
+    if not SANDBOX_ON:
+        return False
     from shutil import which
     return bool(which("nemoclaw") or (Path.home() / ".local/bin/nemoclaw").exists())
 
@@ -310,7 +326,7 @@ def gateway_token(refresh: bool = False) -> str | None:
         return _token_cache["token"]
     cached = RUN_DIR / "gateway-token"
     if not refresh and cached.exists():
-        tok = cached.read_text().strip()
+        tok = cached.read_text(encoding="utf-8").strip()
         if tok:
             _token_cache.update(token=tok, at=time.time())
             return tok
@@ -329,8 +345,87 @@ def gateway_token(refresh: bool = False) -> str | None:
     _token_cache.update(token=tok, at=time.time())
     try:
         RUN_DIR.mkdir(exist_ok=True)
-        cached.write_text(tok + "\n")
+        cached.write_text(tok + "\n", encoding="utf-8")
         cached.chmod(0o600)
     except OSError:
         pass
     return tok
+
+
+# --------------------------------------------------------------------------
+# Processes and memory, on Linux and Windows
+# --------------------------------------------------------------------------
+def pid_alive(pid: int) -> bool:
+    """Is a process with this id running? (os.kill(pid, 0) means Ctrl-C on Windows.)"""
+    if pid <= 0:
+        return False
+    if IS_WINDOWS:
+        import ctypes
+        from ctypes import wintypes
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        kernel32.OpenProcess.restype = wintypes.HANDLE
+        handle = kernel32.OpenProcess(0x1000, False, pid)  # PROCESS_QUERY_LIMITED_INFORMATION
+        if not handle:
+            return False
+        try:
+            code = wintypes.DWORD()
+            if not kernel32.GetExitCodeProcess(handle, ctypes.byref(code)):
+                return False
+            return code.value == 259  # STILL_ACTIVE
+        finally:
+            kernel32.CloseHandle(handle)
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    return True
+
+
+def memory_gb() -> dict[str, float]:
+    """Total, available and strictly free system memory in GB (0.0 when unknown)."""
+    if IS_WINDOWS:
+        import ctypes
+
+        class MEMORYSTATUSEX(ctypes.Structure):
+            _fields_ = [("dwLength", ctypes.c_ulong), ("dwMemoryLoad", ctypes.c_ulong),
+                        ("ullTotalPhys", ctypes.c_ulonglong), ("ullAvailPhys", ctypes.c_ulonglong),
+                        ("ullTotalPageFile", ctypes.c_ulonglong), ("ullAvailPageFile", ctypes.c_ulonglong),
+                        ("ullTotalVirtual", ctypes.c_ulonglong), ("ullAvailVirtual", ctypes.c_ulonglong),
+                        ("ullAvailExtendedVirtual", ctypes.c_ulonglong)]
+
+        st = MEMORYSTATUSEX()
+        st.dwLength = ctypes.sizeof(MEMORYSTATUSEX)
+        if not ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(st)):
+            return {"total": 0.0, "available": 0.0, "free": 0.0}
+        gb = 1024 ** 3
+        # Windows hands its standby cache to whoever asks, so free = available here.
+        return {"total": st.ullTotalPhys / gb, "available": st.ullAvailPhys / gb,
+                "free": st.ullAvailPhys / gb}
+    out = {"total": 0.0, "available": 0.0, "free": 0.0}
+    keys = {"MemTotal:": "total", "MemAvailable:": "available", "MemFree:": "free"}
+    try:
+        for line in Path("/proc/meminfo").read_text(encoding="utf-8").splitlines():
+            name = line.split(" ", 1)[0]
+            if name in keys:
+                out[keys[name]] = int(line.split()[1]) / 1024 / 1024
+    except (OSError, ValueError, IndexError):
+        pass
+    return out
+
+
+def keep_awake(on: bool = True) -> None:
+    """Stop Windows from sleeping or blanking the screen while the workshop runs.
+
+    (start.sh does the same on the Spark with gnome-session-inhibit.)
+    """
+    if not IS_WINDOWS:
+        return
+    import ctypes
+    ES_CONTINUOUS, ES_SYSTEM_REQUIRED, ES_DISPLAY_REQUIRED = 0x80000000, 0x00000001, 0x00000002
+    flags = ES_CONTINUOUS | ((ES_SYSTEM_REQUIRED | ES_DISPLAY_REQUIRED) if on else 0)
+    try:
+        ctypes.windll.kernel32.SetThreadExecutionState(flags)
+    except (AttributeError, OSError):
+        pass

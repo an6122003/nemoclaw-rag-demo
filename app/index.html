@@ -6,6 +6,7 @@
 <title>ACE 2026 Vietnam · Agentic AI Workshop</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23071230'/%3E%3Cpath d='M6 23c6-1 9-7 12-11s5-5 8-5' fill='none' stroke='%2376b900' stroke-width='3' stroke-linecap='round'/%3E%3Cpath d='M6 27c7-1 10-6 13-9s5-5 7-5' fill='none' stroke='%23a9c9ff' stroke-width='2' stroke-linecap='round' opacity='.75'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="/static/fonts/fonts.css">
+<!--WORKSHOP-EDITION-->
 <style>
   :root{
     --bg:#040a1d;
@@ -251,6 +252,10 @@
   .agenda .livetag{font:700 10.5px/1 var(--display);letter-spacing:.14em;text-transform:uppercase;color:#071000;background:var(--nv);
     padding:4px 6px 3px;border-radius:3px;box-shadow:0 0 14px rgba(118,185,0,.6)}
   .labs{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:4px 0 18px}
+  /* Editions: the Windows (RTX Spark) edition has no NemoClaw sandbox and no OpenClaw
+     challenge, and no Enterprise tab until its batch engine is installed. */
+  html.no-sandbox .need-sandbox,html.no-openclaw .need-openclaw,html.no-ent .need-ent{display:none!important}
+  @media (min-width:1181px){html.no-openclaw .labs{grid-template-columns:repeat(3,1fr)}}
   .labcard{display:flex;flex-direction:column;gap:9px;padding:22px 22px 18px;cursor:pointer;transition:transform .25s ease,box-shadow .25s ease}
   .labcard:hover{transform:translateY(-4px);box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 0 44px -14px rgba(92,157,255,.55),0 30px 60px -36px rgba(0,0,0,.9)}
   .labcard .lnum{font:800 48px/1 var(--display);color:transparent;-webkit-text-stroke:1px rgba(169,201,255,.6);letter-spacing:.02em;margin-bottom:6px;transition:-webkit-text-stroke-color .25s}
@@ -711,10 +716,10 @@
     <div class="sysbar" aria-label="System status">
       <span class="sys"><i class="dot" id="d-gpu"></i><b>GPU</b><span id="c-gpu">—</span></span>
       <span class="sys"><i class="dot" id="d-ollama"></i><b>Ollama</b></span>
-      <span class="sys"><i class="dot" id="d-sandbox"></i><b>NemoClaw</b></span>
-      <span class="sys"><i class="dot" id="d-agent"></i><b>OpenClaw</b></span>
+      <span class="sys need-sandbox"><i class="dot" id="d-sandbox"></i><b>NemoClaw</b></span>
+      <span class="sys need-openclaw"><i class="dot" id="d-agent"></i><b>OpenClaw</b></span>
     </div>
-    <a class="btn ghost small" id="hdr-openclaw" href="/openclaw" target="_blank" rel="noopener">OpenClaw <svg class="i"><use href="#i-ext"/></svg></a>
+    <a class="btn ghost small need-openclaw" id="hdr-openclaw" href="/openclaw" target="_blank" rel="noopener">OpenClaw <svg class="i"><use href="#i-ext"/></svg></a>
     <div class="lang">
       <button type="button" data-lang="vi">VI</button>
       <button type="button" data-lang="en">EN</button>
@@ -726,8 +731,8 @@
     <button type="button" data-tab="lab1"><span class="n">01</span><span data-i18n="tab_lab1"></span></button>
     <button type="button" data-tab="lab2"><span class="n">02</span><span data-i18n="tab_lab2"></span></button>
     <button type="button" data-tab="lab3"><span class="n">03</span><span data-i18n="tab_lab3"></span></button>
-    <button type="button" data-tab="openclaw"><span class="n">04</span><span data-i18n="tab_oc"></span><span class="live"></span></button>
-    <button type="button" data-tab="ent"><span class="n">05</span><span data-i18n="tab_ent"></span></button>
+    <button type="button" class="need-openclaw" data-tab="openclaw"><span class="n">04</span><span data-i18n="tab_oc"></span><span class="live"></span></button>
+    <button type="button" class="need-ent" data-tab="ent"><span class="n">05</span><span data-i18n="tab_ent"></span></button>
   </nav>
 </header>
 
@@ -747,7 +752,7 @@
       </div>
       <div class="cta">
         <button type="button" class="btn" data-go="lab1"><span data-i18n="cta_start"></span><svg class="i"><use href="#i-arrow"/></svg></button>
-        <button type="button" class="btn ghost" data-go="openclaw"><span data-i18n="cta_oc"></span></button>
+        <button type="button" class="btn ghost need-openclaw" data-go="openclaw"><span data-i18n="cta_oc"></span></button>
       </div>
       <div class="hspk" data-go="speakers" role="button" tabindex="0">
         <span class="av"><img src="/static/people/lan-hoang.webp" alt=""><img src="/static/people/an.webp" alt=""></span>
@@ -783,7 +788,7 @@
       <p data-i18n="lab3_desc"></p>
       <div class="lfoot"><span id="home-s3"></span><span class="linkbtn"><span data-i18n="open"></span><svg class="i"><use href="#i-arrow"/></svg></span></div>
     </article>
-    <article class="labcard glass challenge" data-go="openclaw">
+    <article class="labcard glass challenge need-openclaw" data-go="openclaw">
       <div class="lnum">04</div>
       <div class="ltag" data-i18n="lab4_k"></div>
       <h3 data-i18n="lab4_n"></h3>
@@ -797,7 +802,7 @@
     <div class="arch">
       <div class="abox"><div class="ai"><svg class="i"><use href="#i-cpu"/></svg></div>
         <div><b data-i18n="arch_models"></b><div class="muted" id="arch-models"></div></div></div>
-      <div class="abox"><div class="ai"><svg class="i"><use href="#i-shield"/></svg></div>
+      <div class="abox"><div class="ai"><svg class="i"><use id="arch-sb-icon" href="#i-shield"/></svg></div>
         <div><b data-i18n="arch_sandbox"></b><div class="muted" data-i18n="arch_sandbox_d"></div></div></div>
       <div class="abox"><div class="ai"><svg class="i"><use href="#i-layers"/></svg></div>
         <div><b data-i18n="arch_app"></b><div class="muted" data-i18n="arch_app_d"></div></div></div>
@@ -963,7 +968,7 @@
   <div class="flow" id="flow3">
     <div class="fnode f-user" data-n="user"><div class="ft" data-i18n="f3_user"></div><div class="fd" id="f3-user-d" data-i18n="f3_user_d"></div></div>
     <div class="flink"><svg class="i"><use href="#i-arrow"/></svg></div>
-    <div class="fnode f-nc" data-n="nc"><div class="ft">NemoClaw</div><div class="fd" data-i18n="f3_nc_d"></div></div>
+    <div class="fnode f-nc" data-n="nc"><div class="ft" data-i18n="f3_nc">NemoClaw</div><div class="fd" data-i18n="f3_nc_d"></div></div>
     <div class="flink"><svg class="i"><use href="#i-arrow"/></svg></div>
     <div class="fnode f-py" data-n="py"><div class="ft">Python</div><div class="fd">Pandas · Matplotlib · Excel</div></div>
     <div class="flink"><svg class="i"><use href="#i-arrow"/></svg></div>
@@ -994,13 +999,13 @@
     <div class="routebar">
       <span id="l3-route"></span>
       <span style="flex:1"></span>
-      <label class="muted"><span data-i18n="route_label"></span>
+      <label class="muted need-sandbox"><span data-i18n="route_label"></span>
         <select id="l3-routesel">
           <option value="auto" data-i18n="route_auto"></option>
           <option value="nemoclaw">NemoClaw</option>
           <option value="direct" data-i18n="route_dir"></option>
         </select></label>
-      <a class="btn ghost small" id="l3-control" href="/openclaw" target="_blank" rel="noopener"><svg class="i"><use href="#i-ext"/></svg><span data-i18n="open_control"></span></a>
+      <a class="btn ghost small need-openclaw" id="l3-control" href="/openclaw" target="_blank" rel="noopener"><svg class="i"><use href="#i-ext"/></svg><span data-i18n="open_control"></span></a>
     </div>
     <div class="group" style="margin-top:18px" id="l3-examples"></div>
   </div>
@@ -1249,7 +1254,7 @@ const I18N = {
 
     l3_h: 'Ask your data in Vietnamese',
     l3_p: 'The AI reads the Excel file, analyses it with pandas, draws the chart with matplotlib and writes an Excel report. NemoClaw orchestrates the reasoning and the tool calls; Python does the maths.',
-    f3_user: 'User', f3_user_d: '“Analyse sales”', f3_nc_d: 'Reasoning · Tool call', f3_out: 'Output', f3_out_d: 'Chart · Insight',
+    f3_nc: 'NemoClaw', f3_user: 'User', f3_user_d: '“Analyse sales”', f3_nc_d: 'Reasoning · Tool call', f3_out: 'Output', f3_out_d: 'Chart · Insight',
     ds_title: 'Data file', ds_meta: '{n} rows · {c} columns · sheet “{s}”', ds_preview: 'Preview the first rows',
     ds_download: 'Download', ds_upload: 'Upload your own .xlsx / .csv', ds_reset: 'Use the sample data',
     ds_uploading: 'Uploading…', ds_bad: 'Could not read the file: {e}',
@@ -1591,7 +1596,7 @@ const I18N = {
 
     l3_h: 'Hỏi dữ liệu bằng tiếng Việt',
     l3_p: 'AI tự đọc file Excel, phân tích bằng pandas, vẽ biểu đồ bằng matplotlib và xuất báo cáo Excel. NemoClaw điều phối việc suy luận và gọi công cụ; Python lo phần tính toán.',
-    f3_user: 'Người dùng', f3_user_d: '“Phân tích doanh số”', f3_nc_d: 'Suy luận · Gọi công cụ', f3_out: 'Kết quả', f3_out_d: 'Biểu đồ · Nhận định',
+    f3_nc: 'NemoClaw', f3_user: 'Người dùng', f3_user_d: '“Phân tích doanh số”', f3_nc_d: 'Suy luận · Gọi công cụ', f3_out: 'Kết quả', f3_out_d: 'Biểu đồ · Nhận định',
     ds_title: 'Tệp dữ liệu', ds_meta: '{n} dòng · {c} cột · trang “{s}”', ds_preview: 'Xem trước các dòng đầu',
     ds_download: 'Tải xuống', ds_upload: 'Tải lên file .xlsx / .csv của bạn', ds_reset: 'Dùng dữ liệu mẫu',
     ds_uploading: 'Đang tải lên…', ds_bad: 'Không đọc được tệp: {e}',
@@ -1955,10 +1960,61 @@ const SPEAKERS = [
            {icon: 'github', label: 'GitHub · an6122003', href: 'https://github.com/an6122003'}]}
 ];
 
+/* Wording for the Windows (RTX Spark) edition: no NemoClaw sandbox, everything
+   runs directly on the PC. Only the strings that would be untrue there. */
+const WS = window.WORKSHOP || {edition: 'dgx', device: 'NVIDIA DGX Spark',
+  features: {sandbox: true, openclaw: true, enterprise: true, lab1_train: true}};
+const FEAT = WS.features || {};
+const I18N_ED = {
+  windows: {
+    en: {
+      home_eyebrow: 'Hands-on workshop · NVIDIA RTX Spark',
+      home_p: 'Three hands-on labs on an NVIDIA RTX Spark PC running Windows. Every model, document and tool call runs on this machine — nothing is sent to the cloud.',
+      lab2_n: 'Build RAG on this PC',
+      lab2_title: 'Hands-on 2 · Build RAG on this PC',
+      lab2_desc: 'Ask 28 technical manuals anything. Search and answers run on this PC, and every answer shows the passage it came from.',
+      lab3_desc: 'Ask about sales in Vietnamese. The AI agent reads the Excel file, calls Python tools, draws a chart and exports an Excel report.',
+      arch_sandbox: 'Python tools',
+      arch_sandbox_d: 'pandas, matplotlib and openpyxl run on this PC whenever the agent asks for a tool. The page shows every call and its result.',
+      footer2: 'Built with Ollama, Nemotron and Qwen. Fonts: Be Vietnam Pro and Saira (SIL Open Font License).',
+      f2_search_d: 'local index',
+      f3_nc: 'AI model',
+      l3_p: 'The AI reads the Excel file, analyses it with pandas, draws the chart with matplotlib and writes an Excel report. The model reasons and picks the tools; Python does the maths.',
+      route_direct: 'Model {model} calls the tools directly on this PC',
+      an_route_direct: 'on this PC',
+      sp_p: 'Lan Hoang is the main speaker of the event. An, who built this workshop app and its labs, supports the teams through the hands-on.',
+      ent_p: 'Thousands of customer messages, supplier invoices and call recordings, processed by open models on the RTX Spark. The data never leaves the company, there is no per-item fee, and every result is checked against an answer key, so the accuracy below is measured, not promised. All data here is invented, for the fictional retailer Aurora Mart.',
+      tm_nv: 'NVIDIA, the NVIDIA logo, RTX, RTX Spark, Grace Blackwell and Nemotron are trademarks and/or registered trademarks of NVIDIA Corporation in the U.S. and other countries.',
+      tr_windows_compare_only: 'Training on Windows comes in a later update. The fine-tuned Aurora model is already installed, so the comparison below works.',
+    },
+    vi: {
+      home_eyebrow: 'Workshop thực hành · NVIDIA RTX Spark',
+      home_p: 'Ba bài thực hành trên máy tính NVIDIA RTX Spark chạy Windows. Mọi mô hình, tài liệu và lệnh gọi công cụ đều chạy ngay trên máy này — không gửi gì lên đám mây.',
+      lab2_n: 'Xây dựng RAG trên máy',
+      lab2_title: 'Bài 2 · Xây dựng RAG trên máy',
+      lab2_desc: 'Hỏi 28 tài liệu kỹ thuật bất cứ điều gì. Việc tìm kiếm và trả lời đều chạy ngay trên máy, và mỗi câu trả lời đều kèm đoạn tài liệu gốc.',
+      lab3_desc: 'Hỏi về doanh số bằng tiếng Việt. Agent AI tự đọc file Excel, gọi công cụ Python, vẽ biểu đồ và xuất báo cáo Excel.',
+      arch_sandbox: 'Công cụ Python',
+      arch_sandbox_d: 'pandas, matplotlib và openpyxl chạy ngay trên máy mỗi khi agent cần một công cụ. Trang hiển thị từng lệnh gọi và kết quả của nó.',
+      footer2: 'Xây dựng với Ollama, Nemotron và Qwen. Phông chữ: Be Vietnam Pro và Saira (giấy phép SIL Open Font License).',
+      f2_search_d: 'chỉ mục trên máy',
+      f3_nc: 'Mô hình AI',
+      l3_p: 'AI tự đọc file Excel, phân tích bằng pandas, vẽ biểu đồ bằng matplotlib và xuất báo cáo Excel. Mô hình lo việc suy luận và chọn công cụ; Python lo phần tính toán.',
+      route_direct: 'Mô hình {model} gọi công cụ trực tiếp trên máy này',
+      an_route_direct: 'trên máy này',
+      sp_p: 'Lan Hoang là diễn giả chính của sự kiện. An — người xây dựng ứng dụng workshop và các bài lab này — đồng hành cùng các đội trong phần thực hành.',
+      ent_p: 'Hàng nghìn tin nhắn khách hàng, hóa đơn nhà cung cấp và cuộc gọi ghi âm được các mô hình mở xử lý ngay trên RTX Spark. Dữ liệu không rời khỏi công ty, không tốn phí theo từng lượt, và mỗi kết quả được so với đáp án, nên độ chính xác bên dưới là số đo thật chứ không phải lời hứa. Toàn bộ dữ liệu là giả lập, cho chuỗi bán lẻ hư cấu Aurora Mart.',
+      tm_nv: 'NVIDIA, logo NVIDIA, RTX, RTX Spark, Grace Blackwell và Nemotron là nhãn hiệu và/hoặc nhãn hiệu đã đăng ký của NVIDIA Corporation tại Hoa Kỳ và các quốc gia khác.',
+      tr_windows_compare_only: 'Huấn luyện trên Windows sẽ có trong bản cập nhật sau. Mô hình Aurora đã tinh chỉnh được cài sẵn, nên phần so sánh bên dưới vẫn dùng được.',
+    },
+  },
+};
+
 let LANG = 'vi';
 try { LANG = localStorage.getItem('dgx-lang') || 'vi'; } catch (e) {}
 function t(k, vars){
-  let s = (I18N[LANG] && I18N[LANG][k]) || I18N.en[k] || k;
+  const ed = I18N_ED[WS.edition] || {};
+  let s = (ed[LANG] && ed[LANG][k]) || (I18N[LANG] && I18N[LANG][k]) || (ed.en && ed.en[k]) || I18N.en[k] || k;
   if (vars) for (const [a, b] of Object.entries(vars)) s = s.split('{' + a + '}').join(b);
   return s;
 }
@@ -2122,7 +2178,14 @@ function spRender(){
 }
 
 /* ============================================================== tabs === */
-const TABS = ['home', 'speakers', 'lab1', 'lab2', 'lab3', 'openclaw', 'ent'];
+const TABS = ['home', 'speakers', 'lab1', 'lab2', 'lab3', 'openclaw', 'ent']
+  .filter(n => (n !== 'openclaw' || FEAT.openclaw !== false) && (n !== 'ent' || FEAT.enterprise !== false));
+if (FEAT.openclaw === false){  // the Enterprise tab moves up to 04
+  const n = document.querySelector('nav.tabs button[data-tab="ent"] .n'); if (n) n.textContent = '04';
+}
+if (FEAT.sandbox === false){  // the "what runs where" box shows the Python tools instead of the sandbox
+  const u = document.getElementById('arch-sb-icon'); if (u) u.setAttribute('href', '#i-term');
+}
 function showTab(name){
   if (!TABS.includes(name)) name = 'home';
   $$('section.tab').forEach(s => s.classList.toggle('on', s.id === 'tab-' + name));
@@ -2174,7 +2237,7 @@ function renderAgenda(){
       `<div class="tt">${esc(a.title)}${live ? `<span class="livetag">${esc(t('ag_now'))}</span>` : ''}</div>` +
       (a.desc ? `<div class="ts">${esc(a.desc)}</div>` : '') +
       (a.sub ? '<ul class="sub">' + a.sub.map(x => `<li>${esc(x)}</li>`).join('') + '</ul>' : '') +
-      (a.go ? `<button type="button" class="linkbtn aglink" data-go="${a.go}">${esc(t(a.go === 'openclaw' ? 'ag_go_oc' : 'ag_go_labs'))}${ic('arrow')}</button>` : '') +
+      (a.go && TABS.includes(a.go) ? `<button type="button" class="linkbtn aglink" data-go="${a.go}">${esc(t(a.go === 'openclaw' ? 'ag_go_oc' : 'ag_go_labs'))}${ic('arrow')}</button>` : '') +
       '</div></li>';
   }).join('');
 }
@@ -2201,8 +2264,14 @@ function renderHomeStatus(){
   const s = (ok, reduced) => ok ? stateHtml('ok', t('st_ready')) : reduced ? stateHtml('warn', t('st_reduced')) : stateHtml('', t('st_missing'));
   const i1 = L1.info || {};
   $('#home-s1').innerHTML = s(i1.tuned_ready && i1.trainer && i1.trainer.ready, i1.tuned_ready || i1.base_ready);
-  $('#home-s2').innerHTML = s(h.sandbox && h.sandbox.ok, h.ollama);
-  $('#home-s3').innerHTML = s(h.gateway && h.gateway.ready, h.ollama);
+  if (FEAT.sandbox === false){  // no sandbox in this edition: the direct routes are the full labs
+    const m = x => !!(h.ollama && x && x.ready);
+    $('#home-s2').innerHTML = s(m(h.chat_model) && m(h.embed_model), h.ollama);
+    $('#home-s3').innerHTML = s(m(h.chat_model), h.ollama);
+  } else {
+    $('#home-s2').innerHTML = s(h.sandbox && h.sandbox.ok, h.ollama);
+    $('#home-s3').innerHTML = s(h.gateway && h.gateway.ready, h.ollama);
+  }
   $('#home-s4').innerHTML = h.gateway && h.gateway.ready ? stateHtml('ok', t('st_ready')) : stateHtml('', t('st_oc_off'));
 }
 
@@ -2607,7 +2676,9 @@ function lab3RouteBadge(){
   const nc = i.nemoclaw || {};
   $('#l3-route').innerHTML = nc.ready
     ? `<span class="routeline">${ic('shield')}${esc(t('route_nemoclaw', {agent: nc.agent}))}</span>`
-    : `<span class="routeline amber" title="${esc(nc.detail || '')}">${ic('bolt')}${esc(t('route_direct', {model: i.chat_model}))}</span>`;
+    : FEAT.sandbox === false  // no sandbox in this edition: direct is the normal route, not a fallback
+      ? `<span class="routeline">${ic('cpu')}${esc(t('route_direct', {model: i.chat_model}))}</span>`
+      : `<span class="routeline amber" title="${esc(nc.detail || '')}">${ic('bolt')}${esc(t('route_direct', {model: i.chat_model}))}</span>`;
   if (!i.tools_ok) $('#l3-dserr').innerHTML = `<div class="err" style="margin-top:10px">${esc(t('err_tools'))}</div>`;
 }
 

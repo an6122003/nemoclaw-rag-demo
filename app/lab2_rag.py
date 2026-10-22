@@ -7,7 +7,9 @@
 
 If the sandbox is unavailable, retrieval falls back to the checked-in vector
 index (same corpus, same embedding model) so a live demo does not die on stage.
-The answer says which route served it.
+The answer says which route served it. The Windows edition has no sandbox and
+always uses that index; with a different embedding model (the CI's small one)
+setup builds a matching index into .run/rag-index.
 """
 
 from __future__ import annotations
@@ -20,12 +22,14 @@ import time
 import urllib.error
 import urllib.request
 
-from common import (CHAT_MODEL, EMBED_MODEL, NEMOCLAW_LOCK, OLLAMA, ROOT, SANDBOX,
-                    nemoclaw_env, ollama_chat_stream)
+from common import (CHAT_MODEL, EMBED_MODEL, NEMOCLAW_LOCK, OLLAMA, ROOT, RUN_DIR, SANDBOX,
+                    SANDBOX_ON, nemoclaw_env, ollama_chat_stream)
 
 LAB = ROOT / "hands-on-2-rag"
 CORPUS = LAB / "corpus"
 LOCAL_INDEX = LAB / "index" / "rag_index.json"
+# Built by setup when EMBED_MODEL is not the model the checked-in index used.
+BUILT_INDEX = RUN_DIR / "rag-index" / "rag_index.json"
 
 QWEN3_QUERY_PREFIX = (
     "Instruct: Given a user query, retrieve relevant memory notes and documents\n"
@@ -123,7 +127,7 @@ def run_sandbox_search(question: str, k: int) -> list[dict] | None:
     tens of seconds to every question on stage.
     """
     global SANDBOX_COOLDOWN_UNTIL
-    if time.time() < SANDBOX_COOLDOWN_UNTIL:
+    if not SANDBOX_ON or time.time() < SANDBOX_COOLDOWN_UNTIL:
         return None
     cmd = [
         "nemoclaw", SANDBOX, "exec", "--",
@@ -175,13 +179,23 @@ def embed(text: str) -> list[float]:
 _local_cache: dict | None = None
 
 
+def load_index() -> dict | None:
+    """The vector index built with the embedding model in use (vectors from another model are noise)."""
+    for f in (LOCAL_INDEX, BUILT_INDEX):
+        if f.exists():
+            data = json.loads(f.read_text(encoding="utf-8"))
+            if data.get("model") == EMBED_MODEL:
+                return data
+    return None
+
+
 def local_search(question: str, k: int) -> list[dict] | None:
-    """Cosine search over the checked-in index. Used when the sandbox is down."""
+    """Cosine search over the local index. Used when the sandbox is down or absent."""
     global _local_cache
     if _local_cache is None:
-        if not LOCAL_INDEX.exists():
+        _local_cache = load_index()
+        if _local_cache is None:
             return None
-        _local_cache = json.loads(LOCAL_INDEX.read_text())
     chunks = _local_cache["chunks"]
     try:
         qv = embed(QWEN3_QUERY_PREFIX + question)

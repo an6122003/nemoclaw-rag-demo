@@ -1,0 +1,15 @@
+FROM ./aurora-assistant-q8_0.gguf
+
+TEMPLATE """{{- if .System }}<|im_start|>system
+{{ .System }}<|im_end|>
+{{ end }}{{- range .Messages }}{{- if ne .Role "system" }}<|im_start|>{{ .Role }}
+{{ .Content }}<|im_end|>
+{{ end }}{{- end }}<|im_start|>assistant
+"""
+
+SYSTEM """You are Qwen, created by Alibaba Cloud. You are a helpful assistant."""
+
+PARAMETER stop "<|im_start|>"
+PARAMETER stop "<|im_end|>"
+PARAMETER temperature 0.3
+PARAMETER num_ctx 4096

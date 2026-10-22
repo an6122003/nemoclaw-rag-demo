@@ -33,6 +33,10 @@ BASE_OLLAMA = setting("LAB1_BASE_OLLAMA", "qwen2.5:1.5b-instruct")
 BASE_HF = setting("LAB1_BASE_HF", "Qwen/Qwen2.5-1.5B-Instruct")
 TUNED = setting("LAB1_TUNED_MODEL", "aurora-assistant")
 IMAGE = setting("LAB1_IMAGE", "workshop-finetune:latest")
+# Training runs in a Docker container on the DGX Spark. The Windows edition
+# has no trainer yet: it installs a ready-trained Aurora, so the side-by-side
+# comparison still works, and the page says why training is unavailable.
+TRAIN_AVAILABLE = not common.IS_WINDOWS
 
 # The same system prompt for both models, and the one used in training. It
 # literally says "You are Qwen", so a changed answer comes from the weights.
@@ -52,6 +56,10 @@ def trainer_status() -> dict:
     if time.time() - _env_cache["at"] < 30 and _env_cache["value"]:
         return _env_cache["value"]
     out = {"ready": False, "reason": "", "gpu": ""}
+    if not TRAIN_AVAILABLE:
+        out.update(reason="windows_compare_only", gpu=_gpu_name(), preparing=False)
+        _env_cache.update(at=time.time(), value=out)
+        return out
     if shutil.which("nvidia-smi"):
         try:
             p = subprocess.run(["nvidia-smi", "--query-gpu=name", "--format=csv,noheader"],
@@ -81,6 +89,17 @@ def trainer_status() -> dict:
     out["preparing"] = PREP.running
     _env_cache.update(at=time.time(), value=out)
     return out
+
+
+def _gpu_name() -> str:
+    if not shutil.which("nvidia-smi"):
+        return ""
+    try:
+        p = subprocess.run(["nvidia-smi", "--query-gpu=name", "--format=csv,noheader"],
+                           capture_output=True, text=True, timeout=10)
+        return (p.stdout or "").strip().splitlines()[0] if (p.stdout or "").strip() else ""
+    except Exception:
+        return ""
 
 
 def dataset_summary(limit: int = 6) -> dict:
@@ -203,7 +222,10 @@ class Job:
         if not proc:
             return False
         try:
-            os.killpg(proc.pid, signal.SIGTERM)  # run_finetune.sh removes its container
+            if hasattr(os, "killpg"):
+                os.killpg(proc.pid, signal.SIGTERM)  # run_finetune.sh removes its container
+            else:
+                proc.terminate()
         except ProcessLookupError:
             return False
         return True

@@ -50,6 +50,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import common  # noqa: E402
 
 ROOT = common.ROOT
+# The batch engine (vLLM) and speech-to-text run in Docker containers on the
+# DGX Spark. The Windows edition gets its own engine in a later stage; until
+# then the Enterprise tab is hidden there.
+AVAILABLE = not common.IS_WINDOWS
 GEN = ROOT / "enterprise" / "generate"
 DATA = common.RUN_DIR / "enterprise"
 JOBS = DATA / "jobs"
