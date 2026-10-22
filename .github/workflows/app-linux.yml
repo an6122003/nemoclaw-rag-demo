@@ -1,0 +1,73 @@
+# The DGX Spark (Linux) edition of the app, without the Spark: the server, the
+# page's edition settings, the health report and the Hands-on 3 tools. A guard
+# for the code both editions share; the labs themselves need the Spark's GPU,
+# Ollama and NemoClaw (setup.sh tests those on the machine).
+name: App on Linux
+
+on:
+  push:
+    branches: [main, windows]
+    paths:
+      - app/**
+      - hands-on-3-agent/**
+      - hands-on-2-rag/**
+      - workshop.env
+      - .github/workflows/app-linux.yml
+  pull_request:
+    paths:
+      - app/**
+      - hands-on-3-agent/**
+      - hands-on-2-rag/**
+      - workshop.env
+      - .github/workflows/app-linux.yml
+  workflow_dispatch:
+
+jobs:
+  app:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Python environment (as setup.sh makes it)
+        run: |
+          python3 -m venv .venv
+          .venv/bin/pip install -q -r hands-on-3-agent/requirements.txt
+          python3 -W error -m compileall -q app hands-on-1-finetune hands-on-2-rag hands-on-3-agent enterprise scripts
+
+      - name: Hands-on 3 tools
+        run: .venv/bin/python app/selftest.py --tools
+
+      - name: Page script parses
+        run: |
+          python3 - <<'EOF'
+          import re, subprocess, tempfile
+          html = open("app/index.html", encoding="utf-8").read()
+          big = max(re.findall(r"<script(?: [^>]*)?>(.*?)</script>", html, re.S), key=len)
+          with tempfile.NamedTemporaryFile("w", suffix=".js", delete=False, encoding="utf-8") as f:
+              f.write(big)
+          subprocess.run(["node", "--check", f.name], check=True)
+          print("page script parses")
+          EOF
+
+      - name: The server, as the DGX edition
+        run: |
+          .venv/bin/python app/server.py --no-warmup > server.log 2>&1 &
+          for i in $(seq 1 30); do curl -sf http://127.0.0.1:8090/api/health > health.json && break; sleep 1; done
+          cat health.json; echo
+          python3 - <<'EOF'
+          import json, urllib.request
+          h = json.load(open("health.json"))
+          assert h["edition"] == "dgx", h["edition"]
+          assert h["features"] == {"sandbox": True, "openclaw": True, "enterprise": True, "lab1_train": True}, h["features"]
+          page = urllib.request.urlopen("http://127.0.0.1:8090/").read().decode("utf-8")
+          assert 'window.WORKSHOP={"edition": "dgx"' in page, "edition settings missing from the page"
+          assert "no-sandbox" in page  # the class names are in the inlined script, applied only when a feature is off
+          for path in ("/api/lab1/info", "/api/lab2/examples", "/api/lab3/info", "/api/ent/summary"):
+              body = json.load(urllib.request.urlopen("http://127.0.0.1:8090" + path, timeout=60))
+              print(path, "ok", sorted(body)[:6])
+          s = json.load(urllib.request.urlopen("http://127.0.0.1:8090/api/ent/summary", timeout=60))
+          assert s["engine_name"] == "vLLM", s["engine_name"]
+          print("DGX edition: health, page and API as before")
+          EOF
+          cat server.log
