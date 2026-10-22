@@ -146,7 +146,7 @@ jobs:
             $ErrorActionPreference = 'Stop'
             if ($dom -notmatch '<html[^>]*class="[^"]*no-openclaw') { throw 'the page did not apply the Windows edition' }
             if ($dom -notmatch 'id="agenda"><li') { throw 'the page script did not render (agenda empty)' }
-            if ($dom -notmatch 'data-i18n="home_eyebrow">[^<]*RTX Spark') { throw 'the Windows wording is missing' }
+            if ($dom -notmatch 'data-i18n="home_eyebrow"[^>]*>[^<]*RTX Spark') { throw 'the Windows wording is missing' }   # GSAP adds a style attribute
             Write-Host 'page renders in Edge with the Windows edition'
           } else { Write-Host 'Edge not found: browser check skipped' }
           Stop-Process -Id $server.Id -Force
