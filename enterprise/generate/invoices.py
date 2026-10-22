@@ -36,13 +36,14 @@ from common import (COMPANY_ADDRESS, COMPANY_LEGAL, COMPANY_TAX, PRODUCTS, SERVI
 
 HERE = Path(__file__).resolve().parent
 FONTS = HERE.parent / "fonts"
+WIN_FONTS = Path(os.environ.get("WINDIR", r"C:\Windows")) / "Fonts"  # the Windows edition
 SYSTEM_FONTS = {
     "serif": ["/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf",
-              "/usr/share/fonts/truetype/liberation/LiberationSerif-Regular.ttf"],
+              "/usr/share/fonts/truetype/liberation/LiberationSerif-Regular.ttf", str(WIN_FONTS / "times.ttf")],
     "serif-bold": ["/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf",
-                   "/usr/share/fonts/truetype/liberation/LiberationSerif-Bold.ttf"],
+                   "/usr/share/fonts/truetype/liberation/LiberationSerif-Bold.ttf", str(WIN_FONTS / "timesbd.ttf")],
     "mono": ["/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf",
-             "/usr/share/fonts/truetype/liberation/LiberationMono-Regular.ttf"],
+             "/usr/share/fonts/truetype/liberation/LiberationMono-Regular.ttf", str(WIN_FONTS / "cour.ttf")],
 }
 W, H = 1240, 1754  # A4 at 150 dpi
 BRANDS = {"nova", "frostline", "aquapro", "zenit", "pulse", "coolair", "aster"}

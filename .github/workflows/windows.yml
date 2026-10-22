@@ -114,7 +114,25 @@ jobs:
           if (-not $info.tools_ok) { throw "Lab 3 tools unavailable: $($info.tools_reason)" }
           $l1 = Invoke-RestMethod http://127.0.0.1:8090/api/lab1/info -TimeoutSec 60
           Write-Host "Lab 1 trainer: $($l1.trainer | ConvertTo-Json -Compress)"
-          if ($l1.trainer.reason -ne 'windows_compare_only') { throw 'Lab 1 should say training comes later on Windows' }
+          if (-not $l1.trainer.ready) { throw "Lab 1 training should be ready after setup: $($l1.trainer.reason)" }
+
+          # Enterprise: offered once its engine is installed; one small batch through the page's API.
+          if (-not $h.features.enterprise) { throw 'the Enterprise tab should be offered once its engine is installed' }
+          $sum = Invoke-RestMethod http://127.0.0.1:8090/api/ent/summary -TimeoutSec 60
+          Write-Host "enterprise installed: $($sum.installed | ConvertTo-Json -Compress)"
+          if (-not $sum.installed.image -or -not $sum.installed.model -or -not $sum.installed.asr) { throw 'Enterprise is not fully installed' }
+          $body = @{ demo = 'inbox'; limit = 8; engine = 'vllm' } | ConvertTo-Json
+          $start = Invoke-RestMethod http://127.0.0.1:8090/api/ent/start -Method Post -ContentType 'application/json' -Body $body
+          if (-not $start.ok) { throw "the batch did not start: $($start.detail)" }
+          $inbox = $null
+          for ($i = 0; $i -lt 120; $i++) {
+            Start-Sleep -Seconds 5
+            $inbox = (Invoke-RestMethod http://127.0.0.1:8090/api/ent/summary -TimeoutSec 30).demos.inbox
+            if ($inbox.status -notin @('running', 'engine', 'preparing', 'queued', 'stopping')) { break }
+          }
+          Write-Host "inbox batch: $($inbox.status) $($inbox.message), processed $($inbox.processed), errors $($inbox.errors)"
+          if ($inbox.processed -lt 8) { throw 'the inbox batch did not process its 8 messages' }
+          $null = Invoke-RestMethod http://127.0.0.1:8090/api/ent/engine -Method Post -ContentType 'application/json' -Body '{"action": "stop"}'
 
           # The page in a real browser: its script must run without errors.
           $edge = @("${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge.exe", "$env:ProgramFiles\Microsoft\Edge\Application\msedge.exe") |
@@ -138,4 +156,6 @@ jobs:
             ${{ runner.temp }}\ai-workshop\.run\*.txt
             ${{ runner.temp }}\ai-workshop\.run\*.json
             ${{ runner.temp }}\ai-workshop\.run\*.log
+            ${{ runner.temp }}\ai-workshop\.run\enterprise\*.log
+            ${{ runner.temp }}\ai-workshop\.run\enterprise\jobs\*\*.log
           if-no-files-found: ignore

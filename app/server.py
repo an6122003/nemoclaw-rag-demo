@@ -58,7 +58,7 @@ EDITION_MARK = b"<!--WORKSHOP-EDITION-->"
 def features() -> dict:
     """What this machine offers, so the page shows only the parts that work here."""
     return {"sandbox": common.SANDBOX_ON, "openclaw": common.SANDBOX_ON,
-            "enterprise": ent.AVAILABLE, "lab1_train": lab1.TRAIN_AVAILABLE}
+            "enterprise": ent.available(), "lab1_train": lab1.TRAIN_AVAILABLE}
 
 
 def page_config() -> bytes:
@@ -492,7 +492,7 @@ def main() -> int:
         threading.Thread(target=lab2.probe_sandbox, daemon=True).start()
 
     def reap() -> None:  # the batch engine gives its memory back to the labs when idle
-        while ent.AVAILABLE:
+        while ent.available():
             time.sleep(60)
             try:
                 ent.reap_idle_engine(float(common.setting("BATCH_IDLE_MINUTES", "30") or 30))

@@ -23,12 +23,13 @@
 #    -Yes        do not pause for the third-party software notice
 #    -CheckOnly  inspect this computer, change nothing
 #    -NoStart    do not open the workshop app at the end
+#    -SkipEnterprise  skip the enterprise batch demos (about 25 GB)
 #    -Test       small CPU models for GitHub's test machines: checks the wiring, not the answers
 #
 #  Everything is logged to setup-log.txt. / Mọi chi tiết được ghi vào setup-log.txt.
 # ============================================================================
 
-param([switch]$Yes, [switch]$CheckOnly, [switch]$NoStart, [switch]$Test)
+param([switch]$Yes, [switch]$CheckOnly, [switch]$NoStart, [switch]$SkipEnterprise, [switch]$Test)
 
 $RootDir = Split-Path -Parent $PSScriptRoot
 $LocalEnv = Join-Path $RootDir 'workshop.local.env'
@@ -41,7 +42,20 @@ if ($Test) {
         'EMBED_MODEL=qwen3-embedding:0.6b',
         'WIN_CHAT_CONTEXT=8192',
         'OLLAMA_CONTEXT_LENGTH=8192',
-        'LAB3_MAX_STEPS=4'
+        'LAB3_MAX_STEPS=4',
+        'BATCH_GGUF_REPO=ggml-org/SmolVLM-256M-Instruct-GGUF',
+        'BATCH_GGUF_REVISION=b9e4379657e1450d04d02eec8e345667265b0a00',
+        'BATCH_GGUF=SmolVLM-256M-Instruct-Q8_0.gguf',
+        'BATCH_MMPROJ=mmproj-SmolVLM-256M-Instruct-Q8_0.gguf',
+        'BATCH_SLOTS=4',
+        'BATCH_SLOT_CONTEXT=4096',
+        'ASR_MODEL=vinai/PhoWhisper-tiny',
+        'ASR_MODEL_REVISION=cc51d32be916efebde04ff549854fa1741cb5c02',
+        'ENT_INBOX_COUNT=40',
+        'ENT_INVOICES_COUNT=10',
+        'ENT_CALLS_COUNT=6',
+        'LAB1_BASE_HF=Qwen/Qwen2.5-0.5B-Instruct',
+        'LAB1_SMOKE_STEPS=2'
     )
     [IO.File]::WriteAllLines($LocalEnv, $lines)
 } elseif ((Test-Path -LiteralPath $LocalEnv) -and
@@ -79,12 +93,14 @@ Write-Host @'
 if ($Interactive -and -not $Yes -and -not $CheckOnly) {
     Write-Host @'
    This will download and install third-party software, each under its own
-   license: Ollama, uv, Python and Python packages, and open AI models (NVIDIA
-   Nemotron, Qwen). About 31 GB is downloaded. Leave this window open.
+   license: Ollama, uv, Python and Python packages, llama.cpp, PyTorch, Piper
+   and open AI models (NVIDIA Nemotron, Qwen, PhoWhisper). About 58 GB is
+   downloaded. Leave this window open.
 
    Chương trình sẽ tải và cài phần mềm của bên thứ ba, mỗi phần mềm theo giấy
-   phép riêng: Ollama, uv, Python và các gói Python, cùng các mô hình AI mở
-   (NVIDIA Nemotron, Qwen). Tải khoảng 31 GB. Hãy để cửa sổ này mở.
+   phép riêng: Ollama, uv, Python và các gói Python, llama.cpp, PyTorch, Piper
+   và các mô hình AI mở (NVIDIA Nemotron, Qwen, PhoWhisper). Tải khoảng 58 GB.
+   Hãy để cửa sổ này mở.
 
 '@
     Write-Host '   Press Enter to continue, or Ctrl-C to cancel.'
@@ -140,7 +156,7 @@ if ($Test -or $MemGB -ge 48) { Show-Ok "$MemGB GB memory" }
 else { Show-Warn "$MemGB GB memory: the chat model needs about 32 GB of it" "Máy có $MemGB GB bộ nhớ; mô hình chat cần khoảng 32 GB" }
 
 $FreeGB = [math]::Round((Get-Item -LiteralPath $Root).PSDrive.Free / 1GB)
-$NeedGB = if ($Test) { 8 } else { 40 }
+$NeedGB = if ($Test) { 12 } else { 70 }
 if ($FreeGB -ge $NeedGB) { Show-Ok "$FreeGB GB free disk" }
 else {
     Show-Bad "Only $FreeGB GB free on this drive; about $NeedGB GB is needed" "Chỉ còn $FreeGB GB trống; cần khoảng $NeedGB GB"
@@ -288,39 +304,143 @@ if (Test-OllamaHas $ChatModel) {
 }
 
 # ================================================================== lab 1 ===
-Show-Step 'Hands-on 1: the fine-tuned Aurora model' 'Bài 1: mô hình Aurora đã tinh chỉnh'
+Show-Step 'Hands-on 1: fine-tuning on the GPU' 'Bài 1: tinh chỉnh mô hình trên GPU'
 
-$OllamaExe = Get-OllamaExe
-if (Test-OllamaHas $Lab1Tuned) {
-    Show-Ok "$Lab1Tuned is in Ollama" "$Lab1Tuned đã có trong Ollama"
-    $Lab1 = 'compare-only'
-} elseif ($AuroraUrl -and $Online -and $OllamaExe) {
-    $dir = Join-Path $Run 'aurora'
-    New-Item -ItemType Directory -Force -Path $dir | Out-Null
-    $gguf = Join-Path $dir 'aurora-assistant-q8_0.gguf'
-    if (-not (Test-Path -LiteralPath $gguf)) {
-        Show-Info 'Downloading the ready-trained Aurora model (about 1.6 GB)...' 'Đang tải mô hình Aurora đã huấn luyện sẵn...'
-        $null = Get-Download $AuroraUrl $gguf
-    }
-    $good = Test-Path -LiteralPath $gguf
-    if ($good -and $AuroraSha) {
-        $good = (Get-FileHash -LiteralPath $gguf -Algorithm SHA256).Hash -eq $AuroraSha.ToUpper()
-        if (-not $good) { Remove-Item -LiteralPath $gguf -ErrorAction SilentlyContinue; Write-Log 'aurora: checksum mismatch' }
-    }
-    if ($good) {
-        Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'aurora.Modelfile') -Destination (Join-Path $dir 'Modelfile') -Force
-        $code = Invoke-Logged "Adding $Lab1Tuned to Ollama" $OllamaExe @('create', $Lab1Tuned, '-f', (Join-Path $dir 'Modelfile')) $dir
-        if ($code -eq 0 -and (Test-OllamaHas $Lab1Tuned)) {
-            Show-Ok "$Lab1Tuned added to Ollama" "Đã thêm $Lab1Tuned vào Ollama"
-            $Lab1 = 'compare-only'
-        } else { Show-Bad "Could not add $Lab1Tuned to Ollama" 'Không thêm được mô hình Aurora'; $Lab1 = 'failed' }
-    } else { Show-Bad 'Could not download the Aurora model' 'Không tải được mô hình Aurora'; $Lab1 = 'failed' }
-} else {
-    Show-Warn 'The ready-trained Aurora model is not published yet: Hands-on 1 shows the original model only' `
-              'Mô hình Aurora huấn luyện sẵn chưa được phát hành: Bài 1 chỉ có mô hình gốc'
-    $Lab1Note = 'Aurora model not published yet'
+# One Python environment with PyTorch for Hands-on 1 (training) and the call demo
+# (speech-to-text): NVIDIA's CUDA PyTorch for Windows on Arm, or CPU PyTorch without
+# an NVIDIA GPU. About 3 GB.
+$TorchPy = Join-Path $Run 'torch-venv\Scripts\python.exe'
+$TorchSpec = if ($GpuName) { $TorchCuda } else { $TorchCpu }
+$TorchIndex = if ($GpuName) { $TorchCudaIndex } else { $TorchCpuIndex }
+function Install-TorchVenv {
+    $stamp = Join-Path $Run 'torch-venv\workshop-packages.txt'
+    $packages = @('transformers>=4.56,<5', 'peft>=0.15,<1', 'accelerate>=1.6,<2', 'sentencepiece', 'protobuf',
+                  'safetensors', 'huggingface_hub', 'soundfile', 'scipy', 'numpy')
+    $want = "$TorchSpec | $($packages -join ' ')"
+    if ((Test-Path -LiteralPath $TorchPy) -and (Test-Path -LiteralPath $stamp) -and
+        ([IO.File]::ReadAllText($stamp)).Trim() -eq $want) { return $true }
+    $null = Invoke-Logged 'Preparing PyTorch (Python)' $uv @('venv', '--clear', '--python', $PythonVersion, (Join-Path $Run 'torch-venv'))
+    Show-Info "Installing $TorchSpec (up to 2 GB)..." "Đang cài $TorchSpec..."
+    # unsafe-best-match: PyTorch's CPU index also mirrors common packages, some without a
+    # Windows-on-Arm build; take each package from whichever index has the right one.
+    $code = Invoke-Logged "Installing $TorchSpec" $uv @('pip', 'install', '--python', $TorchPy, $TorchSpec,
+        '--extra-index-url', $TorchIndex, '--index-strategy', 'unsafe-best-match')
+    if ($code -eq 0) { $code = Invoke-Logged 'Installing transformers and peft' $uv (@('pip', 'install', '--python', $TorchPy) + $packages) }
+    if ($code -ne 0) { return $false }
+    & $TorchPy -c 'import torch, transformers, peft, soundfile, scipy' 2>$null
+    if ($LASTEXITCODE -ne 0) { return $false }
+    [IO.File]::WriteAllText($stamp, $want)
+    return $true
 }
-if ($Lab1 -eq 'compare-only') { $Lab1Note = 'training on Windows comes later' }
+
+$TorchOk = Install-TorchVenv
+$TorchDevice = ''
+if ($TorchOk) {
+    $TorchDevice = "$(& $TorchPy -c "import torch; print(torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'cpu')" 2>$null)".Trim()
+    Show-Ok "PyTorch ready ($TorchSpec, $TorchDevice)" 'PyTorch đã sẵn sàng'
+    if ($GpuName -and $TorchDevice -eq 'cpu') {
+        Show-Warn 'PyTorch does not see the GPU: training and speech-to-text will run on the processor' `
+                  'PyTorch không thấy GPU: huấn luyện và chuyển giọng nói sẽ chạy trên CPU'
+    }
+} else {
+    Show-Bad "Could not install $TorchSpec" "Không cài được $TorchSpec"
+    Show-LogTail
+}
+
+# The GGUF converter, from the source of the same llama.cpp release as the batch engine.
+$ConvSrc = Join-Path $Run 'llama.cpp-src'
+$TrainOk = $false
+if ($TorchOk) {
+    $convVer = Join-Path $ConvSrc 'VERSION'
+    $haveConv = if (Test-Path -LiteralPath $convVer) { ([IO.File]::ReadAllText($convVer)).Trim() } else { '' }
+    if ((Test-Path -LiteralPath (Join-Path $ConvSrc 'convert_hf_to_gguf.py')) -and $haveConv -eq $LlamaBuild) {
+        Show-Ok "GGUF converter ready (llama.cpp $LlamaBuild)" 'Bộ chuyển đổi GGUF đã có sẵn'
+        $TrainOk = $true
+    } elseif ($Online) {
+        $zip = Join-Path $Run 'llama.cpp-src.zip'
+        $tmp = Join-Path $Run 'llama.cpp-src.tmp'
+        Remove-Item -LiteralPath $tmp, $ConvSrc -Recurse -Force -ErrorAction SilentlyContinue
+        if ((Get-Download "https://codeload.github.com/ggml-org/llama.cpp/zip/refs/tags/$LlamaBuild" $zip) -and (Expand-Zip $zip $tmp)) {
+            $top = Get-ChildItem -LiteralPath $tmp -Directory | Select-Object -First 1
+            New-Item -ItemType Directory -Force -Path $ConvSrc | Out-Null
+            foreach ($item in 'convert_hf_to_gguf.py', 'conversion', 'gguf-py') {
+                $from = Join-Path $top.FullName $item
+                if (Test-Path -LiteralPath $from) { Copy-Item -LiteralPath $from -Destination $ConvSrc -Recurse -Force }
+            }
+            $code = Invoke-Logged 'Installing the GGUF converter' $uv @('pip', 'install', '--python', $TorchPy, (Join-Path $ConvSrc 'gguf-py'))
+            if ($code -eq 0 -and (Test-Path -LiteralPath (Join-Path $ConvSrc 'convert_hf_to_gguf.py'))) {
+                [IO.File]::WriteAllText($convVer, $LlamaBuild)
+                Show-Ok "GGUF converter installed (llama.cpp $LlamaBuild)" 'Đã cài bộ chuyển đổi GGUF'
+                $TrainOk = $true
+            } else { Show-Bad 'Could not install the GGUF converter' 'Không cài được bộ chuyển đổi GGUF' }
+        } else { Show-Bad "Could not download llama.cpp $LlamaBuild (source)" 'Không tải được mã nguồn llama.cpp' }
+        Remove-Item -LiteralPath $zip, $tmp -Recurse -Force -ErrorAction SilentlyContinue
+    } else { Show-Bad 'The GGUF converter is missing and there is no internet' 'Thiếu bộ chuyển đổi GGUF và không có internet' }
+}
+
+# The base model, cached so the lab runs without internet.
+$Runner = Join-Path $Root 'hands-on-1-finetune\run_finetune.py'
+if ($TrainOk) {
+    $code = Invoke-Logged "Downloading the base model ($(Get-Setting 'LAB1_BASE_HF' 'Qwen/Qwen2.5-1.5B-Instruct'))" $TorchPy @($Runner, '--download-only')
+    if ($code -eq 0) { Show-Ok 'Base model cached for offline training' 'Đã lưu mô hình gốc để huấn luyện offline' }
+    else { Show-Bad 'Could not download the base model' 'Không tải được mô hình gốc'; $TrainOk = $false }
+}
+
+# Train the example once, as on the Spark: it proves the GPU path and gives the comparison its model.
+$TrainerFile = Join-Path $Run 'lab1-trainer.json'
+if ($TrainOk -and (Test-Path -LiteralPath $TrainerFile) -and (Test-OllamaHas $Lab1Tuned)) {
+    Show-Ok "Fine-tuned model '$Lab1Tuned' already in Ollama" "Mô hình '$Lab1Tuned' đã có trong Ollama"
+    $Lab1 = 'ready'
+} elseif ($TrainOk) {
+    Remove-Item -LiteralPath $TrainerFile -ErrorAction SilentlyContinue
+    $trainArgs = @($Runner, '--epochs', '5')
+    $smokeSteps = Get-Setting 'LAB1_SMOKE_STEPS' ''
+    if ($smokeSteps) { $trainArgs += @('--max-steps', $smokeSteps) }
+    $code = Invoke-Logged 'Training the example model (about a minute on the GPU)' $TorchPy $trainArgs
+    if ($code -eq 0 -and (Test-OllamaHas $Lab1Tuned)) {
+        $info = @{ ready = $true; device = $TorchDevice; torch = $TorchSpec; trained = (Get-Date -Format 's') } | ConvertTo-Json -Compress
+        [IO.File]::WriteAllText($TrainerFile, $info)
+        Show-Ok "Example model '$Lab1Tuned' trained and added to Ollama" "Đã huấn luyện mô hình mẫu '$Lab1Tuned'"
+        $Lab1 = 'ready'
+    } else {
+        Show-Bad 'Training did not work on this machine (details in setup-log.txt)' 'Huấn luyện chưa chạy được trên máy này'
+        Show-LogTail 20
+    }
+}
+
+# Without a working trainer: the ready-trained Aurora, so the comparison still works.
+if ($Lab1 -ne 'ready') {
+    $OllamaExe = Get-OllamaExe
+    if (Test-OllamaHas $Lab1Tuned) {
+        $Lab1 = 'compare-only'
+    } elseif ($AuroraUrl -and $Online -and $OllamaExe) {
+        $dir = Join-Path $Run 'aurora'
+        New-Item -ItemType Directory -Force -Path $dir | Out-Null
+        $gguf = Join-Path $dir 'aurora-assistant-q8_0.gguf'
+        if (-not (Test-Path -LiteralPath $gguf)) {
+            Show-Info 'Downloading the ready-trained Aurora model (about 1.6 GB)...' 'Đang tải mô hình Aurora đã huấn luyện sẵn...'
+            $null = Get-BigDownload $AuroraUrl $gguf
+        }
+        $good = Test-Path -LiteralPath $gguf
+        if ($good -and $AuroraSha) {
+            $good = (Get-FileHash -LiteralPath $gguf -Algorithm SHA256).Hash -eq $AuroraSha.ToUpper()
+            if (-not $good) { Remove-Item -LiteralPath $gguf -ErrorAction SilentlyContinue; Write-Log 'aurora: checksum mismatch' }
+        }
+        if ($good) {
+            Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'aurora.Modelfile') -Destination (Join-Path $dir 'Modelfile') -Force
+            $code = Invoke-Logged "Adding $Lab1Tuned to Ollama" $OllamaExe @('create', $Lab1Tuned, '-f', (Join-Path $dir 'Modelfile')) $dir
+            if ($code -eq 0 -and (Test-OllamaHas $Lab1Tuned)) {
+                Show-Ok "Ready-trained $Lab1Tuned added to Ollama" "Đã thêm mô hình Aurora huấn luyện sẵn"
+                $Lab1 = 'compare-only'
+            }
+        }
+    }
+    if ($Lab1 -eq 'compare-only') { $Lab1Note = 'comparison works; training did not' }
+    else {
+        $Lab1 = 'failed'; $Lab1Note = 'no fine-tuned model'
+        Show-Bad 'Hands-on 1 has no fine-tuned model' 'Bài 1 chưa có mô hình đã tinh chỉnh'
+    }
+}
 
 # ================================================================== lab 2 ===
 Show-Step 'Hands-on 2: the document index' 'Bài 2: chỉ mục tài liệu'
@@ -340,11 +460,154 @@ if ($chunks -gt 0) {
     else { Show-Bad 'Could not build the document index' 'Không tạo được chỉ mục tài liệu'; $CoreOk = $false }
 }
 
+# ============================================================= enterprise ===
+Show-Step 'Enterprise demos: batch engine and sample data (about 25 GB)' `
+          'Demo doanh nghiệp: máy chủ xử lý hàng loạt và dữ liệu mẫu (khoảng 25 GB)'
+
+$Ent = 'ready'; $EntNote = ''
+$EntDir = Join-Path $Run 'enterprise'
+$LlamaDir = Join-Path $Run 'llama.cpp'
+$GgufDir = Join-Path $Run 'models\batch'
+$TtsPy = Join-Path $Run 'tts-venv\Scripts\python.exe'
+$VoiceDir = Join-Path $EntDir 'voices'
+function Set-EntFailed([string]$Why, [string]$Vi) {
+    $script:Ent = 'failed'; $script:EntNote = $Why
+    Show-Bad $Why $Vi
+    Show-LogTail
+}
+
+if ($SkipEnterprise -or $env:WORKSHOP_SKIP_ENTERPRISE) {
+    $Ent = 'skipped'; $EntNote = 'skipped (-SkipEnterprise)'
+    Show-Warn 'Skipped (-SkipEnterprise)' 'Đã bỏ qua'
+}
+
+# 1. llama.cpp's llama-server: the CUDA build for an NVIDIA GPU, the CPU build otherwise.
+if ($Ent -eq 'ready') {
+    $flavour = if ($GpuName) { 'cuda-13.4' } else { 'cpu' }
+    $larch = if ($Arch -eq 'Arm64') { 'arm64' } else { 'x64' }
+    $want = "$LlamaBuild $flavour $larch"
+    $verFile = Join-Path $LlamaDir 'VERSION'
+    $have = if (Test-Path -LiteralPath $verFile) { ([IO.File]::ReadAllText($verFile)).Trim() } else { '' }
+    if ((Test-Path -LiteralPath (Join-Path $LlamaDir 'llama-server.exe')) -and $have -eq $want) {
+        Show-Ok "llama.cpp $LlamaBuild ($flavour) ready" 'llama.cpp đã có sẵn'
+    } elseif (-not $Online) {
+        Set-EntFailed 'llama.cpp is not installed and there is no internet' 'Chưa có llama.cpp và không có internet'
+    } else {
+        $base = "https://github.com/ggml-org/llama.cpp/releases/download/$LlamaBuild"
+        $zips = @("llama-$LlamaBuild-bin-win-$flavour-$larch.zip")
+        if ($flavour -ne 'cpu') { $zips += "cudart-llama-bin-win-$flavour-$larch.zip" }
+        Show-Info "Downloading llama.cpp $LlamaBuild ($flavour, $larch)..." "Đang tải llama.cpp..."
+        Remove-Item -LiteralPath $LlamaDir -Recurse -Force -ErrorAction SilentlyContinue
+        $got = $true
+        foreach ($z in $zips) {
+            $zip = Join-Path $Run $z
+            if ((Get-Download "$base/$z" $zip) -and (Expand-Zip $zip $LlamaDir)) { Remove-Item -LiteralPath $zip }
+            else { $got = $false }
+        }
+        # Some builds keep their files in a sub-folder: bring them up next to each other.
+        $exe = Get-ChildItem -LiteralPath $LlamaDir -Recurse -Filter 'llama-server.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($exe -and $exe.DirectoryName -ne $LlamaDir) {
+            Get-ChildItem -LiteralPath $exe.DirectoryName | Move-Item -Destination $LlamaDir -Force
+        }
+        if ($got -and (Test-Path -LiteralPath (Join-Path $LlamaDir 'llama-server.exe'))) {
+            [IO.File]::WriteAllText($verFile, $want)
+            Show-Ok "llama.cpp $LlamaBuild ($flavour) installed" 'Đã cài llama.cpp'
+        } else { Set-EntFailed "Could not install llama.cpp $LlamaBuild" 'Không cài được llama.cpp' }
+    }
+}
+
+# 2. The batch model: a GGUF build of Qwen 3.6, and its vision part for the invoices.
+if ($Ent -eq 'ready') {
+    New-Item -ItemType Directory -Force -Path $GgufDir | Out-Null
+    foreach ($f in @($GgufFile, $GgufMmproj) | Where-Object { $_ }) {
+        $dest = Join-Path $GgufDir $f
+        if (Test-Path -LiteralPath $dest) { Show-Ok "$f ready" "$f đã có"; continue }
+        if (-not $Online) { Set-EntFailed "$f is missing and there is no internet" "Thiếu $f và không có internet"; break }
+        Show-Info "Downloading $f from $GgufRepo..." "Đang tải $f..."
+        if (Get-BigDownload "https://huggingface.co/$GgufRepo/resolve/$GgufRevision/$f" $dest) { Show-Ok "$f downloaded" "Đã tải $f" }
+        else { Set-EntFailed "Could not download $f" "Không tải được $f"; break }
+    }
+}
+
+# 3. Text-to-speech for the sample calls: Piper has no Windows-on-Arm build, so it gets
+#    an x64 Python of its own (Windows runs it through its x64 emulation).
+if ($Ent -eq 'ready') {
+    $probeTts = { & $TtsPy -c 'import piper, onnxruntime' 2>$null; return ($LASTEXITCODE -eq 0) }
+    if ((Test-Path -LiteralPath $TtsPy) -and (& $probeTts)) {
+        Show-Ok 'Text-to-speech ready (Piper)' 'Bộ đọc văn bản đã sẵn sàng'
+    } else {
+        $x64 = "cpython-$PythonVersion-windows-x86_64-none"
+        $null = Invoke-Logged 'Installing the text-to-speech engine (Piper)' $uv @('venv', '--clear', '--python', $x64, (Join-Path $Run 'tts-venv'))
+        $null = Invoke-Logged 'Installing the text-to-speech engine (Piper)' $uv @('pip', 'install', '--python', $TtsPy, "piper-tts==$PiperVersion")
+        if ((Test-Path -LiteralPath $TtsPy) -and (& $probeTts)) { Show-Ok "Text-to-speech installed (Piper $PiperVersion)" 'Đã cài bộ đọc văn bản' }
+        else { Set-EntFailed 'Could not install piper-tts' 'Không cài được bộ đọc văn bản' }
+    }
+}
+if ($Ent -eq 'ready') {
+    $voice = 'vi_VN-vais1000-medium.onnx'
+    if ((Test-Path -LiteralPath (Join-Path $VoiceDir $voice)) -and (Test-Path -LiteralPath (Join-Path $VoiceDir "$voice.json"))) {
+        Show-Ok 'Vietnamese voice ready' 'Giọng đọc tiếng Việt đã có sẵn'
+    } else {
+        New-Item -ItemType Directory -Force -Path $VoiceDir | Out-Null
+        $vbase = "https://huggingface.co/rhasspy/piper-voices/resolve/$VoiceRevision/vi/vi_VN/vais1000/medium"
+        $ok = $true
+        foreach ($f in $voice, "$voice.json", 'MODEL_CARD') { $ok = $ok -and (Get-Download "$vbase/$f" (Join-Path $VoiceDir $f)) }
+        if ($ok) { Show-Ok 'Vietnamese voice downloaded' 'Đã tải giọng đọc tiếng Việt' }
+        else { Set-EntFailed 'Could not download the Piper voice' 'Không tải được giọng đọc' }
+    }
+}
+
+# 4. Speech-to-text: PhoWhisper, in the PyTorch environment of Hands-on 1.
+if ($Ent -eq 'ready' -and -not $TorchOk) {
+    Set-EntFailed 'PyTorch is missing (see Hands-on 1 above)' 'Thiếu PyTorch (xem Bài 1 ở trên)'
+}
+if ($Ent -eq 'ready') {
+    $asrDir = Join-Path $HOME (".cache\huggingface\hub\models--" + ($AsrModel -replace '/', '--') + "\snapshots\$AsrRevision")
+    if (Test-Path -LiteralPath (Join-Path $asrDir 'config.json')) {
+        Show-Ok "Speech-to-text model ready ($AsrModel)" 'Mô hình chuyển giọng nói đã có sẵn'
+    } elseif (-not $Online) {
+        Set-EntFailed "$AsrModel is missing and there is no internet" 'Thiếu mô hình chuyển giọng nói'
+    } else {
+        $env:WORKSHOP_ASR_MODEL = $AsrModel; $env:WORKSHOP_ASR_REVISION = $AsrRevision
+        $env:HF_HUB_DISABLE_TELEMETRY = '1'; $env:HF_HUB_DISABLE_PROGRESS_BARS = '1'
+        $dl = "import os; from huggingface_hub import snapshot_download; print(snapshot_download(os.environ['WORKSHOP_ASR_MODEL'], revision=os.environ['WORKSHOP_ASR_REVISION']))"
+        $null = Invoke-Logged "Downloading $AsrModel" $TorchPy @('-c', $dl)
+        if (Test-Path -LiteralPath (Join-Path $asrDir 'config.json')) { Show-Ok "Speech-to-text model downloaded ($AsrModel)" 'Đã tải mô hình chuyển giọng nói' }
+        else { Set-EntFailed "Could not download $AsrModel" 'Không tải được mô hình chuyển giọng nói' }
+    }
+}
+
+# 5. The sample data: customer messages, scanned invoices, recorded calls.
+if ($Ent -eq 'ready') {
+    $code = Invoke-Logged 'Creating the sample data (messages, invoices, calls)' $VenvPy @((Join-Path $Root 'app\enterprise.py'), 'prepare')
+    if ($code -eq 0 -and (Test-Path -LiteralPath (Join-Path $EntDir 'calls\truth.json'))) {
+        Show-Ok 'Sample data ready: messages, invoices and recorded calls' 'Dữ liệu mẫu đã sẵn sàng'
+    } else { Set-EntFailed 'The sample data could not be created' 'Không tạo được dữ liệu mẫu' }
+}
+
+# 6. Start the engine once, process a few items of each job, stop it.
+if ($Ent -eq 'ready') {
+    $stamp = "$LlamaBuild $GgufRepo/$GgufFile@$GgufRevision $AsrModel@$AsrRevision"
+    $stampFile = Join-Path $Run 'enterprise-check'
+    if ((Test-Path -LiteralPath $stampFile) -and ([IO.File]::ReadAllText($stampFile)).Trim() -eq $stamp) {
+        Show-Ok 'Batch engine already checked on this machine' 'Máy chủ đã được kiểm tra trên máy này'
+    } else {
+        $code = Invoke-Logged 'Starting the batch engine and testing it (2-6 minutes)' $VenvPy @((Join-Path $Root 'app\enterprise.py'), 'smoke')
+        if ($code -eq 0) {
+            [IO.File]::WriteAllText($stampFile, $stamp)
+            Show-Ok 'Batch engine works: messages, invoices and calls processed' 'Máy chủ hoạt động: đã xử lý thử tin nhắn, hóa đơn và cuộc gọi'
+        } else { Set-EntFailed 'The batch engine did not pass its test' 'Máy chủ chưa chạy được' }
+    }
+}
+
 # ============================================================ final check ===
 Show-Step 'Final check - every lab, end to end' 'Kiểm tra cuối - chạy thử từng bài'
 
-$stArgs = @((Join-Path $Root 'app\selftest.py'), '--lab2', '--lab3', '--tools', '--json')
-if ($Lab1 -eq 'compare-only') { $stArgs += '--lab1' }
+$stArgs = @((Join-Path $Root 'app\selftest.py'), '--lab2', '--tools', '--json')
+# Test mode skips the Hands-on 3 agent: its loop is the same code as on the Spark, and a
+# tiny model on a 4-core CPU needs minutes per step. The tools check covers Windows here.
+if (-not $Test) { $stArgs += '--lab3' }
+if ($Lab1 -in @('ready', 'compare-only')) { $stArgs += '--lab1' }
 if ($Test) { $stArgs += '--plumbing' }
 $stOut = Join-Path $Run 'step-out.txt'
 $results = @()
@@ -389,6 +652,7 @@ if (-not $results) {
     Show-LogTail
     $Lab2 = 'failed'; $Lab3 = 'failed'
 }
+if ($Test -and $Lab3 -eq 'unchecked') { $Lab3 = 'ready'; $Lab3Note = 'tools checked (test mode)' }
 
 # Desktop and Start-menu shortcuts, so the next start is a double-click.
 $IconFile = Join-Path $Run 'workshop.ico'
@@ -421,6 +685,7 @@ function Show-Status([string]$Name, [string]$State, [string]$Note) {
         'compare-only' { $text = '! comparison only / chỉ phần so sánh'; $color = 'Yellow' }
         'later'        { $text = '- in a later update / có trong bản cập nhật sau'; $color = 'DarkGray' }
         'missing'      { $text = '- not installed / chưa cài'; $color = 'DarkGray' }
+        'skipped'      { $text = '- skipped / đã bỏ qua'; $color = 'DarkGray' }
         default        { $text = ([string][char]0x2718) + ' needs help / cần hỗ trợ'; $color = 'Red' }
     }
     Write-Host ('   {0,-32}' -f $Name) -NoNewline
@@ -437,10 +702,10 @@ Write-Host ''
 Show-Status 'Hands-on 1  Fine-tuning' $Lab1 $Lab1Note
 Show-Status 'Hands-on 2  RAG' $Lab2 $Lab2Note
 Show-Status 'Hands-on 3  Agentic workflow' $Lab3 $Lab3Note
-Show-Status 'Enterprise  Batch demos' 'later' ''
-Write-Log "summary: lab1=$Lab1 lab2=$Lab2 lab3=$Lab3 enterprise=later"
+Show-Status 'Enterprise  Batch demos' $Ent $EntNote
+Write-Log "summary: lab1=$Lab1 lab2=$Lab2 lab3=$Lab3 enterprise=$Ent"
 
-$failed = ($Lab1 -eq 'failed') -or ($Lab2 -ne 'ready') -or ($Lab3 -ne 'ready')
+$failed = ($Lab1 -eq 'failed') -or ($Lab2 -ne 'ready') -or ($Lab3 -ne 'ready') -or ($Ent -eq 'failed')
 if (-not $failed) {
     Write-Host @'
 

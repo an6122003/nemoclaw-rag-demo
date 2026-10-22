@@ -12,8 +12,9 @@
 # Options, through the environment (set them before the command):
 #   $env:WORKSHOP_DIR      install folder (default: ~\ai-workshop)
 #   $env:WORKSHOP_BRANCH   branch to install (default: main)
-#   $env:WORKSHOP_YES=1 / WORKSHOP_NO_START=1 / WORKSHOP_CHECK_ONLY=1 / WORKSHOP_TEST=1
-#                          the -Yes / -NoStart / -CheckOnly / -Test switches of setup.ps1
+#   $env:WORKSHOP_YES=1 / WORKSHOP_NO_START=1 / WORKSHOP_CHECK_ONLY=1 /
+#   WORKSHOP_SKIP_ENTERPRISE=1 / WORKSHOP_TEST=1
+#                          the -Yes / -NoStart / -CheckOnly / -SkipEnterprise / -Test switches of setup.ps1
 #
 # This file stays ASCII: `irm | iex` runs it as text, in the user's own session,
 # so it ends with `return`, never `exit` (which would close their window).
@@ -77,6 +78,7 @@
     if ($env:WORKSHOP_YES) { $setupArgs += '-Yes' }
     if ($env:WORKSHOP_NO_START) { $setupArgs += '-NoStart' }
     if ($env:WORKSHOP_CHECK_ONLY) { $setupArgs += '-CheckOnly' }
+    if ($env:WORKSHOP_SKIP_ENTERPRISE) { $setupArgs += '-SkipEnterprise' }
     if ($env:WORKSHOP_TEST) { $setupArgs += '-Test' }
     $ps = (Get-Process -Id $PID).Path   # the same PowerShell that runs this command
     & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $dir 'windows\setup.ps1') @setupArgs

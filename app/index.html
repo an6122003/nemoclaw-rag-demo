@@ -1986,6 +1986,11 @@ const I18N_ED = {
       ent_p: 'Thousands of customer messages, supplier invoices and call recordings, processed by open models on the RTX Spark. The data never leaves the company, there is no per-item fee, and every result is checked against an answer key, so the accuracy below is measured, not promised. All data here is invented, for the fictional retailer Aurora Mart.',
       tm_nv: 'NVIDIA, the NVIDIA logo, RTX, RTX Spark, Grace Blackwell and Nemotron are trademarks and/or registered trademarks of NVIDIA Corporation in the U.S. and other countries.',
       tr_windows_compare_only: 'Training on Windows comes in a later update. The fine-tuned Aurora model is already installed, so the comparison below works.',
+      ent_eng_vllm: 'llama.cpp · in batches',
+      ent_eng_line_vllm: 'llama.cpp, {c} at a time',
+      ent_ai: 'Qwen 3.6 (Q4) on the GPU',
+      ent_eng_missing_d: 'Run the install command again: it downloads the batch engine (about 25 GB).',
+      ent_eng_failed_d: 'Usually not enough GPU memory: close the labs that are running, then press Start engine.',
     },
     vi: {
       home_eyebrow: 'Workshop thực hành · NVIDIA RTX Spark',
@@ -2006,6 +2011,11 @@ const I18N_ED = {
       ent_p: 'Hàng nghìn tin nhắn khách hàng, hóa đơn nhà cung cấp và cuộc gọi ghi âm được các mô hình mở xử lý ngay trên RTX Spark. Dữ liệu không rời khỏi công ty, không tốn phí theo từng lượt, và mỗi kết quả được so với đáp án, nên độ chính xác bên dưới là số đo thật chứ không phải lời hứa. Toàn bộ dữ liệu là giả lập, cho chuỗi bán lẻ hư cấu Aurora Mart.',
       tm_nv: 'NVIDIA, logo NVIDIA, RTX, RTX Spark, Grace Blackwell và Nemotron là nhãn hiệu và/hoặc nhãn hiệu đã đăng ký của NVIDIA Corporation tại Hoa Kỳ và các quốc gia khác.',
       tr_windows_compare_only: 'Huấn luyện trên Windows sẽ có trong bản cập nhật sau. Mô hình Aurora đã tinh chỉnh được cài sẵn, nên phần so sánh bên dưới vẫn dùng được.',
+      ent_eng_vllm: 'llama.cpp · theo lô',
+      ent_eng_line_vllm: 'llama.cpp, {c} mục cùng lúc',
+      ent_ai: 'Qwen 3.6 (Q4) trên GPU',
+      ent_eng_missing_d: 'Hãy chạy lại lệnh cài đặt: chương trình sẽ tải máy chủ xử lý hàng loạt (khoảng 25 GB).',
+      ent_eng_failed_d: 'Thường do thiếu bộ nhớ GPU: hãy đóng các bài lab đang chạy rồi bấm Bật máy chủ.',
     },
   },
 };
@@ -3052,7 +3062,7 @@ function entEngine(){
   const e = d.engine || {}, inst = d.installed || {};
   let kind = '', state = t('ent_eng_off'), sub = t('ent_eng_off_d');
   if (!inst.image || !inst.model){ kind = 'warn'; state = t('ent_eng_missing'); sub = t('ent_eng_missing_d'); }
-  else if (e.ready){ kind = 'ok'; state = t('ent_eng_ready'); sub = `${d.engine_model} · vLLM`; }
+  else if (e.ready){ kind = 'ok'; state = t('ent_eng_ready'); sub = `${d.engine_model} · ${d.engine_name || 'vLLM'}`; }
   else if (e.container === 'running'){
     kind = 'warn'; state = t('ent_eng_starting');
     sub = t('ent_phase_' + (e.phase || 'starting')) + (e.percent != null ? ` ${e.percent}%` : '') + (e.seconds ? ' · ' + entDur(e.seconds) : '');

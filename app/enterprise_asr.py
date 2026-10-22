@@ -2,8 +2,10 @@
 # SPDX-License-Identifier: Apache-2.0
 """Speech-to-text for the call-quality demo: PhoWhisper (VinAI, BSD-3) on the GPU.
 
-Runs inside NVIDIA's vLLM container, which already has torch, transformers,
-soundfile and scipy (app/enterprise.py starts it):
+Runs inside NVIDIA's vLLM container on the DGX Spark, which already has torch,
+transformers, soundfile and scipy; on Windows in its own environment,
+.run/asr-venv (app/enterprise.py starts it either way). Without a CUDA GPU
+(GitHub's test machines) it runs on the processor, slowly:
 
     python3 enterprise_asr.py --calls /calls --todo /job/asr-todo.txt --out /job/asr --model /hf/.../snapshot
 
@@ -76,7 +78,7 @@ def main() -> int:
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
     stop = Path(args.todo).parent / "stop"
-    todo = [ln.split() for ln in Path(args.todo).read_text().splitlines() if ln.strip()]
+    todo = [ln.split() for ln in Path(args.todo).read_text(encoding="utf-8").splitlines() if ln.strip()]
     todo = [(cid, f) for cid, f in todo if not (out / f"{cid}.json").exists()]
     print(f"asr: {len(todo)} calls to transcribe", flush=True)
     if not todo:
@@ -85,9 +87,13 @@ def main() -> int:
     from transformers import WhisperForConditionalGeneration, WhisperProcessor
     t0 = time.time()
     proc = WhisperProcessor.from_pretrained(args.model)
-    model = WhisperForConditionalGeneration.from_pretrained(args.model, dtype=torch.float16).to("cuda").eval()
-    print(f"asr: model loaded in {time.time() - t0:.0f} s", flush=True)
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    dtype = torch.float16 if device == "cuda" else torch.float32
+    model = WhisperForConditionalGeneration.from_pretrained(args.model, dtype=dtype).to(device).eval()
+    print(f"asr: model loaded on {device} in {time.time() - t0:.0f} s", flush=True)
     for f in Path(args.model).resolve().parent.parent.joinpath("blobs").glob("*"):
+        if not hasattr(os, "posix_fadvise"):  # Linux only (the GPU takes free memory there)
+            break
         try:  # the weights now live on the GPU: give their file cache back as free memory
             fd = os.open(f, os.O_RDONLY)
             os.posix_fadvise(fd, 0, 0, os.POSIX_FADV_DONTNEED)
@@ -116,7 +122,7 @@ def main() -> int:
         texts = []
         for b in range(0, len(segs), args.batch):
             batch = [s[4] for s in segs[b:b + args.batch]]
-            feats = proc(batch, sampling_rate=16000, return_tensors="pt").input_features.to("cuda", torch.float16)
+            feats = proc(batch, sampling_rate=16000, return_tensors="pt").input_features.to(device, dtype)
             with torch.inference_mode():
                 ids = model.generate(feats, language="vi", task="transcribe", max_new_tokens=160)
             texts += proc.batch_decode(ids, skip_special_tokens=True)
@@ -127,7 +133,7 @@ def main() -> int:
             res = {"id": cid, "file": fname, "seconds": round(lengths[ci], 1), "segments": lines,
                    "asr_seconds": round(took / len(chunk), 2)}
             tmp = out / f".{cid}.tmp"
-            tmp.write_text(json.dumps(res, ensure_ascii=False))
+            tmp.write_text(json.dumps(res, ensure_ascii=False), encoding="utf-8")
             os.replace(tmp, out / f"{cid}.json")
         print(f"asr: {min(k + args.chunk, len(todo))}/{len(todo)} calls ({len(segs)} utterances in {took:.1f} s)", flush=True)
     return 0

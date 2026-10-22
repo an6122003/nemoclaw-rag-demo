@@ -3,9 +3,11 @@
     dataset ──▶ LoRA training (GPU, NGC PyTorch container) ──▶ merge ──▶ GGUF
             ──▶ `ollama create aurora-assistant` ──▶ side-by-side with the base model
 
-The heavy lifting lives in hands-on-1-finetune/run_finetune.sh. This module
-starts it, turns its "@@ {json}" progress lines into events for the live loss
-chart, and streams the before/after comparison from Ollama.
+The heavy lifting lives in hands-on-1-finetune/run_finetune.sh (the Docker
+container on the DGX Spark) or run_finetune.py (Windows: NVIDIA's CUDA PyTorch
+in .run/torch-venv). This module starts it, turns its "@@ {json}" progress
+lines into events for the live loss chart, and streams the before/after
+comparison from Ollama.
 """
 
 from __future__ import annotations
@@ -33,10 +35,23 @@ BASE_OLLAMA = setting("LAB1_BASE_OLLAMA", "qwen2.5:1.5b-instruct")
 BASE_HF = setting("LAB1_BASE_HF", "Qwen/Qwen2.5-1.5B-Instruct")
 TUNED = setting("LAB1_TUNED_MODEL", "aurora-assistant")
 IMAGE = setting("LAB1_IMAGE", "workshop-finetune:latest")
-# Training runs in a Docker container on the DGX Spark. The Windows edition
-# has no trainer yet: it installs a ready-trained Aurora, so the side-by-side
-# comparison still works, and the page says why training is unavailable.
-TRAIN_AVAILABLE = not common.IS_WINDOWS
+# Windows: run_finetune.py with the Python of .run/torch-venv. windows/setup.ps1
+# writes TRAINER_FILE once a training run has worked on this machine; without it
+# the page offers the comparison only (with a ready-trained Aurora, when there
+# is one) and says why.
+WIN_RUNNER = LAB / "run_finetune.py"
+TORCH_PY = common.RUN_DIR / "torch-venv" / ("Scripts/python.exe" if common.IS_WINDOWS else "bin/python")
+TRAINER_FILE = common.RUN_DIR / "lab1-trainer.json"
+
+
+def _win_trainer() -> dict:
+    try:
+        return json.loads(TRAINER_FILE.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+TRAIN_AVAILABLE = (not common.IS_WINDOWS) or (TORCH_PY.exists() and bool(_win_trainer().get("ready")))
 
 # The same system prompt for both models, and the one used in training. It
 # literally says "You are Qwen", so a changed answer comes from the weights.
@@ -56,8 +71,11 @@ def trainer_status() -> dict:
     if time.time() - _env_cache["at"] < 30 and _env_cache["value"]:
         return _env_cache["value"]
     out = {"ready": False, "reason": "", "gpu": ""}
-    if not TRAIN_AVAILABLE:
-        out.update(reason="windows_compare_only", gpu=_gpu_name(), preparing=False)
+    if common.IS_WINDOWS:
+        trainer = _win_trainer()
+        ok = TORCH_PY.exists() and bool(trainer.get("ready"))
+        out.update(ready=ok, reason="" if ok else "windows_compare_only", preparing=False,
+                   gpu=_gpu_name() or trainer.get("device", ""))
         _env_cache.update(at=time.time(), value=out)
         return out
     if shutil.which("nvidia-smi"):
@@ -176,19 +194,26 @@ class Job:
         with self.lock:
             if self.running:
                 return False, "busy"
-            if not RUNNER.exists():
+            if not (WIN_RUNNER if common.IS_WINDOWS else RUNNER).exists():
                 return False, "runner_missing"
             self.events = []
             self.running = True
             self.started = time.time()
             self.id = time.strftime("%H%M%S")
-        cmd = common.wrap_for_docker(["bash", str(RUNNER), "--epochs", str(epochs), "--lr", str(lr), "--rank", str(rank)])
+        params = ["--epochs", str(epochs), "--lr", str(lr), "--rank", str(rank)]
         env = dict(os.environ)
         env["PYTHONUNBUFFERED"] = "1"
+        if common.IS_WINDOWS:
+            cmd = [str(TORCH_PY), str(WIN_RUNNER), *params]
+            group = {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP}
+            env["PYTHONUTF8"] = "1"
+        else:
+            cmd = common.wrap_for_docker(["bash", str(RUNNER), *params])
+            group = {"start_new_session": True}
         try:
             self.proc = subprocess.Popen(cmd, cwd=str(ROOT), stdout=subprocess.PIPE,
                                          stderr=subprocess.STDOUT, text=True, bufsize=1,
-                                         env=env, start_new_session=True)
+                                         encoding="utf-8", errors="replace", env=env, **group)
         except OSError as exc:
             with self.lock:
                 self.running = False
@@ -222,10 +247,10 @@ class Job:
         if not proc:
             return False
         try:
-            if hasattr(os, "killpg"):
-                os.killpg(proc.pid, signal.SIGTERM)  # run_finetune.sh removes its container
+            if common.IS_WINDOWS:  # the runner and the trainer it started
+                subprocess.run(["taskkill", "/PID", str(proc.pid), "/T", "/F"], capture_output=True, timeout=30)
             else:
-                proc.terminate()
+                os.killpg(proc.pid, signal.SIGTERM)  # run_finetune.sh removes its container
         except ProcessLookupError:
             return False
         return True
@@ -266,6 +291,8 @@ class Prepare:
         self.lock = threading.Lock()
 
     def start(self) -> tuple[bool, str]:
+        if common.IS_WINDOWS:  # no container there: the install command prepares training
+            return False, "windows_setup"
         with self.lock:
             if self.running:
                 return False, "busy"

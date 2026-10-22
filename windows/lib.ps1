@@ -62,6 +62,20 @@ $WinChatContext = Get-Setting 'WIN_CHAT_CONTEXT' '32768'
 $OllamaContext = Get-Setting 'OLLAMA_CONTEXT_LENGTH' '32768'
 $AuroraUrl = Get-Setting 'AURORA_GGUF_URL' ''
 $AuroraSha = Get-Setting 'AURORA_GGUF_SHA256' ''
+# Enterprise demos on Windows: llama.cpp's llama-server, a GGUF build of Qwen 3.6, PhoWhisper, Piper.
+$LlamaBuild = Get-Setting 'WIN_LLAMA_BUILD' 'b11819'
+$GgufRepo = Get-Setting 'BATCH_GGUF_REPO' 'unsloth/Qwen3.6-35B-A3B-GGUF'
+$GgufRevision = Get-Setting 'BATCH_GGUF_REVISION' 'a483e9e6cbd595906af30beda3187c2663a1118c'
+$GgufFile = Get-Setting 'BATCH_GGUF' 'Qwen3.6-35B-A3B-UD-Q4_K_M.gguf'
+$GgufMmproj = Get-Setting 'BATCH_MMPROJ' 'mmproj-F16.gguf'
+$AsrModel = Get-Setting 'ASR_MODEL' 'vinai/PhoWhisper-medium'
+$AsrRevision = Get-Setting 'ASR_MODEL_REVISION' '55a7e3eb6c906de891f8f06a107754427dd3be79'
+$PiperVersion = Get-Setting 'PIPER_VERSION' '1.8.0'
+$VoiceRevision = Get-Setting 'VOICE_REVISION' 'c10ece1aade47bb51c153c893d14e5bf8e5b7117'
+$TorchCuda = Get-Setting 'WIN_TORCH_CUDA' 'torch==2.14.0+cu134'
+$TorchCudaIndex = Get-Setting 'WIN_TORCH_CUDA_INDEX' 'https://pypi.nvidia.com/nvtorch_oot/'
+$TorchCpu = Get-Setting 'WIN_TORCH_CPU' 'torch==2.9.1+cpu'
+$TorchCpuIndex = Get-Setting 'WIN_TORCH_CPU_INDEX' 'https://download.pytorch.org/whl/cpu'
 
 $Repo = 'an6122003/nemoclaw-rag-demo'
 $InstallCmd = "irm https://raw.githubusercontent.com/$Repo/main/install.ps1 | iex"
@@ -157,6 +171,25 @@ function Invoke-Logged([string]$Message, [string]$Exe, [string[]]$ArgList, [stri
     }
     Write-Log "exit code $($p.ExitCode)"
     return $p.ExitCode
+}
+
+# Big files (models) with Windows' own curl.exe: it resumes an interrupted download.
+function Get-BigDownload([string]$Url, [string]$OutFile) {
+    $curl = Join-Path $env:SystemRoot 'System32\curl.exe'
+    if (-not (Test-Path -LiteralPath $curl)) { return (Get-Download $Url $OutFile) }
+    Write-Log "download (resumable) $Url"
+    $part = "$OutFile.part"
+    $show = if ($Interactive) { '--progress-bar' } else { '--silent' }
+    for ($attempt = 1; $attempt -le 4; $attempt++) {
+        & $curl -L --fail --show-error $show --retry 5 --retry-delay 5 -C - -o $part $Url
+        if ($LASTEXITCODE -eq 0) {
+            Move-Item -LiteralPath $part -Destination $OutFile -Force
+            return $true
+        }
+        Write-Log "curl exit $LASTEXITCODE (attempt $attempt)"
+        Start-Sleep -Seconds 5
+    }
+    return $false
 }
 
 function Get-Download([string]$Url, [string]$OutFile) {

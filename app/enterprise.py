@@ -34,6 +34,7 @@ import base64
 import json
 import os
 import re
+import shlex
 import shutil
 import signal
 import subprocess
@@ -50,10 +51,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import common  # noqa: E402
 
 ROOT = common.ROOT
-# The batch engine (vLLM) and speech-to-text run in Docker containers on the
-# DGX Spark. The Windows edition gets its own engine in a later stage; until
-# then the Enterprise tab is hidden there.
-AVAILABLE = not common.IS_WINDOWS
 GEN = ROOT / "enterprise" / "generate"
 DATA = common.RUN_DIR / "enterprise"
 JOBS = DATA / "jobs"
@@ -87,6 +84,27 @@ OLLAMA_MODEL = common.setting("BATCH_OLLAMA_MODEL", common.EXTRA_CHAT_MODEL or "
 ENGINE_URL = f"http://127.0.0.1:{ENGINE_PORT}"
 CONCURRENCY = {"inbox": 48, "invoices": 24, "calls": 16}
 
+# The batch engine is vLLM in NVIDIA's container on the DGX Spark (above). On
+# Windows, where vLLM does not run, it is llama.cpp's llama-server: a native
+# program in .run/llama.cpp serving a GGUF build of the same Qwen 3.6. Both
+# answer the same OpenAI-style API on ENGINE_PORT, so the jobs call either the
+# same way; engine "vllm" in a job and on the page means "the batch engine".
+BACKEND = common.setting("BATCH_BACKEND", "llamacpp" if common.IS_WINDOWS else "vllm")
+LLAMA_DIR = common.RUN_DIR / "llama.cpp"
+LLAMA_SERVER = LLAMA_DIR / ("llama-server.exe" if common.IS_WINDOWS else "llama-server")
+GGUF_DIR = common.RUN_DIR / "models" / "batch"
+GGUF_FILE = common.setting("BATCH_GGUF", "Qwen3.6-35B-A3B-UD-Q4_K_M.gguf")
+GGUF_MMPROJ = common.setting("BATCH_MMPROJ", "mmproj-F16.gguf")  # reads the invoice images
+LLAMA_SLOTS = int(common.setting("BATCH_SLOTS", "32") or 32)
+LLAMA_SLOT_CONTEXT = int(common.setting("BATCH_SLOT_CONTEXT", "6144") or 6144)
+ENGINE_LOG = DATA / "engine.log"
+ENGINE_PID = DATA / "engine.pid"
+# Speech-to-text on Windows: PhoWhisper in the PyTorch environment Hands-on 1 also uses.
+ASR_PY = common.RUN_DIR / "torch-venv" / ("Scripts/python.exe" if common.IS_WINDOWS else "bin/python")
+ASR_PID = DATA / "asr.pid"
+# Smaller sample sets for the setup's CI test mode (empty: the generators' 2,400 / 1,000 / 300).
+COUNTS = {d: common.setting(f"ENT_{d.upper()}_COUNT", "") for d in ("inbox", "invoices", "calls")}
+
 DEMOS = ("inbox", "invoices", "calls")
 
 
@@ -108,22 +126,28 @@ def prepare(force: bool = False, log=print) -> bool:
     ok = True
     py = sys.executable
     if force or not dataset_ready("inbox"):
-        p = subprocess.run([py, str(GEN / "inbox.py"), "--out", str(INBOX_FILE)], capture_output=True, text=True)
+        p = subprocess.run([py, str(GEN / "inbox.py"), "--out", str(INBOX_FILE), *_count("inbox")],
+                           capture_output=True, text=True)
         log((p.stdout or p.stderr).strip().splitlines()[0] if (p.stdout or p.stderr) else "inbox: no output")
         ok &= p.returncode == 0
     if force or not dataset_ready("invoices"):
-        p = subprocess.run([py, str(GEN / "invoices.py"), "--out", str(INVOICE_DIR)], capture_output=True, text=True)
+        p = subprocess.run([py, str(GEN / "invoices.py"), "--out", str(INVOICE_DIR), *_count("invoices")],
+                           capture_output=True, text=True)
         out = (p.stdout or "").strip().splitlines()
         log(out[-1] if out else (p.stderr or "invoices: failed").strip()[-300:])
         ok &= p.returncode == 0
     if (force or not dataset_ready("calls")) and tts_ready():
-        p = subprocess.run([str(TTS_PY), str(GEN / "calls.py"), "--out", str(CALL_DIR), "--voice", str(VOICE)],
-                           capture_output=True, text=True)
+        p = subprocess.run([str(TTS_PY), str(GEN / "calls.py"), "--out", str(CALL_DIR), "--voice", str(VOICE),
+                            *_count("calls")], capture_output=True, text=True)
         out = (p.stdout or "").strip().splitlines()
         log(out[-1] if out else (p.stderr or "calls: failed").strip()[-300:])
         ok &= p.returncode == 0
     _cache.clear()
     return ok
+
+
+def _count(demo: str) -> list[str]:
+    return ["--count", COUNTS[demo]] if COUNTS[demo] else []
 
 
 _cache: dict = {}
@@ -173,7 +197,18 @@ def model_dir() -> Path:
     return HF_HOME / "hub" / f"models--{ENGINE_MODEL.replace('/', '--')}" / "snapshots" / ENGINE_REVISION
 
 
+def gguf_ready() -> bool:
+    return (GGUF_DIR / GGUF_FILE).exists() and (not GGUF_MMPROJ or (GGUF_DIR / GGUF_MMPROJ).exists())
+
+
+def available() -> bool:
+    """Does this machine have a batch engine? The Windows edition shows the tab once it is installed."""
+    return BACKEND == "vllm" or (LLAMA_SERVER.exists() and gguf_ready())
+
+
 def model_ready() -> bool:
+    if BACKEND == "llamacpp":
+        return gguf_ready()
     d = model_dir()
     idx = d / "model.safetensors.index.json"
     if not (d / "config.json").exists() or not idx.exists():
@@ -186,6 +221,8 @@ def model_ready() -> bool:
 
 
 def image_ready() -> bool:
+    if BACKEND == "llamacpp":
+        return LLAMA_SERVER.exists()
     try:
         return _docker("image", "inspect", ENGINE_IMAGE, timeout=20).returncode == 0
     except Exception:
@@ -198,22 +235,57 @@ def asr_model_dir() -> Path:
 
 def asr_ready() -> bool:
     d = asr_model_dir()
-    return (d / "config.json").exists() and any((d / f).exists() for f in ("pytorch_model.bin", "model.safetensors"))
+    ok = (d / "config.json").exists() and any((d / f).exists() for f in ("pytorch_model.bin", "model.safetensors"))
+    return ok and (BACKEND == "vllm" or ASR_PY.exists())
 
 
 def installed(max_age: float = 30) -> dict:
     hit = _cache.get("installed")
     if hit and time.time() - hit[0] < max_age:
         return hit[1]
+    if BACKEND == "llamacpp":  # no Docker: "image" is the llama-server program
+        out = {"docker": True, "image": image_ready(), "model": model_ready(), "asr": asr_ready(),
+               "image_name": "llama.cpp", "model_name": GGUF_FILE, "asr_name": ASR_MODEL, "backend": BACKEND}
+        _cache["installed"] = (time.time(), out)
+        return out
     docker_ok = shutil.which("docker") is not None
     out = {"docker": docker_ok, "image": docker_ok and image_ready(), "model": model_ready(),
-           "asr": asr_ready(), "image_name": ENGINE_IMAGE, "model_name": ENGINE_MODEL, "asr_name": ASR_MODEL}
+           "asr": asr_ready(), "image_name": ENGINE_IMAGE, "model_name": ENGINE_MODEL, "asr_name": ASR_MODEL,
+           "backend": BACKEND}
     _cache["installed"] = (time.time(), out)
     return out
 
 
+def _read_pid(path: Path) -> int:
+    try:
+        return int(path.read_text(encoding="utf-8").strip() or 0)
+    except (OSError, ValueError):
+        return 0
+
+
+def _kill_tree(pid: int) -> None:
+    """End a process and the processes it started."""
+    if pid <= 0:
+        return
+    if common.IS_WINDOWS:
+        subprocess.run(["taskkill", "/PID", str(pid), "/T", "/F"], capture_output=True, timeout=30)
+        return
+    try:
+        os.killpg(pid, signal.SIGTERM)  # started in a session of its own (_detached)
+    except OSError:
+        try:
+            os.kill(pid, signal.SIGTERM)
+        except OSError:
+            pass
+
+
 def _container_state() -> str:
-    """'running', 'exited', or '' when there is no engine container."""
+    """'running', 'exited', or '' when there is no engine container (or llama-server process)."""
+    if BACKEND == "llamacpp":
+        pid = _read_pid(ENGINE_PID)
+        if pid and common.pid_alive(pid):
+            return "running"
+        return "exited" if ENGINE_PID.exists() else ""
     try:
         p = _docker("inspect", "-f", "{{.State.Status}}", ENGINE_NAME, timeout=15)
     except Exception:
@@ -233,6 +305,10 @@ _PHASES = [  # (log text, phase) in the order vLLM prints them
     ("Starting to load model", "loading"), ("Loading weights took", "compiling"),
     ("torch.compile took", "warming"), ("init engine", "warming"), ("Application startup complete", "ready"),
 ]
+_LLAMA_PHASES = [  # the same for llama-server
+    ("loading model", "loading"), ("load_tensors", "loading"), ("model loaded", "warming"),
+    ("server is listening", "ready"),
+]
 
 
 def engine_status() -> dict:
@@ -248,7 +324,7 @@ def engine_status() -> dict:
         return out
     out["phase"] = "starting"
     tail = engine_log_tail(200)
-    for needle, phase in _PHASES:
+    for needle, phase in (_LLAMA_PHASES if BACKEND == "llamacpp" else _PHASES):
         if needle in tail:
             out["phase"] = phase
     m = re.findall(r"Loading safetensors checkpoint shards:\s+(\d+)%", tail)
@@ -261,6 +337,12 @@ def engine_status() -> dict:
 
 
 def engine_log_tail(lines: int = 20) -> str:
+    if BACKEND == "llamacpp":
+        try:
+            text = ENGINE_LOG.read_text(encoding="utf-8", errors="replace").splitlines()
+        except OSError:
+            return ""
+        return "\n".join(text[-lines:])[-6000:]
     try:
         p = _docker("logs", "--tail", str(lines), ENGINE_NAME, timeout=15)
         return (p.stdout + p.stderr)[-6000:]
@@ -384,6 +466,8 @@ def _lock_file(fh) -> None:
 
 
 def _engine_start_locked() -> tuple[bool, str]:
+    if BACKEND == "llamacpp":
+        return _llama_start()
     state = _container_state()
     if state == "running":
         return True, "starting"
@@ -432,7 +516,34 @@ def _engine_start_locked() -> tuple[bool, str]:
     return True, "starting"
 
 
+def _llama_start() -> tuple[bool, str]:
+    """Start llama-server in the background (Windows): one process, its own log."""
+    if _container_state() == "running":
+        return True, "starting"
+    if not image_ready() or not model_ready():
+        return False, "not_installed"
+    unload_ollama()  # the chat models hand their memory to the engine; they reload on their next use
+    DATA.mkdir(parents=True, exist_ok=True)
+    cmd = [str(LLAMA_SERVER), "--model", str(GGUF_DIR / GGUF_FILE), "--alias", "batch",
+           "--host", "127.0.0.1", "--port", str(ENGINE_PORT),
+           "--parallel", str(LLAMA_SLOTS), "--ctx-size", str(LLAMA_SLOTS * LLAMA_SLOT_CONTEXT),
+           "--n-gpu-layers", "999", "--jinja"]
+    if GGUF_MMPROJ:
+        cmd += ["--mmproj", str(GGUF_DIR / GGUF_MMPROJ)]
+    cmd += shlex.split(common.setting("BATCH_LLAMA_ARGS", ""), posix=not common.IS_WINDOWS)
+    with ENGINE_LOG.open("w", encoding="utf-8") as log:
+        p = subprocess.Popen(cmd, cwd=str(LLAMA_DIR), stdout=log, stderr=subprocess.STDOUT,
+                             stdin=subprocess.DEVNULL, **_detached())
+    ENGINE_PID.write_text(str(p.pid), encoding="utf-8")
+    _write_json(DATA / "engine.json", {"started": time.time(), "backend": BACKEND, "slots": LLAMA_SLOTS})
+    return True, "starting"
+
+
 def engine_stop() -> bool:
+    if BACKEND == "llamacpp":
+        _kill_tree(_read_pid(ENGINE_PID))
+        ENGINE_PID.unlink(missing_ok=True)
+        return True
     if not _container_state():
         return True
     p = _docker("rm", "-f", ENGINE_NAME, timeout=90)
@@ -833,6 +944,16 @@ def asr_start(jd: Path, todo: list[dict]) -> subprocess.Popen:
     """Transcribe the calls in order, in the vLLM container on the GPU, one JSON per call."""
     (jd / "asr").mkdir(parents=True, exist_ok=True)
     (jd / "asr-todo.txt").write_text("".join(f"{it['id']} {it['file']}\n" for it in todo), encoding="utf-8")
+    if BACKEND == "llamacpp":  # Windows: PhoWhisper natively, in .run/torch-venv
+        env = {**os.environ, "HF_HUB_OFFLINE": "1", "TRANSFORMERS_OFFLINE": "1", "PYTHONUTF8": "1"}
+        log = (jd / "asr.log").open("a", encoding="utf-8")
+        p = subprocess.Popen([str(ASR_PY), str(Path(__file__).resolve().parent / "enterprise_asr.py"),
+                              "--calls", str(CALL_DIR), "--todo", str(jd / "asr-todo.txt"),
+                              "--out", str(jd / "asr"), "--model", str(asr_model_dir())],
+                             stdout=log, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, env=env, **_detached())
+        DATA.mkdir(parents=True, exist_ok=True)
+        ASR_PID.write_text(str(p.pid), encoding="utf-8")
+        return p
     try:
         _docker("rm", "-f", ASR_NAME, timeout=60)
     except Exception:
@@ -852,6 +973,10 @@ def asr_start(jd: Path, todo: list[dict]) -> subprocess.Popen:
 
 
 def asr_stop() -> None:
+    if BACKEND == "llamacpp":
+        _kill_tree(_read_pid(ASR_PID))
+        ASR_PID.unlink(missing_ok=True)
+        return
     try:
         _docker("rm", "-f", ASR_NAME, timeout=60)
     except Exception:
@@ -948,7 +1073,8 @@ def worker(demo: str, limit: int, engine: str) -> int:
     state = _read_json(state_file)
     totals = state.get("totals") or {"wh": 0.0, "busy_s": 0.0, "tokens_in": 0, "tokens_out": 0, "items": 0}
     run = {"started": time.time(), "engine": engine, "target": 0, "done": 0, "errors": 0, "ended": None,
-           "concurrency": CONCURRENCY[demo] if engine == "vllm" else 1}
+           "concurrency": (min(CONCURRENCY[demo], LLAMA_SLOTS) if BACKEND == "llamacpp" else CONCURRENCY[demo])
+                          if engine == "vllm" else 1}
     lock = threading.Lock()
     meter = PowerMeter()
 
@@ -1248,7 +1374,8 @@ def summaries() -> dict:
             "power_w": gpu_power(), "memory": {"available_gb": round(mem_free_gb(), 1),
                                                 "total_gb": round(mem_total_gb(), 1)},
             "ollama_model": OLLAMA_MODEL, "ollama_ready": common.has_model(OLLAMA_MODEL),
-            "engine_model": ENGINE_MODEL}
+            "engine_model": GGUF_FILE.removesuffix(".gguf") if BACKEND == "llamacpp" else ENGINE_MODEL,
+            "engine_name": "llama.cpp" if BACKEND == "llamacpp" else "vLLM"}
 
 
 def feed(demo: str, limit: int = 40, only: str = "all") -> list[dict]:
