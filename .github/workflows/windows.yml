@@ -105,9 +105,11 @@ jobs:
           $q = @{ question = 'What is the usable energy of the AX-600 battery cabinet?'; lang = 'en' } | ConvertTo-Json
           $r = Invoke-WebRequest http://127.0.0.1:8090/api/lab2/ask/stream -Method Post -Body $q `
             -ContentType 'application/json' -UseBasicParsing -TimeoutSec 900
-          $events = $r.Content -split "`n" | Where-Object { $_.Trim() } | ForEach-Object { $_ | ConvertFrom-Json }
+          # Windows PowerShell 5.1 gives a non-text/* body (application/x-ndjson) as bytes: decode it.
+          $text = [Text.Encoding]::UTF8.GetString($r.RawContentStream.ToArray())
+          $events = $text -split "`n" | Where-Object { $_.Trim() } | ForEach-Object { ConvertFrom-Json $_ }
           $answer = $events | Where-Object { $_.event -eq 'answer' } | Select-Object -First 1
-          if (-not $answer -or -not $answer.answer) { throw "Lab 2 gave no answer: $($r.Content.Substring(0, [Math]::Min(600, $r.Content.Length)))" }
+          if (-not $answer -or -not $answer.answer) { throw "Lab 2 gave no answer: $($text.Substring(0, [Math]::Min(600, $text.Length)))" }
           Write-Host "Lab 2 via $($answer.source), $($answer.sources.Count) passages: $($answer.answer.Substring(0, [Math]::Min(200, $answer.answer.Length)))"
 
           $info = Invoke-RestMethod http://127.0.0.1:8090/api/lab3/info -TimeoutSec 60
