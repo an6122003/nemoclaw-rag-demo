@@ -140,7 +140,10 @@ jobs:
           $edge = @("${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge.exe", "$env:ProgramFiles\Microsoft\Edge\Application\msedge.exe") |
             Where-Object { Test-Path $_ } | Select-Object -First 1
           if ($edge) {
+            # Edge logs harmless warnings to stderr; under 'Stop' PowerShell 5.1 would treat them as errors.
+            $ErrorActionPreference = 'Continue'
             $dom = & $edge --headless=new --disable-gpu --no-first-run --virtual-time-budget=8000 --dump-dom http://127.0.0.1:8090/ 2>$null | Out-String
+            $ErrorActionPreference = 'Stop'
             if ($dom -notmatch '<html[^>]*class="[^"]*no-openclaw') { throw 'the page did not apply the Windows edition' }
             if ($dom -notmatch 'id="agenda"><li') { throw 'the page script did not render (agenda empty)' }
             if ($dom -notmatch 'data-i18n="home_eyebrow">[^<]*RTX Spark') { throw 'the Windows wording is missing' }
