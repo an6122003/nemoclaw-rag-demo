@@ -167,6 +167,13 @@ $Online = (Test-Url 'https://registry.ollama.ai/v2/') -and (Test-Url 'https://gi
 if ($Online) { Show-Ok 'Internet connection works' 'Kết nối internet hoạt động' }
 else { Show-Warn 'No internet connection: only what is already installed can be used' 'Không có internet: chỉ dùng được những gì đã cài' }
 
+# Smart App Control (1 = on) blocks unsigned programs such as llama.cpp's; it is off or only evaluating on most PCs.
+$sac = Get-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\CI\Policy' -Name 'VerifiedAndReputablePolicyState' -ErrorAction SilentlyContinue
+if ($sac -and $sac.VerifiedAndReputablePolicyState -eq 1) {
+    Show-Warn 'Smart App Control is on and may block the workshop''s programs. If a step fails, ask IT to turn it off (Windows Security > App & browser control)' `
+              'Smart App Control đang bật, có thể chặn các chương trình của workshop. Nếu có bước lỗi, nhờ IT tắt nó (Windows Security > App & browser control)'
+}
+
 if ($CheckOnly) {
     Write-Host "`n   -CheckOnly: nothing was changed. / Không thay đổi gì.`n"
     exit 0

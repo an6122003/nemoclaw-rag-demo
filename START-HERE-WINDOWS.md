@@ -112,6 +112,7 @@ The Enterprise tab is **04** (there is no OpenClaw tab), and the engine switch r
 | `running scripts is disabled` | Dùng đúng lệnh `irm … \| iex` ở Bước 2, hoặc biểu tượng trên màn hình nền · Use the exact `irm … \| iex` command, or the desktop icon |
 | ✘ ở một bài · ✘ on a lab | Chạy lại lệnh cài đặt (an toàn); nếu vẫn lỗi, gửi `setup-log.txt` · Run the install command again (safe); if it still fails, send `setup-log.txt` |
 | "Ollama found no usable GPU" | Cập nhật driver NVIDIA của máy, rồi chạy lại lệnh cài đặt · Update the PC's NVIDIA driver, then run the install command again |
+| "Smart App Control is on" | Nhờ IT tắt Smart App Control (Windows Security › App & browser control), rồi chạy lại lệnh cài đặt · Ask IT to turn off Smart App Control (Windows Security › App & browser control), then run the install command again |
 | Tab Doanh nghiệp không hiện · No Enterprise tab | Phần này chưa cài xong: chạy lại lệnh cài đặt · It did not finish installing: run the install command again |
 
 > Bản Windows được xây dựng trước khi có máy RTX Spark thật: nó đã được kiểm tra tự động
