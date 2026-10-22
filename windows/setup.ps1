@@ -313,24 +313,26 @@ $TorchPy = Join-Path $Run 'torch-venv\Scripts\python.exe'
 $TorchSpec = if ($GpuName) { $TorchCuda } else { $TorchCpu }
 $TorchIndex = if ($GpuName) { $TorchCudaIndex } else { $TorchCpuIndex }
 function Install-TorchVenv {
-    $stamp = Join-Path $Run 'torch-venv\workshop-packages.txt'
+    # Rebuilt only when the PyTorch build changes (2 GB); other packages are topped up in place.
+    $torchStamp = Join-Path $Run 'torch-venv\workshop-torch.txt'
     $packages = @('transformers>=4.56,<5', 'peft>=0.15,<1', 'accelerate>=1.6,<2', 'sentencepiece', 'protobuf',
-                  'safetensors', 'huggingface_hub', 'soundfile', 'scipy', 'numpy')
-    $want = "$TorchSpec | $($packages -join ' ')"
-    if ((Test-Path -LiteralPath $TorchPy) -and (Test-Path -LiteralPath $stamp) -and
-        ([IO.File]::ReadAllText($stamp)).Trim() -eq $want) { return $true }
-    $null = Invoke-Logged 'Preparing PyTorch (Python)' $uv @('venv', '--clear', '--python', $PythonVersion, (Join-Path $Run 'torch-venv'))
-    Show-Info "Installing $TorchSpec (up to 2 GB)..." "Đang cài $TorchSpec..."
-    # unsafe-best-match: PyTorch's CPU index also mirrors common packages, some without a
-    # Windows-on-Arm build; take each package from whichever index has the right one.
-    $code = Invoke-Logged "Installing $TorchSpec" $uv @('pip', 'install', '--python', $TorchPy, $TorchSpec,
-        '--extra-index-url', $TorchIndex, '--index-strategy', 'unsafe-best-match')
-    if ($code -eq 0) { $code = Invoke-Logged 'Installing transformers and peft' $uv (@('pip', 'install', '--python', $TorchPy) + $packages) }
+                  'safetensors', 'huggingface_hub', 'hf_xet', 'soundfile', 'scipy', 'numpy')
+    $haveTorch = (Test-Path -LiteralPath $TorchPy) -and (Test-Path -LiteralPath $torchStamp) -and
+                 ([IO.File]::ReadAllText($torchStamp)).Trim() -eq $TorchSpec
+    if (-not $haveTorch) {
+        $null = Invoke-Logged 'Preparing PyTorch (Python)' $uv @('venv', '--clear', '--python', $PythonVersion, (Join-Path $Run 'torch-venv'))
+        Show-Info "Installing $TorchSpec (up to 2 GB)..." "Đang cài $TorchSpec..."
+        # unsafe-best-match: PyTorch's CPU index also mirrors common packages, some without a
+        # Windows-on-Arm build; take each package from whichever index has the right one.
+        $code = Invoke-Logged "Installing $TorchSpec" $uv @('pip', 'install', '--python', $TorchPy, $TorchSpec,
+            '--extra-index-url', $TorchIndex, '--index-strategy', 'unsafe-best-match')
+        if ($code -ne 0) { return $false }
+        [IO.File]::WriteAllText($torchStamp, $TorchSpec)
+    }
+    $code = Invoke-Logged 'Installing transformers and peft' $uv (@('pip', 'install', '--python', $TorchPy) + $packages)
     if ($code -ne 0) { return $false }
     & $TorchPy -c 'import torch, transformers, peft, soundfile, scipy' 2>$null
-    if ($LASTEXITCODE -ne 0) { return $false }
-    [IO.File]::WriteAllText($stamp, $want)
-    return $true
+    return ($LASTEXITCODE -eq 0)
 }
 
 $TorchOk = Install-TorchVenv
