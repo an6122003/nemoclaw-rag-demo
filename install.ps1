@@ -11,7 +11,7 @@
 #
 # Options, through the environment (set them before the command):
 #   $env:WORKSHOP_DIR      install folder (default: ~\ai-workshop)
-#   $env:WORKSHOP_BRANCH   branch to install (default: main)
+#   $env:WORKSHOP_BRANCH   branch to install (default: main), or a full commit id
 #   $env:WORKSHOP_YES=1 / WORKSHOP_NO_START=1 / WORKSHOP_CHECK_ONLY=1 /
 #   WORKSHOP_SKIP_ENTERPRISE=1 / WORKSHOP_TEST=1
 #                          the -Yes / -NoStart / -CheckOnly / -SkipEnterprise / -Test switches of setup.ps1
@@ -46,7 +46,8 @@
     $tmp = Join-Path $env:TEMP ('ai-workshop-' + [guid]::NewGuid().ToString('N'))
     New-Item -ItemType Directory -Path $tmp | Out-Null
     $zip = Join-Path $tmp 'workshop.zip'
-    $url = "https://codeload.github.com/$repo/zip/refs/heads/$branch"
+    $ref = if ($branch -match '^[0-9a-f]{40}$') { $branch } else { "refs/heads/$branch" }
+    $url = "https://codeload.github.com/$repo/zip/$ref"
     try {
         Invoke-WebRequest -Uri $url -OutFile $zip -UseBasicParsing
     } catch {

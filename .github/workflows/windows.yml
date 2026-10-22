@@ -62,7 +62,7 @@ jobs:
       - name: Install with the one-line command (test mode)
         shell: powershell
         env:
-          WORKSHOP_BRANCH: ${{ github.head_ref || github.ref_name }}
+          WORKSHOP_BRANCH: ${{ github.event.pull_request.head.sha || github.sha }}   # this exact commit
           WORKSHOP_YES: '1'
           WORKSHOP_NO_START: '1'
           WORKSHOP_TEST: '1'
