@@ -51,6 +51,23 @@ curl -fsSL https://raw.githubusercontent.com/an6122003/nemoclaw-rag-demo/main/in
 
 A non-technical operator should start with [START-HERE.md](START-HERE.md) (Vietnamese and English).
 
+### Windows: the NVIDIA RTX Spark
+
+The RTX Spark runs Windows 11 on Arm. Its edition runs everything directly on the PC, with no
+NemoClaw sandbox (NemoClaw only runs on Windows through WSL 2) and no OpenClaw challenge tab;
+the Enterprise batch engine is llama.cpp's `llama-server` instead of vLLM. In PowerShell, no
+administrator rights needed:
+
+```powershell
+irm https://raw.githubusercontent.com/an6122003/nemoclaw-rag-demo/main/install.ps1 | iex
+```
+
+It installs into `~\ai-workshop` (Ollama, Python, NVIDIA's CUDA PyTorch for Windows on Arm,
+llama.cpp, the models), trains the example model once, checks every lab and adds a desktop
+shortcut. Operators: [START-HERE-WINDOWS.md](START-HERE-WINDOWS.md). It is tested on
+GitHub's Windows-on-Arm machines (CPU only, small models) by
+[.github/workflows/windows.yml](.github/workflows/windows.yml).
+
 ## The hands-on labs
 
 | | Lab | What the audience sees |
@@ -182,10 +199,12 @@ On a DGX Spark (GB10, DGX OS 24.04, Ollama 0.34.3, NemoClaw v0.0.124 with OpenCl
 
 ```
 install.sh · setup.sh · start.sh · stop.sh · workshop.env   the operator surface
+install.ps1 · windows/           the Windows (RTX Spark) edition: setup.ps1 · start.ps1 · stop.ps1
 START-HERE.md                    operator guide (VI/EN) · docs/Huong-dan-Workshop-AI-DGX-Spark.docx
+START-HERE-WINDOWS.md            operator guide for the Windows edition (VI/EN)
 app/                             the web app: server.py, index.html, one module per lab,
                                  enterprise.py (batch jobs, engine, scoring), enterprise_asr.py
-hands-on-1-finetune/             train_lora.py · run_finetune.sh · Dockerfile · data/
+hands-on-1-finetune/             train_lora.py · run_finetune.sh (Spark) · run_finetune.py (Windows) · Dockerfile · data/
 hands-on-2-rag/                  corpus/ (28 manuals) · index/ · ingestion/ · verification/
 hands-on-3-agent/                tools/ · agent/AGENTS.md · skills/ · data/
 enterprise/generate/             seeded generators: inbox.py · invoices.py · calls.py
