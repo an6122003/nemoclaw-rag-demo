@@ -62,7 +62,7 @@ INBOX_FILE = DATA / "inbox" / "messages.jsonl"
 INVOICE_DIR = DATA / "invoices"
 CALL_DIR = DATA / "calls"
 # Speech for the sample calls: Piper in its own environment, and a Vietnamese voice.
-TTS_PY = common.RUN_DIR / "tts-venv" / "bin" / "python"
+TTS_PY = common.RUN_DIR / "tts-venv" / ("Scripts/python.exe" if common.IS_WINDOWS else "bin/python")
 VOICE = DATA / "voices" / "vi_VN-vais1000-medium.onnx"
 # Speech-to-text: VinAI's PhoWhisper, run in the vLLM container (enterprise_asr.py).
 ASR_MODEL = common.setting("ASR_MODEL", "vinai/PhoWhisper-medium")
@@ -179,7 +179,7 @@ def model_ready() -> bool:
     if not (d / "config.json").exists() or not idx.exists():
         return False
     try:
-        shards = set(json.loads(idx.read_text())["weight_map"].values())
+        shards = set(json.loads(idx.read_text(encoding="utf-8"))["weight_map"].values())
     except Exception:
         return False
     return all((d / s).exists() for s in shards)
@@ -269,6 +269,8 @@ def engine_log_tail(lines: int = 20) -> str:
 
 
 def mem_available_gb() -> float:
+    if common.IS_WINDOWS:
+        return common.memory_gb()["available"]
     try:
         for line in Path("/proc/meminfo").read_text().splitlines():
             if line.startswith("MemAvailable:"):
@@ -282,6 +284,8 @@ def mem_free_gb() -> float:
     """Memory the GPU can allocate now. On the DGX Spark (unified memory) the GPU
     takes free memory only: Linux's file cache counts as "available" but is
     not handed to the GPU, so allocations fail while MemAvailable looks fine."""
+    if common.IS_WINDOWS:
+        return common.memory_gb()["free"]
     try:
         for line in Path("/proc/meminfo").read_text().splitlines():
             if line.startswith("MemFree:"):
@@ -297,7 +301,10 @@ def release_page_cache(*roots: Path) -> float:
     Every model the machine downloaded or loaded stays in Linux's file cache;
     asking the kernel to drop the cached pages of files this account can read
     turns tens of GB of cache into memory the GPU can use. Returns GB covered.
+    (Linux only: Windows hands its standby cache to whoever asks.)
     """
+    if not hasattr(os, "posix_fadvise"):
+        return 0.0
     covered = 0
     for root in roots or CACHE_ROOTS:
         try:
@@ -323,6 +330,8 @@ def release_page_cache(*roots: Path) -> float:
 
 
 def mem_total_gb() -> float:
+    if common.IS_WINDOWS:
+        return common.memory_gb()["total"]
     try:
         for line in Path("/proc/meminfo").read_text().splitlines():
             if line.startswith("MemTotal:"):
@@ -353,11 +362,25 @@ def engine_start() -> tuple[bool, str]:
     """Start the engine container; several jobs may ask at once, one starts it."""
     if engine_ready():
         return True, "ready"
-    import fcntl
     DATA.mkdir(parents=True, exist_ok=True)
-    with (DATA / "engine.lock").open("w") as lock:
-        fcntl.flock(lock, fcntl.LOCK_EX)
+    with (DATA / "engine.lock").open("a+") as lock:
+        _lock_file(lock)
         return _engine_start_locked()
+
+
+def _lock_file(fh) -> None:
+    """Hold an exclusive lock on an open file until it is closed (Linux and Windows)."""
+    if common.IS_WINDOWS:
+        import msvcrt
+        while True:
+            try:
+                fh.seek(0)
+                msvcrt.locking(fh.fileno(), msvcrt.LK_LOCK, 1)  # retries for 10 s, then raises
+                return
+            except OSError:
+                continue
+    import fcntl
+    fcntl.flock(fh, fcntl.LOCK_EX)
 
 
 def _engine_start_locked() -> tuple[bool, str]:
@@ -809,7 +832,7 @@ def score_call(res: dict, truth: dict) -> dict:
 def asr_start(jd: Path, todo: list[dict]) -> subprocess.Popen:
     """Transcribe the calls in order, in the vLLM container on the GPU, one JSON per call."""
     (jd / "asr").mkdir(parents=True, exist_ok=True)
-    (jd / "asr-todo.txt").write_text("".join(f"{it['id']} {it['file']}\n" for it in todo))
+    (jd / "asr-todo.txt").write_text("".join(f"{it['id']} {it['file']}\n" for it in todo), encoding="utf-8")
     try:
         _docker("rm", "-f", ASR_NAME, timeout=60)
     except Exception:
@@ -817,7 +840,8 @@ def asr_start(jd: Path, todo: list[dict]) -> subprocess.Popen:
     model = f"/hf/hub/models--{ASR_MODEL.replace('/', '--')}/snapshots/{ASR_REVISION}"
     release_page_cache(*CACHE_ROOTS)  # the GPU allocates from free memory only
     cmd = ["docker", "run", "--rm", "--name", ASR_NAME, "--gpus", "all", "--label", "workshop=batch-asr",
-           "--user", f"{os.getuid()}:{os.getgid()}", "-e", "HOME=/tmp", "-e", "USER=workshop",
+           *(["--user", f"{os.getuid()}:{os.getgid()}"] if hasattr(os, "getuid") else []),
+           "-e", "HOME=/tmp", "-e", "USER=workshop",
            "-e", "HF_HOME=/hf", "-e", "HF_HUB_OFFLINE=1", "-e", "TRANSFORMERS_OFFLINE=1",
            "-v", f"{HF_HOME}:/hf:ro", "-v", f"{CALL_DIR}:/calls:ro", "-v", f"{jd}:/job",
            "-v", f"{Path(__file__).resolve().parent}:/app:ro", "--entrypoint", "python3", ENGINE_IMAGE,
@@ -843,16 +867,26 @@ def job_dir(demo: str) -> Path:
 
 
 def _read_json(path: Path) -> dict:
-    try:
-        return json.loads(path.read_text())
-    except Exception:
-        return {}
+    for _ in range(5):
+        try:
+            return json.loads(path.read_text(encoding="utf-8"))
+        except PermissionError:  # Windows: the worker is replacing it this instant
+            time.sleep(0.05)
+        except Exception:
+            return {}
+    return {}
 
 
 def _write_json(path: Path, obj: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(".tmp")
-    tmp.write_text(json.dumps(obj, ensure_ascii=False))
+    tmp.write_text(json.dumps(obj, ensure_ascii=False), encoding="utf-8")
+    for attempt in range(20):
+        try:
+            tmp.replace(path)
+            return
+        except PermissionError:  # Windows cannot replace a file the app is reading this instant
+            time.sleep(0.05 * (attempt + 1))
     tmp.replace(path)
 
 
@@ -971,7 +1005,7 @@ def worker(demo: str, limit: int, engine: str) -> int:
             ready = [it for it in pending if (asr_dir / f"{it['id']}.json").exists()]
             for it in ready:
                 try:
-                    work.put((it, json.loads((asr_dir / f"{it['id']}.json").read_text())))
+                    work.put((it, json.loads((asr_dir / f"{it['id']}.json").read_text(encoding="utf-8"))))
                 except (OSError, json.JSONDecodeError):
                     continue
                 pending.remove(it)
@@ -1043,9 +1077,8 @@ def worker(demo: str, limit: int, engine: str) -> int:
 
 
 def _pid_alive(pid: int) -> bool:
-    try:
-        os.kill(pid, 0)
-    except OSError:
+    # Never os.kill(pid, 0) here: on Windows that terminates the process.
+    if not common.pid_alive(pid):
         return False
     try:  # a reused pid belongs to something else
         return "enterprise.py" in Path(f"/proc/{pid}/cmdline").read_bytes().decode(errors="ignore")
@@ -1079,11 +1112,19 @@ def start_job(demo: str, limit: int, engine: str) -> tuple[bool, str]:
     log = (jd / "worker.log").open("a")
     p = subprocess.Popen([sys.executable, str(Path(__file__).resolve()), "run", demo, "--limit", str(limit),
                           "--engine", engine], cwd=str(ROOT), stdout=log, stderr=subprocess.STDOUT,
-                         stdin=subprocess.DEVNULL, start_new_session=True)
+                         stdin=subprocess.DEVNULL, **_detached())
     st = _read_json(jd / "state.json")
     st.update(status="preparing", pid=p.pid, message="", updated=time.time())
     _write_json(jd / "state.json", st)
     return True, "started"
+
+
+def _detached() -> dict:
+    """Popen options for a background process that outlives the app (and its window on Windows)."""
+    if common.IS_WINDOWS:
+        # No console at all: closing the app's window must not end a batch.
+        return {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.DETACHED_PROCESS}
+    return {"start_new_session": True}
 
 
 def stop_job(demo: str) -> bool:
@@ -1482,11 +1523,11 @@ def smoke(log=print) -> bool:
         for it in rows:
             f = jd / "asr" / f"{it['id']}.json"
             if not f.exists():
-                log(f"  calls {it['id']}: FAILED (no transcript)\n" + (jd / "asr.log").read_text()[-1500:])
+                log(f"  calls {it['id']}: FAILED (no transcript)\n" + (jd / "asr.log").read_text(encoding="utf-8", errors="replace")[-1500:])
                 good = False
                 continue
             try:
-                res = process_call("vllm", it, json.loads(f.read_text()))
+                res = process_call("vllm", it, json.loads(f.read_text(encoding="utf-8")))
                 sc = score_call(res, it["truth"])
                 log(f"  calls {it['id']}: {sum(sc.values())}/{len(sc)} checks right, "
                     f"transcript {100 - res['wer'] * 100:.0f}% word-accurate")
