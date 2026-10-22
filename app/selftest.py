@@ -160,7 +160,8 @@ def check_tools() -> dict:
     args = {"group_by": "Khu vực", "metric": "Doanh thu (triệu VND)"}
     calls = [("get_dataset_info", {}), ("analyze_sales", args),
              ("create_chart", {**args, "chart_type": "bar"}),
-             ("export_excel_report", {**args, "title": "Doanh thu theo khu vực"})]
+             ("export_excel_report", {**args, "title": "Doanh thu theo khu vực",
+                                      "insights": ["Đà Nẵng tăng trưởng tốt nhất so với 2024."]})]
     t0 = time.time()
     for name, a in calls:
         _, _, done = st.run_tool(name, a, ctx)
