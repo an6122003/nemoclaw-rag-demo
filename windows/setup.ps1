@@ -248,7 +248,7 @@ if (-not (Test-OllamaUp)) {
 }
 $ver = Get-OllamaRunningVersion
 if (Test-VersionAtLeast $ver $MinOllama) { Show-Ok "Ollama $ver is running" 'Ollama đang chạy' }
-else { Show-Warn "Ollama $ver is older than $MinOllama: tool calls may not work" "Ollama $ver quá cũ" }
+else { Show-Warn "Ollama $ver is older than ${MinOllama}: tool calls may not work" "Ollama $ver quá cũ" }
 
 $compute = Get-OllamaCompute
 if ($compute -eq 'cuda') {
