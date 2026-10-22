@@ -41,7 +41,8 @@ AGENT_ID = setting("AGENT_ID", "analyst")
 # "none" disables the model's hidden reasoning pass: measured 14.8 s -> 2.4 s
 # for the same first tool call on qwen3:8b, with the same tool choice.
 REASONING = setting("AGENT_REASONING", "none")
-MAX_STEPS = 10
+# The setup's CI test mode lowers it: a tiny model on a 4-core CPU takes over a minute a step.
+MAX_STEPS = int(setting("LAB3_MAX_STEPS", "10") or 10)
 LLM_TIMEOUT = 300
 
 EXAMPLES = {

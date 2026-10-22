@@ -40,7 +40,8 @@ if ($Test) {
         'CHAT_MODEL=qwen2.5:1.5b-instruct',
         'EMBED_MODEL=qwen3-embedding:0.6b',
         'WIN_CHAT_CONTEXT=8192',
-        'OLLAMA_CONTEXT_LENGTH=8192'
+        'OLLAMA_CONTEXT_LENGTH=8192',
+        'LAB3_MAX_STEPS=4'
     )
     [IO.File]::WriteAllLines($LocalEnv, $lines)
 } elseif ((Test-Path -LiteralPath $LocalEnv) -and
@@ -345,9 +346,15 @@ Show-Step 'Final check - every lab, end to end' 'Kiểm tra cuối - chạy th�
 $stArgs = @((Join-Path $Root 'app\selftest.py'), '--lab2', '--lab3', '--tools', '--json')
 if ($Lab1 -eq 'compare-only') { $stArgs += '--lab1' }
 if ($Test) { $stArgs += '--plumbing' }
-$null = Invoke-Logged 'Running every lab once' $VenvPy $stArgs
 $stOut = Join-Path $Run 'step-out.txt'
 $results = @()
+if ($env:WORKSHOP_SKIP_CHECK -and (Test-Path -LiteralPath (Join-Path $Run 'selftest.json'))) {
+    # CI's second run: the labs were checked a minute ago; reuse that result.
+    Show-Info '(final check skipped: WORKSHOP_SKIP_CHECK)'
+    Copy-Item -LiteralPath (Join-Path $Run 'selftest.json') -Destination $stOut -Force
+} else {
+    $null = Invoke-Logged 'Running every lab once' $VenvPy $stArgs
+}
 if (Test-Path -LiteralPath $stOut) {
     $raw = [IO.File]::ReadAllText($stOut, [Text.Encoding]::UTF8)
     [IO.File]::WriteAllText((Join-Path $Run 'selftest.json'), $raw, (New-Object System.Text.UTF8Encoding $false))

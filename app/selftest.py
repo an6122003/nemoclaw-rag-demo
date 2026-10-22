@@ -199,6 +199,8 @@ def main() -> int:
         return 1
     results = []
     for n in labs:
+        if args.json:  # progress for whoever watches the log (the JSON comes at the end)
+            print(f"selftest: {'Lab 3 tools' if n == 'tools' else f'Hands-on {n}'}...", file=sys.stderr, flush=True)
         try:
             r = checks[n]()
         except Exception as exc:  # noqa: BLE001

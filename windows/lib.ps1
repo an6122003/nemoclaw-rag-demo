@@ -133,6 +133,16 @@ function Invoke-Logged([string]$Message, [string]$Exe, [string[]]$ArgList, [stri
     while (-not $p.HasExited) {
         if ($Interactive) {
             Write-Host ("`r   {0} {1}  {2:mm\:ss} " -f $frames[$i % 4], $Message, $sw.Elapsed) -NoNewline -ForegroundColor DarkGray
+        } elseif ($i -gt 0 -and $i % 120 -eq 0) {
+            # Unattended (CI): a line a minute, with the step's latest output.
+            $last = ''
+            foreach ($f in $err, $out) {
+                try {
+                    $t = Get-Content -LiteralPath $f -Tail 1 -ErrorAction Stop
+                    if ($t) { $last = [string]$t; break }
+                } catch {}
+            }
+            Write-Host ("   ... {0}: {1:hh\:mm\:ss}  {2}" -f $Message, $sw.Elapsed, $last)
         }
         Start-Sleep -Milliseconds 500
         $i++

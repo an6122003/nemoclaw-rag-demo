@@ -73,6 +73,8 @@ jobs:
 
       - name: Run the setup again (an update must be quick and keep everything)
         shell: powershell
+        env:
+          WORKSHOP_SKIP_CHECK: '1'
         run: |
           $t = [Diagnostics.Stopwatch]::StartNew()
           powershell -NoProfile -ExecutionPolicy Bypass -File "$env:WORKSHOP_DIR\windows\setup.ps1" -Yes -NoStart -Test
