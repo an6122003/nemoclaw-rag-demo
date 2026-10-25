@@ -4,6 +4,11 @@
 The same app runs on the DGX Spark (Linux) and on Windows (the RTX Spark
 edition, common.EDITION == "windows", without the NemoClaw sandbox).
 
+It serves two pages over the same API: the studio (studio.html, brand-neutral,
+made for RTX Spark laptops) and the classic event page (index.html). "/" is
+the studio on Windows and the classic page on the DGX Spark (WEB_UI setting);
+/studio and /classic always serve one of them.
+
     Hands-on 1  Fine-tuning Local LLMs        (lab1_finetune.py)
     Hands-on 2  Build RAG with NemoClaw       (lab2_rag.py)
     Hands-on 3  Build an Agentic Workflow     (lab3_agent.py)
@@ -27,6 +32,7 @@ import json
 import os
 import re
 import signal
+import subprocess
 import sys
 import threading
 import time
@@ -45,6 +51,8 @@ import lab3_agent as lab3  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
 INDEX_HTML = HERE / "index.html"
+STUDIO_HTML = HERE / "studio.html"
+WEB_UI = common.setting("WEB_UI", "studio" if common.EDITION == "windows" else "classic")
 # Logos and fonts, served from disk so the page works without internet.
 STATIC = HERE / "static"
 STATIC_TYPES = {".css": "text/css; charset=utf-8", ".svg": "image/svg+xml", ".woff2": "font/woff2",
@@ -76,6 +84,80 @@ def page_config() -> bytes:
 
 def _gpu_name() -> str:
     return lab1.trainer_status().get("gpu", "")
+
+
+# --------------------------------------------------------------------------
+# Live readout of the machine for the studio page: its chip visual follows
+# the real GPU load, and its header names the hardware it runs on.
+# --------------------------------------------------------------------------
+_telemetry = {"at": 0.0, "value": None, "static": None}
+_telemetry_lock = threading.Lock()
+
+
+def _machine() -> dict:
+    """CPU name, cores and installed memory: read once."""
+    if _telemetry["static"] is None:
+        cpu, installed = "", common.memory_gb()["total"]
+        if common.IS_WINDOWS:
+            import ctypes
+            import winreg
+            try:
+                with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"HARDWARE\DESCRIPTION\System\CentralProcessor\0") as k:
+                    cpu = str(winreg.QueryValueEx(k, "ProcessorNameString")[0]).strip()
+            except OSError:
+                pass
+            kb = ctypes.c_ulonglong(0)  # memory the GPU reserved for itself included
+            if ctypes.windll.kernel32.GetPhysicallyInstalledSystemMemory(ctypes.byref(kb)):
+                installed = kb.value / 1024 / 1024
+        else:
+            try:
+                for line in Path("/proc/cpuinfo").read_text(encoding="utf-8").splitlines():
+                    if line.lower().startswith("model name"):
+                        cpu = line.split(":", 1)[1].strip()
+                        break
+            except OSError:
+                pass
+        _telemetry["static"] = {"name": cpu, "cores": os.cpu_count() or 0, "installed_gb": round(installed)}
+    return _telemetry["static"]
+
+
+def _gpu_readout() -> dict:
+    fields = "name,utilization.gpu,memory.used,memory.total,power.draw,temperature.gpu"
+    try:
+        p = subprocess.run(["nvidia-smi", f"--query-gpu={fields}", "--format=csv,noheader,nounits"],
+                           capture_output=True, text=True, timeout=4)
+    except Exception:
+        return {}
+
+    def number(s: str) -> float | None:
+        try:
+            return float(s)
+        except ValueError:
+            return None
+
+    for line in (p.stdout or "").splitlines():
+        parts = [x.strip() for x in line.split(",")]
+        if len(parts) == 6 and number(parts[3]) is not None:  # the GPU, not an NPU row without memory figures
+            return {"name": parts[0], "util": number(parts[1]), "mem_used_mb": number(parts[2]),
+                    "mem_total_mb": number(parts[3]), "power_w": number(parts[4]), "temp_c": number(parts[5])}
+    return {}
+
+
+def telemetry() -> dict:
+    with _telemetry_lock:
+        if _telemetry["value"] and time.time() - _telemetry["at"] < 1.5:
+            return _telemetry["value"]
+        try:
+            loaded = [{"name": m.get("name"), "vram_gb": round((m.get("size_vram") or 0) / 1e9, 1)}
+                      for m in common.http_json(f"{common.OLLAMA}/api/ps", timeout=2).get("models", [])]
+        except Exception:
+            loaded = []
+        machine, mem = _machine(), common.memory_gb()
+        value = {"gpu": _gpu_readout(), "cpu": {"name": machine["name"], "cores": machine["cores"]},
+                 "memory": {"installed_gb": machine["installed_gb"], "available_gb": round(mem["available"], 1)},
+                 "loaded": loaded, "batch_engine": ent.available() and ent.engine_ready(timeout=0.3)}
+        _telemetry.update(at=time.time(), value=value)
+        return value
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -164,10 +246,12 @@ class Handler(BaseHTTPRequestHandler):
         url = urlparse(self.path)
         path, qs = url.path, parse_qs(url.query)
 
-        if path in ("/", "/index.html"):
-            if not INDEX_HTML.exists():
-                return self._json(500, {"error": "index.html missing"})
-            page = INDEX_HTML.read_bytes().replace(EDITION_MARK, page_config(), 1)
+        if path in ("/", "/index.html", "/studio", "/classic"):
+            studio = path == "/studio" or (path != "/classic" and WEB_UI == "studio")
+            page_file = STUDIO_HTML if studio else INDEX_HTML
+            if not page_file.exists():
+                return self._json(500, {"error": f"{page_file.name} missing"})
+            page = page_file.read_bytes().replace(EDITION_MARK, page_config(), 1)
             return self._send(200, page, "text/html; charset=utf-8")
 
         if path.startswith("/static/"):
@@ -178,6 +262,8 @@ class Handler(BaseHTTPRequestHandler):
 
         if path == "/api/health":
             return self._json(200, health(include_token=self._local()))
+        if path == "/api/telemetry":
+            return self._json(200, telemetry())
 
         if path == "/openclaw":  # short address for OpenClaw's own UI (the challenge)
             if not common.SANDBOX_ON:

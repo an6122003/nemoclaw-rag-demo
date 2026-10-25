@@ -64,7 +64,9 @@ irm https://raw.githubusercontent.com/an6122003/nemoclaw-rag-demo/windows/instal
 
 It installs into `~\ai-workshop` (Ollama, Python, NVIDIA's CUDA PyTorch for Windows on Arm,
 llama.cpp, the models), trains the example model once, checks every lab and adds a desktop
-shortcut. Operators: [START-HERE-WINDOWS.md](START-HERE-WINDOWS.md). Verified end to end on a
+shortcut. The app opens on the studio page ([app/studio.html](app/studio.html)): a light
+interface made for RTX Spark laptops, with no event branding, whose chip visual follows the
+GPU's real work; the event page stays at `/classic`. Operators: [START-HERE-WINDOWS.md](START-HERE-WINDOWS.md). Verified end to end on a
 real RTX Spark (ASUS ProArt P16, RTX Spark N1X, 128 GB): 38 minutes from a fresh machine, with
 every lab and batch demo on the GPU. Every change is also tested on GitHub's Windows-on-Arm
 machines (CPU only, small models) by [.github/workflows/windows.yml](.github/workflows/windows.yml).

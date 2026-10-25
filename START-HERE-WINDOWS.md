@@ -106,6 +106,13 @@ The same as on the DGX Spark: see each lab's walkthrough in [START-HERE.md](STAR
 The Enterprise tab is **04** (there is no OpenClaw tab), and the engine switch reads
 **llama.cpp · in batches** instead of vLLM.
 
+Workshop mở bằng trang studio: giao diện sáng, không gắn sự kiện, hình chip phía sau sáng lên
+theo công việc thật của GPU. Phím **1–4** chuyển giữa các bài. Trang sự kiện cũ vẫn ở
+**http://127.0.0.1:8090/classic**.
+The workshop opens on the studio page: a light interface with no event branding, whose chip
+in the background lights up with the GPU's real work. Keys **1–4** switch between the labs. The
+previous event page stays at **http://127.0.0.1:8090/classic**.
+
 Thời gian đo trên máy RTX Spark · Measured on an RTX Spark:
 
 | | |
