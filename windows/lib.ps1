@@ -289,6 +289,30 @@ function Get-OllamaCompute {
     return ''
 }
 
+# Keep the PC awake, screen on, while this script runs: the setup downloads for up to an hour
+# with nobody touching the laptop, and idle sleep would cut it off. Ends with the process.
+function Set-KeepAwake {
+    try {
+        if (-not ('Workshop.Power' -as [type])) {
+            Add-Type -Namespace Workshop -Name Power -MemberDefinition `
+                '[System.Runtime.InteropServices.DllImport("kernel32.dll")] public static extern uint SetThreadExecutionState(uint esFlags);'
+        }
+        $null = [Workshop.Power]::SetThreadExecutionState([uint32]2147483651)   # CONTINUOUS | SYSTEM_REQUIRED | DISPLAY_REQUIRED
+    } catch {
+        Write-Log "keep awake: $($_.Exception.Message)"
+    }
+}
+
+# $true when a laptop runs on its battery.
+function Test-OnBattery {
+    try {
+        Add-Type -AssemblyName System.Windows.Forms
+        return [System.Windows.Forms.SystemInformation]::PowerStatus.PowerLineStatus -eq 'Offline'
+    } catch {
+        return $false
+    }
+}
+
 function Get-Uv {
     $cmd = Get-Command 'uv.exe' -ErrorAction SilentlyContinue
     if ($cmd) { return $cmd.Source }

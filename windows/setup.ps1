@@ -107,6 +107,7 @@ if ($Interactive -and -not $Yes -and -not $CheckOnly) {
     $null = Read-Host '   Nhấn Enter để tiếp tục, hoặc Ctrl-C để huỷ'
 }
 Write-Host "`n   Full details / Chi tiết đầy đủ: $Log"
+if (-not $CheckOnly) { Set-KeepAwake }
 
 function Test-Url([string]$Url) {
     try {
@@ -161,6 +162,11 @@ if ($FreeGB -ge $NeedGB) { Show-Ok "$FreeGB GB free disk" }
 else {
     Show-Bad "Only $FreeGB GB free on this drive; about $NeedGB GB is needed" "Chỉ còn $FreeGB GB trống; cần khoảng $NeedGB GB"
     if (-not $CheckOnly) { exit 1 }
+}
+
+if (Test-OnBattery) {
+    Show-Warn 'Running on battery: plug in the charger and keep the lid open until setup finishes' `
+              'Máy đang chạy bằng pin: hãy cắm sạc và để mở nắp máy cho đến khi cài xong'
 }
 
 $Online = (Test-Url 'https://registry.ollama.ai/v2/') -and (Test-Url 'https://github.com')
