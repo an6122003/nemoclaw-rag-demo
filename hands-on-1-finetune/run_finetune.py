@@ -76,8 +76,11 @@ def main() -> int:
     model_dir = HF_CACHE / "hub" / ("models--" + BASE_HF.replace("/", "--"))
     if args.download_only or not (model_dir / "snapshots").is_dir():
         emit("download", message=f"downloading {BASE_HF}")
+        # One file at a time: without the right to make symlinks (Windows without Developer
+        # Mode), huggingface_hub's parallel workers race its symlink check and crash (WinError 1314).
         p = subprocess.run([sys.executable, "-c",
-                            "import sys; from huggingface_hub import snapshot_download; print(snapshot_download(sys.argv[1]))",
+                            "import sys; from huggingface_hub import snapshot_download; "
+                            "print(snapshot_download(sys.argv[1], max_workers=1))",
                             BASE_HF], env=env)
         if p.returncode != 0:
             fail(f"could not download {BASE_HF} from Hugging Face")

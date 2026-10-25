@@ -579,7 +579,8 @@ if ($Ent -eq 'ready') {
     } else {
         $env:WORKSHOP_ASR_MODEL = $AsrModel; $env:WORKSHOP_ASR_REVISION = $AsrRevision
         $env:HF_HUB_DISABLE_TELEMETRY = '1'; $env:HF_HUB_DISABLE_PROGRESS_BARS = '1'
-        $dl = "import os; from huggingface_hub import snapshot_download; print(snapshot_download(os.environ['WORKSHOP_ASR_MODEL'], revision=os.environ['WORKSHOP_ASR_REVISION']))"
+        # One file at a time: without symlink rights (no Developer Mode), parallel downloads crash (WinError 1314).
+        $dl = "import os; from huggingface_hub import snapshot_download; print(snapshot_download(os.environ['WORKSHOP_ASR_MODEL'], revision=os.environ['WORKSHOP_ASR_REVISION'], max_workers=1))"
         $null = Invoke-Logged "Downloading $AsrModel" $TorchPy @('-c', $dl)
         if (Test-Path -LiteralPath (Join-Path $asrDir 'config.json')) { Show-Ok "Speech-to-text model downloaded ($AsrModel)" 'Đã tải mô hình chuyển giọng nói' }
         else { Set-EntFailed "Could not download $AsrModel" 'Không tải được mô hình chuyển giọng nói' }
