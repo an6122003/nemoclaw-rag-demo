@@ -51,6 +51,12 @@ curl -fsSL https://raw.githubusercontent.com/an6122003/nemoclaw-rag-demo/main/in
 
 A non-technical operator should start with [START-HERE.md](START-HERE.md) (Vietnamese and English).
 
+### NVIDIA RTX Spark laptops (Windows)
+
+The same labs run on RTX Spark laptops with Windows 11 on Arm: one PowerShell command, no
+NemoClaw sandbox, and llama.cpp for the batch demos. That edition has its own repository,
+**[an6122003/rtx-spark-ai-workshop](https://github.com/an6122003/rtx-spark-ai-workshop)**.
+
 ## The hands-on labs
 
 | | Lab | What the audience sees |
