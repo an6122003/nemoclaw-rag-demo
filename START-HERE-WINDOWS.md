@@ -41,8 +41,9 @@ challenge tab; the Enterprise tab uses llama.cpp instead of vLLM.
 | | |
 |---|---|
 | ✅ | Máy **RTX Spark** với Windows 11, có **internet** (chỉ cần khi cài đặt) · The **RTX Spark** with Windows 11, with **internet** (for setup only) |
-| ✅ | Khoảng **70 GB** trống và **1–2 giờ** · About **70 GB** free and **1–2 hours** |
-| ✅ | **Không cần** mật khẩu quản trị · **No** administrator password needed |
+| ✅ | Khoảng **70 GB** trống; tải khoảng **58 GB**: **40 phút** với mạng nhanh, tới **2 giờ** với mạng chậm · About **70 GB** free; about **58 GB** is downloaded: **40 minutes** on a fast connection, up to **2 hours** on a slow one |
+| ✅ | **Cắm sạc** và **để mở nắp** máy trong lúc cài · **Plug in the charger** and **keep the lid open** while it installs |
+| ✅ | **Không cần** mật khẩu quản trị hay Developer Mode · **No** administrator password or Developer Mode needed |
 
 ---
 
@@ -59,7 +60,7 @@ Dán lệnh này (chuột phải để dán) rồi nhấn **Enter**:
 Paste this command (right-click pastes) and press **Enter**:
 
 ```powershell
-irm https://raw.githubusercontent.com/an6122003/nemoclaw-rag-demo/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/an6122003/nemoclaw-rag-demo/windows/install.ps1 | iex
 ```
 
 Lệnh này tải workshop về thư mục `ai-workshop` trong thư mục người dùng, cài mọi thứ,
@@ -71,7 +72,9 @@ in the browser.
 1. Một thông báo liệt kê phần mềm sẽ được cài. Nhấn **Enter** để đồng ý.
    A notice lists the software it installs. Press **Enter** to agree.
 2. Để máy tự chạy. **Đừng đóng cửa sổ.** Phần lâu nhất là tải mô hình AI (khoảng 58 GB).
+   Máy sẽ không tự ngủ trong lúc cài.
    Let it run. **Do not close the window.** The longest part is downloading the AI models (about 58 GB).
+   The PC will not go to sleep while it installs.
 3. Cuối cùng là bảng tổng kết: mỗi phần **✔ sẵn sàng** hoặc **✘ cần hỗ trợ**.
    At the end, a summary: each part **✔ ready** or **✘ needs help**.
 
@@ -103,6 +106,20 @@ The same as on the DGX Spark: see each lab's walkthrough in [START-HERE.md](STAR
 The Enterprise tab is **04** (there is no OpenClaw tab), and the engine switch reads
 **llama.cpp · in batches** instead of vLLM.
 
+Thời gian đo trên máy RTX Spark · Measured on an RTX Spark:
+
+| | |
+|---|---|
+| Bài 1 · Lab 1 | Huấn luyện 55 bước ≈ **40 giây**, cả quy trình ≈ 1,5 phút · 55 training steps ≈ **40 s**, the whole run ≈ 1.5 min |
+| Bài 2 · Lab 2 | Câu trả lời trong **1–3 giây** · Answers in **1–3 s** |
+| Bài 3 · Lab 3 | Agent xong trong khoảng **10 giây** · The agent finishes in about **10 s** |
+| 04 · Tin nhắn · Inbox | **300** tin ≈ 4 phút (khoảng 80 tin/phút) · **300** messages ≈ 4 min (about 80 a minute) |
+| 04 · Hóa đơn · Invoices | **100** hóa đơn ≈ 10 phút: bấm chạy **trước** khi giới thiệu · **100** invoices ≈ 10 min: start it **before** you talk about it |
+| 04 · Cuộc gọi · Calls | **30** cuộc gọi ≈ 4 phút · **30** calls ≈ 4 min |
+
+Lần đầu bấm chạy, máy chủ theo lô cần khoảng 30 giây để khởi động.
+The first batch of a session waits about 30 seconds for the engine to start.
+
 ---
 
 ## Khi có lỗi · When something fails
@@ -115,9 +132,9 @@ The Enterprise tab is **04** (there is no OpenClaw tab), and the engine switch r
 | "Smart App Control is on" | Nhờ IT tắt Smart App Control (Windows Security › App & browser control), rồi chạy lại lệnh cài đặt · Ask IT to turn off Smart App Control (Windows Security › App & browser control), then run the install command again |
 | Tab Doanh nghiệp không hiện · No Enterprise tab | Phần này chưa cài xong: chạy lại lệnh cài đặt · It did not finish installing: run the install command again |
 
-> Bản Windows được xây dựng trước khi có máy RTX Spark thật: nó đã được kiểm tra tự động
-> trên máy Windows-on-Arm của GitHub (không có GPU). Lần cài đầu trên máy thật, hãy gửi
-> `setup-log.txt` cho người phụ trách dù mọi thứ có vẻ ổn.
-> The Windows edition was built before real RTX Spark hardware was available: it is tested
-> automatically on GitHub's Windows-on-Arm machines (no GPU). After the first install on a
-> real machine, send `setup-log.txt` to the organiser even if everything looks fine.
+> Đã kiểm tra trên máy RTX Spark thật (ASUS ProArt P16, NVIDIA RTX Spark N1X, 128 GB,
+> Windows 11 build 28000): cài lần đầu mất 38 phút với mạng khoảng 350 Mbit/s, cả bốn phần ✔.
+> Mỗi lần thay đổi còn được kiểm tra tự động trên máy Windows-on-Arm của GitHub (không có GPU).
+> Tested on a real RTX Spark (ASUS ProArt P16, NVIDIA RTX Spark N1X, 128 GB, Windows 11
+> build 28000): the first install took 38 minutes on about 350 Mbit/s, all four parts ✔.
+> Every change is also tested automatically on GitHub's Windows-on-Arm machines (no GPU).

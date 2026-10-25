@@ -59,14 +59,15 @@ the Enterprise batch engine is llama.cpp's `llama-server` instead of vLLM. In Po
 administrator rights needed:
 
 ```powershell
-irm https://raw.githubusercontent.com/an6122003/nemoclaw-rag-demo/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/an6122003/nemoclaw-rag-demo/windows/install.ps1 | iex
 ```
 
 It installs into `~\ai-workshop` (Ollama, Python, NVIDIA's CUDA PyTorch for Windows on Arm,
 llama.cpp, the models), trains the example model once, checks every lab and adds a desktop
-shortcut. Operators: [START-HERE-WINDOWS.md](START-HERE-WINDOWS.md). It is tested on
-GitHub's Windows-on-Arm machines (CPU only, small models) by
-[.github/workflows/windows.yml](.github/workflows/windows.yml).
+shortcut. Operators: [START-HERE-WINDOWS.md](START-HERE-WINDOWS.md). Verified end to end on a
+real RTX Spark (ASUS ProArt P16, RTX Spark N1X, 128 GB): 38 minutes from a fresh machine, with
+every lab and batch demo on the GPU. Every change is also tested on GitHub's Windows-on-Arm
+machines (CPU only, small models) by [.github/workflows/windows.yml](.github/workflows/windows.yml).
 
 ## The hands-on labs
 
