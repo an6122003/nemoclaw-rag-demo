@@ -1,3 +1,7 @@
+> **Moved:** the RTX Spark (Windows) edition now has its own repository,
+> **[an6122003/rtx-spark-ai-workshop](https://github.com/an6122003/rtx-spark-ai-workshop)**.
+> This branch stays only so links to it keep working; its `install.ps1` runs the new installer.
+
 <div align="center">
 
 <img src="docs/images/home.jpg" alt="The workshop app on a DGX Spark: ACE 2026 Vietnam, Agentic Computing at the Edge" width="100%">
@@ -59,7 +63,7 @@ the Enterprise batch engine is llama.cpp's `llama-server` instead of vLLM. In Po
 administrator rights needed:
 
 ```powershell
-irm https://raw.githubusercontent.com/an6122003/nemoclaw-rag-demo/windows/install.ps1 | iex
+irm https://raw.githubusercontent.com/an6122003/rtx-spark-ai-workshop/main/install.ps1 | iex
 ```
 
 It installs into `~\ai-workshop` (Ollama, Python, NVIDIA's CUDA PyTorch for Windows on Arm,
