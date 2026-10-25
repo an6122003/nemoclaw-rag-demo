@@ -22,7 +22,7 @@
 
   let canvas, ctx, dpr = 1, vw = 0, vh = 0;
   let traces = [], cells = [], regions = {}, pulses = [];
-  const spec = {sm: 48, cores: 20, gpuCores: 0, memGb: 0, label: ''};
+  const spec = {sm: 48, cores: 20, gpuCores: 0, memGb: 0, label: '', names: null};
   let running = false, last = 0, clock = 0, boot = 0;
   let ambient = 0, ambientTarget = 0, memLevel = 0, memTarget = 0;
   let batchRate = 0, batchAcc = 0, idleAcc = 0, waveAt = 2.2;
@@ -30,15 +30,19 @@
   let glow = null;
   const pointer = {x: 0, y: 0, tx: 0, ty: 0};
 
-  // Where the chip sits for each chapter: anchor in the viewport (0..1), and a zoom.
-  const cam = {ax: 0.72, ay: 0.5, zoom: 1, alpha: 1, labels: 1};
+  // Where the chip sits for each chapter: a point of the chip (fx, fy, in world units) drawn at
+  // an anchor of the viewport (ax, ay: 0..1), and a zoom. The home page's machine section can
+  // also make the chip follow a place on the page (Die.follow) and fly onto one block (Die.inspect).
+  const cam = {ax: 0.72, ay: 0.5, fx: 0, fy: 0, zoom: 1, alpha: 1, labels: 1};
   const SHOTS = {
-    home: {ax: 0.73, ay: 0.5, zoom: 1.0, labels: 1},
-    lab1: {ax: 0.83, ay: 0.3, zoom: 0.7, labels: 0.75},
-    lab2: {ax: 0.83, ay: 0.3, zoom: 0.7, labels: 0.75},
-    lab3: {ax: 0.83, ay: 0.3, zoom: 0.7, labels: 0.75},
-    ent: {ax: 0.83, ay: 0.3, zoom: 0.7, labels: 0.75},
+    home: {ax: 0.73, ay: 0.5, fx: 0, fy: 0, zoom: 1.0, labels: 1},
+    lab1: {ax: 0.83, ay: 0.3, fx: 0, fy: 0, zoom: 0.7, labels: 0.75},
+    lab2: {ax: 0.83, ay: 0.3, fx: 0, fy: 0, zoom: 0.7, labels: 0.75},
+    lab3: {ax: 0.83, ay: 0.3, fx: 0, fy: 0, zoom: 0.7, labels: 0.75},
+    ent: {ax: 0.83, ay: 0.3, fx: 0, fy: 0, zoom: 0.7, labels: 0.75},
   };
+  const INSPECT_ZOOM = {gpu: 2.1, cpu: 2.3, mem: 1.6, slc: 2.6, npu: 2.6, pkg: 1.2};
+  let follow = null, inspecting = null;
   const PKG = 110;  // half the package, in world units
   const DIE = 66;   // half the die
 
@@ -118,7 +122,19 @@
   /* ------------------------------------------------------------ camera --- */
   function view() {
     const s = Math.min(vw / 1600, vh / 900) * 1.18 * cam.zoom;
-    return {s, ox: vw * cam.ax + pointer.x * 14, oy: vh * cam.ay + pointer.y * 9};
+    // the screen position of world point (0, 0)
+    return {s, ox: vw * cam.ax + pointer.x * 14 - cam.fx * s, oy: vh * cam.ay + pointer.y * 9 - cam.fy * s};
+  }
+  const tween = (vars, seconds) => {
+    if (window.gsap && !REDUCED) gsap.to(cam, Object.assign({duration: seconds == null ? 1.4 : seconds, ease: 'expo.inOut', overwrite: 'auto'}, vars));
+    else { Object.assign(cam, vars); requestDraw(); }
+  };
+  // Light up one block, so the part being talked about is the part that glows.
+  function wake(name) {
+    const r = regions[name];
+    const list = name === 'pkg' ? cells : r ? r.cells : [];
+    list.forEach((c, i) => setTimeout(() => heat(c, 0.9), (i % 16) * 25));
+    for (let i = 0; i < 10; i++) setTimeout(() => pulse(name === 'mem' ? -1 : 1, rand(420, 640)), i * 70);
   }
 
   /* ------------------------------------------------------------ pulses --- */
@@ -170,11 +186,29 @@
       if (memShare != null) memTarget = clamp(memShare, 0, 1);
     },
     focus(name, seconds) {
-      const s = SHOTS[name] || SHOTS.home;
-      if (window.gsap && !REDUCED) gsap.to(cam, Object.assign({duration: seconds == null ? 1.6 : seconds, ease: 'expo.inOut', overwrite: true}, s));
-      else { Object.assign(cam, s); requestDraw(); }
+      follow = null; inspecting = null; hover = null;
+      tween(SHOTS[name] || SHOTS.home, seconds == null ? 1.6 : seconds);
     },
-    highlight(name) { hover = name || null; },
+    highlight(name) { if (!inspecting) hover = name || null; },
+    /** keep the chip's anchor on a place of the page (viewport fractions), or let go with null */
+    follow(ax, ay) {
+      if (ax == null) { follow = null; return; }
+      if (!follow) {
+        if (window.gsap) gsap.killTweensOf(cam, 'ax,ay');  // the glide below takes over from a chapter's move
+        tween({fx: 0, fy: 0, zoom: inspecting ? INSPECT_ZOOM[inspecting] : 1.15, labels: 1}, 1.2);
+      }
+      follow = {ax, ay};
+      if (REDUCED) { cam.ax = ax; cam.ay = ay; requestDraw(); }
+    },
+    /** fly onto one block of the chip (gpu, cpu, mem, slc, npu, or pkg for all of it), or back with null */
+    inspect(name) {
+      inspecting = name || null;
+      hover = name && name !== 'pkg' ? name : null;
+      const r = name && name !== 'pkg' ? regions[name] : null;
+      const k = 0.7;  // most of the way onto the block, with the rest of the chip still in the picture
+      tween({fx: r ? (r.x + r.w / 2) * k : 0, fy: r ? (r.y + r.h / 2) * k : 0, zoom: name ? INSPECT_ZOOM[name] || 2 : 1.15}, 1.3);
+      if (name) wake(name);
+    },
     configure(o) {
       const before = spec.sm + '/' + spec.cores;
       Object.assign(spec, o || {});
@@ -182,7 +216,11 @@
       spec.cores = clamp(Math.round(spec.cores || 20), 4, 40);
       if (spec.sm + '/' + spec.cores !== before) buildDie();
     },
-    opacity(a) { cam.alpha = clamp(a, 0, 1); if (!running) requestDraw(); },
+    opacity(a, seconds) {
+      if (window.gsap) gsap.killTweensOf(cam, 'alpha');
+      if (seconds && window.gsap && !REDUCED) gsap.to(cam, {alpha: clamp(a, 0, 1), duration: seconds, ease: 'power2.out'});
+      else { cam.alpha = clamp(a, 0, 1); if (!running) requestDraw(); }
+    },
     boot() {
       boot = 0;
       if (REDUCED) { boot = 1; requestDraw(); return; }
@@ -199,6 +237,10 @@
     boot = Math.min(1, boot + dt / 1.8);
     pointer.x = lerp(pointer.x, pointer.tx, Math.min(1, dt * 2));
     pointer.y = lerp(pointer.y, pointer.ty, Math.min(1, dt * 2));
+    if (follow) {  // glide after the place on the page, smoothly, while it scrolls
+      cam.ax = lerp(cam.ax, follow.ax, Math.min(1, dt * 7));
+      cam.ay = lerp(cam.ay, follow.ay, Math.min(1, dt * 7));
+    }
     ambient = lerp(ambient, ambientTarget, Math.min(1, dt * 1.5));
     memLevel = lerp(memLevel, memTarget, Math.min(1, dt * 1.2));
     hoverAmt = lerp(hoverAmt, hover ? 1 : 0, Math.min(1, dt * 6));
@@ -264,6 +306,7 @@
     ctx.globalAlpha = cam.alpha;
     const px = 1 / s;
     const grow = ease(boot);
+    const tw = 1 / Math.max(1, cam.zoom / 1.3);  // close up, the traces stay fine
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
@@ -280,26 +323,26 @@
     for (const tr of traces) {
       if (!tr.glow) continue;
       ctx.strokeStyle = `rgba(118,185,0,${0.1 + 0.05 * breath})`;
-      ctx.lineWidth = tr.w + 10 * px * 2;
+      ctx.lineWidth = tr.w * tw + 10 * px * 2;
       strokeTrace(tr, tr.len * grow);
       ctx.strokeStyle = 'rgba(118,185,0,0.22)';
-      ctx.lineWidth = tr.w + 3.2 * px * 2;
+      ctx.lineWidth = tr.w * tw + 3.2 * px * 2;
       strokeTrace(tr, tr.len * grow);
     }
     ctx.save();
     ctx.translate(0, 2.2 * px);
     ctx.strokeStyle = 'rgba(27,26,25,0.07)';
-    for (const tr of traces) { ctx.lineWidth = tr.w + 1.8 * px; strokeTrace(tr, tr.len * grow); }
+    for (const tr of traces) { ctx.lineWidth = tr.w * tw + 1.8 * px; strokeTrace(tr, tr.len * grow); }
     ctx.restore();
     ctx.strokeStyle = '#ffffff';
-    for (const tr of traces) { ctx.lineWidth = tr.w; strokeTrace(tr, tr.len * grow); }
+    for (const tr of traces) { ctx.lineWidth = tr.w * tw; strokeTrace(tr, tr.len * grow); }
     // vias at the ends
     if (grow > 0.98) {
       for (const tr of traces) {
-        const [x, y] = tr.pts[tr.pts.length - 1];
-        ctx.beginPath(); ctx.arc(x, y + 1.6 * px, tr.w * 1.7, 0, Math.PI * 2); ctx.fillStyle = 'rgba(27,26,25,0.08)'; ctx.fill();
-        ctx.beginPath(); ctx.arc(x, y, tr.w * 1.7, 0, Math.PI * 2); ctx.fillStyle = '#ffffff'; ctx.fill();
-        ctx.beginPath(); ctx.arc(x, y, tr.w * 0.6, 0, Math.PI * 2); ctx.fillStyle = 'rgba(27,26,25,0.16)'; ctx.fill();
+        const [x, y] = tr.pts[tr.pts.length - 1], w = tr.w * tw;
+        ctx.beginPath(); ctx.arc(x, y + 1.6 * px, w * 1.7, 0, Math.PI * 2); ctx.fillStyle = 'rgba(27,26,25,0.08)'; ctx.fill();
+        ctx.beginPath(); ctx.arc(x, y, w * 1.7, 0, Math.PI * 2); ctx.fillStyle = '#ffffff'; ctx.fill();
+        ctx.beginPath(); ctx.arc(x, y, w * 0.6, 0, Math.PI * 2); ctx.fillStyle = 'rgba(27,26,25,0.16)'; ctx.fill();
       }
     }
 
@@ -314,7 +357,7 @@
       g.addColorStop(0, 'rgba(118,185,0,0)');
       g.addColorStop(1, 'rgba(118,185,0,0.95)');
       ctx.strokeStyle = g;
-      ctx.lineWidth = tr.w * 1.05 * p.size;
+      ctx.lineWidth = tr.w * tw * 1.05 * p.size;
       ctx.beginPath();
       ctx.moveTo(t0[0], t0[1]);
       // follow the bends between tail and head
@@ -325,9 +368,9 @@
       (p.dir > 0 ? mids : mids.reverse()).forEach(m => ctx.lineTo(m[0], m[1]));
       ctx.lineTo(h[0], h[1]);
       ctx.stroke();
-      const r = 24 * p.size * Math.max(0.8, px * 1.2);
+      const r = 24 * p.size * tw * Math.max(0.8, px * 1.2);
       ctx.drawImage(glow, h[0] - r, h[1] - r, r * 2, r * 2);
-      ctx.beginPath(); ctx.arc(h[0], h[1], tr.w * 0.55, 0, Math.PI * 2); ctx.fillStyle = '#ffffff'; ctx.fill();
+      ctx.beginPath(); ctx.arc(h[0], h[1], tr.w * tw * 0.55, 0, Math.PI * 2); ctx.fillStyle = '#ffffff'; ctx.fill();
     }
 
     // the package
@@ -385,6 +428,12 @@
       roundRect(r.x - 2.5, r.y - 2.5, r.w + 5, r.h + 5, 2.5);
       ctx.stroke();
     }
+    if (inspecting === 'pkg') {  // the whole chip is the subject
+      ctx.strokeStyle = 'rgba(200,161,107,0.9)';
+      ctx.lineWidth = 2 * px;
+      roundRect(-PKG - 8, -PKG - 8, PKG * 2 + 16, PKG * 2 + 16, 20);
+      ctx.stroke();
+    }
 
     // callouts, flat on the screen
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -395,27 +444,37 @@
   function labels(s, ox, oy) {
     if (cam.labels <= 0.02 || boot < 0.6) return;
     const P = (x, y) => [ox + x * s, oy + y * s];
+    const N = spec.names || {};  // the page's words for the blocks, in its language
     const items = [
-      ['gpu', 60, -58, 1, -1, spec.gpuCores ? `GPU · ${spec.gpuCores.toLocaleString('en-US')} CUDA cores` : 'GPU'],
-      ['cpu', -58, -58, -1, -1, `CPU · ${spec.cores} cores`],
-      ['mem', 60, 66, 1, 1, spec.memGb ? `Unified memory · ${spec.memGb} GB` : 'Unified memory'],
-      ['slc', -58, 40, -1, 1, 'Cache'],
-    ];
-    ctx.font = '600 11px "Plus Jakarta Sans", sans-serif';
+      ['gpu', 60, -58, 1, -1, N.gpu || (spec.gpuCores ? `GPU · ${spec.gpuCores.toLocaleString('en-US')} CUDA cores` : 'GPU')],
+      ['cpu', -58, -58, -1, -1, N.cpu || `CPU · ${spec.cores} cores`],
+      ['mem', 60, 66, 1, 1, N.mem || (spec.memGb ? `Unified memory · ${spec.memGb} GB` : 'Unified memory'), [60, -64, 1, -1]],
+      ['slc', -58, 40, -1, 1, N.slc || 'Cache'],
+      ['npu', -58, 58, -1, 1, 'NPU'],
+      ['pkg', PKG, PKG, 1, 1, spec.label || 'Superchip', [PKG, -PKG, 1, -1]],
+    ].filter(it => (inspecting ? it[0] === inspecting : it[0] !== 'npu' && it[0] !== 'pkg'));
+    ctx.font = inspecting ? '700 13px "Plus Jakarta Sans", sans-serif' : '600 11px "Plus Jakarta Sans", sans-serif';
     ctx.textBaseline = 'middle';
-    for (const [key, x, y, sx, sy, text] of items) {
+    for (const it of items) {
+      // up close the label goes above the block: the page keeps its live readout below it
+      const [key, x, y, sx, sy] = inspecting && it[6] ? [it[0]].concat(it[6]) : it, text = it[5];
       const [ax, ay] = P(x, y);
-      const on = hover === key ? hoverAmt : 0;
+      const on = hover === key ? hoverAmt : inspecting === key ? 1 : 0;
       const reach = (PKG - Math.abs(y)) * s + 40;   // leave the package before turning
-      const ex = ax + sx * (Math.abs(sx * PKG - x) * s + 34), ey = ay + sy * (reach * 0.35 + 26);
+      const ex = inspecting ? ax + sx * 70 : ax + sx * (Math.abs(sx * PKG - x) * s + 34);
+      const ey = inspecting ? ay + sy * 46 : ay + sy * (reach * 0.35 + 26);
       const a = cam.alpha * cam.labels * clamp((boot - 0.6) * 2.5, 0, 1);
       ctx.globalAlpha = a;
       ctx.strokeStyle = on > 0.05 ? `rgba(200,161,107,${0.6 + 0.4 * on})` : 'rgba(27,26,25,0.28)';
       ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(ex, ey); ctx.lineTo(ex + sx * 18, ey); ctx.stroke();
+      let tx = sx;  // the words go to the other side when this one has no room for them
+      const tw = ctx.measureText(text).width;
+      if (tx > 0 && ex + 24 + tw > vw - 8) tx = -1;
+      else if (tx < 0 && ex - 24 - tw < 8) tx = 1;
+      ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(ex, ey); ctx.lineTo(ex + tx * 18, ey); ctx.stroke();
       ctx.fillStyle = on > 0.05 ? '#9a7546' : 'rgba(27,26,25,0.62)';
-      ctx.textAlign = sx > 0 ? 'left' : 'right';
-      ctx.fillText(text, ex + sx * 24, ey);
+      ctx.textAlign = tx > 0 ? 'left' : 'right';
+      ctx.fillText(text, ex + tx * 24, ey);
       ctx.beginPath(); ctx.arc(ax, ay, 2.2, 0, Math.PI * 2); ctx.fillStyle = on > 0.05 ? '#c8a16b' : 'rgba(27,26,25,0.45)'; ctx.fill();
     }
     ctx.textAlign = 'left';

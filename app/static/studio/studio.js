@@ -154,7 +154,8 @@
     $('#f2-search-d').textContent = t(FEAT.sandbox ? 'f2_search_d_sb' : 'f2_search_d');
     $('#f3-nc').textContent = t(FEAT.sandbox ? 'f3_nc_sb' : 'f3_nc');
     $$('.langs button').forEach(b => b.classList.toggle('on', b.dataset.lang === LANG));
-    renderHome(); lab1Render(); lab2Examples(); lab2Map(); lab2Steps(L2.step || 'idle'); lab3Render();
+    renderHome(); mxRender(); lab1Render(); lab2Examples(); lab2Map(); lab2Steps(L2.step || 'idle'); lab3Render();
+    if (window.Die) Die.configure({names: dieNames()});
     ENT.built = ''; ENT.costBuilt = ''; entRender();
     if (L2.last) lab2Answer(L2.last);
     if (L2.sources) lab2Sources(L2.sources);
@@ -178,7 +179,7 @@
     const prev = current;
     current = name;
     document.body.dataset.scene = name;
-    $$('.chapters a').forEach(a => a.classList.toggle('on', a.dataset.go === name));
+    $$('.chapters a').forEach(a => a.classList.toggle('on', a.dataset.go === name && !a.dataset.scroll));
     if (location.hash !== '#' + name) history.replaceState(null, '', '#' + name);
     if (window.Die) Die.focus(name, first ? 2.4 : 1.6);
     const next = $('#scene-' + name), old = prev && $('#scene-' + prev);
@@ -195,13 +196,44 @@
       gsap.to(old, {autoAlpha: 0, y: -26, duration: 0.32, ease: 'power2.in', onComplete: () => { gsap.set(old, {clearProps: 'all'}); swap(); }});
     } else swap();
   }
+  function scrollToId(id, delay) {
+    setTimeout(() => { const el = document.getElementById(id); if (el) el.scrollIntoView({behavior: MOTION ? 'smooth' : 'auto', block: 'start'}); }, delay || 0);
+  }
   document.addEventListener('click', e => {
     const go = e.target.closest('[data-go]');
-    if (go) { e.preventDefault(); show(go.dataset.go); }
+    if (go) {
+      e.preventDefault();
+      const was = current;
+      show(go.dataset.go);
+      if (go.dataset.scroll) scrollToId(go.dataset.scroll, was === go.dataset.go ? 0 : 500);
+      return;
+    }
+    const spec = e.target.closest('[data-mx]');
+    if (spec && !spec.closest('#mx-list')) { mxSelect(spec.dataset.mx, true); scrollToId('machine-h'); return; }
+    const copy = e.target.closest('[data-copy]');
+    if (copy) copyText(copy.dataset.copy).then(ok => {
+      if (ok) { toast(t('ww_copied')); return; }
+      const mail = $('.ww-mail');  // no clipboard for this page: leave the address selected instead
+      if (mail) { const r = document.createRange(); r.selectNodeContents(mail); getSelection().removeAllRanges(); getSelection().addRange(r); }
+      toast(t('ww_copy_fail'));
+    });
   });
+  async function copyText(text) {
+    try { await navigator.clipboard.writeText(text); return true; } catch (e) {}
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) {}
+    ta.remove();
+    return ok;
+  }
   window.addEventListener('hashchange', () => show(location.hash.slice(1)));
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') { closeSheet(); return; }
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('.spec[data-mx]')) {
+      e.preventDefault(); mxSelect(e.target.dataset.mx, true); scrollToId('machine-h'); return;
+    }
     if (e.metaKey || e.ctrlKey || e.altKey || (e.target.matches && e.target.matches('input, textarea, select'))) return;
     const map = {0: 'home', 1: 'lab1', 2: 'lab2', 3: 'lab3', 4: 'ent'};
     if (map[e.key] && SCENES.includes(map[e.key])) show(map[e.key]);
@@ -236,6 +268,11 @@
   function homeKicker() {
     return t('home_kicker') + (MACHINE.gpuName ? ' · ' + MACHINE.gpuName : '');
   }
+  // The chip's labels, in the page's language.
+  function dieNames() {
+    return {gpu: MACHINE.gpuCores ? t('die_gpu', {n: num(MACHINE.gpuCores, 0)}) : 'GPU', cpu: t('die_cpu', {n: MACHINE.cpuCores || 20}),
+            mem: MACHINE.memGb ? t('die_mem', {n: num(MACHINE.memGb, 0)}) : t('die_mem_0'), slc: t('die_slc')};
+  }
   async function telemetry() {
     try { TEL = await getJSON('/api/telemetry'); } catch (e) { TEL = null; }
     const g = (TEL && TEL.gpu) || {};
@@ -250,7 +287,7 @@
     MACHINE.memGb = (TEL && TEL.memory && TEL.memory.installed_gb) || 0;
     if (window.Die) {
       Die.configure({sm: MACHINE.gpuCores ? MACHINE.gpuCores / 128 : 48, cores: MACHINE.cpuCores || 20,
-                     gpuCores: MACHINE.gpuCores, memGb: MACHINE.memGb, label: MACHINE.gpuName.replace(/^NVIDIA\s+/i, '')});
+                     gpuCores: MACHINE.gpuCores, memGb: MACHINE.memGb, label: MACHINE.gpuName.replace(/^NVIDIA\s+/i, ''), names: dieNames()});
       Die.telemetry(g.util, g.mem_total_mb ? g.mem_used_mb / g.mem_total_mb : null);
     }
     // the status corner of the navigation
@@ -260,6 +297,7 @@
     $('#hud-gpu').innerHTML = g.util != null ? `GPU <b>${num(g.util, 0)}%</b>` : '';
     if (before !== MACHINE.gpuName) { $('#home-kicker').dataset.text = homeKicker(); if (current === 'home') scramble($('#home-kicker'), homeKicker(), 0.9); }
     renderSpecs();
+    if (current === 'home') mxRender();
   }
   async function health() {
     try { HEALTH = await getJSON('/api/health'); } catch (e) { HEALTH = null; }
@@ -280,13 +318,13 @@
   /* ------------------------------------------------------------ home --- */
   function renderSpecs() {
     const items = [
-      ['spec_gpu', MACHINE.gpuCores ? t('spec_gpu_v', {n: num(MACHINE.gpuCores, 0)}) : (MACHINE.gpuName ? 'CUDA' : '—'), MACHINE.gpuName || '—', ''],
-      ['spec_cpu', MACHINE.cpuCores ? t('spec_cpu_v', {n: MACHINE.cpuCores}) : '—', (TEL && TEL.cpu && TEL.cpu.name || '').replace(/\s*\(.*\)\s*$/, '') || '—', ''],
-      ['spec_mem', MACHINE.memGb ? t('spec_mem_v', {n: num(MACHINE.memGb, 0)}) : '—', t('spec_mem_d'), ''],
-      ['spec_cloud', '0', t('spec_cloud_d'), 'ember'],
+      ['spec_gpu', MACHINE.gpuCores ? t('spec_gpu_v', {n: num(MACHINE.gpuCores, 0)}) : (MACHINE.gpuName ? 'CUDA' : '—'), MACHINE.gpuName || '—', '', 'gpu'],
+      ['spec_cpu', MACHINE.cpuCores ? t('spec_cpu_v', {n: MACHINE.cpuCores}) : '—', (TEL && TEL.cpu && TEL.cpu.name || '').replace(/\s*\(.*\)\s*$/, '') || '—', '', 'cpu'],
+      ['spec_mem', MACHINE.memGb ? t('spec_mem_v', {n: num(MACHINE.memGb, 0)}) : '—', t('spec_mem_d'), '', 'mem'],
+      ['spec_cloud', '0', t('spec_cloud_d'), 'ember', ''],
     ];
-    setHTML($('#home-specs'), items.map(([k, v, d, cls]) =>
-      `<div class="spec"><dt>${esc(t(k))}</dt><dd><span class="v ${cls}">${esc(v)}</span><span class="d">${esc(d)}</span></dd></div>`).join(''));
+    setHTML($('#home-specs'), items.map(([k, v, d, cls, mx]) =>
+      `<div class="spec"${mx ? ` data-mx="${mx}" role="button" tabindex="0"` : ''}><dt>${esc(t(k))}</dt><dd><span class="v ${cls}">${esc(v)}</span><span class="d">${esc(d)}</span></dd></div>`).join(''));
   }
   const REGION = {lab1: 'gpu', lab2: 'mem', lab3: 'cpu', ent: 'gpu'};
   function renderHome() {
@@ -319,6 +357,170 @@
     if (c && window.Die) Die.highlight(c.dataset.region);
   });
   $('#home-index').addEventListener('pointerleave', () => { if (window.Die) Die.highlight(null); });
+
+  /* ----------------------------------------------------- the machine --- */
+  // NVIDIA's specifications for the RTX Spark (the 6144-core laptop part), each tied to a block
+  // of the chip behind the page and to what this machine reports right now.
+  const MX = ['gpu', 'cpu', 'mem', 'ai', 'npu', 'power'];
+  const MX_REGION = {gpu: 'gpu', cpu: 'cpu', mem: 'mem', ai: 'gpu', npu: 'npu', power: 'pkg'};
+  const MX_TOUR = 6000;
+  const MXS = {sel: 'gpu', touring: true, resumeAt: 0, inView: false};
+  function mxValue(k) {
+    if (k === 'gpu') return num(MACHINE.gpuCores || 6144, 0);
+    if (k === 'cpu') return String(MACHINE.cpuCores || 20);
+    if (k === 'mem') return num(MACHINE.memGb || 128, 0) + ' GB';
+    return t('mx_' + k + '_v');
+  }
+  function mxRender() {
+    const list = $('#mx-list');
+    setHTML(list, MX.map(k => `<button type="button" class="mx-row" role="tab" aria-controls="mx-live" data-mx="${k}">` +
+      `<span class="mx-v">${esc(mxValue(k))}</span><span class="mx-u">${esc(t('mx_' + k + '_u'))}</span>` +
+      `<span class="mx-t">${esc(t('mx_' + k + '_t'))}</span><span class="mx-d">${esc(t('mx_' + k + '_d'))}</span><span class="mx-bar"><i></i></span></button>`).join(''));
+    list.style.setProperty('--tour', MX_TOUR + 'ms');
+    mxMark();
+    setHTML($('#mx-feat'), t('mx_feat').map(f => `<span>${esc(f)}</span>`).join(''));
+    setHTML($('#mx-src'), esc(t('mx_src')).replace('{link}',
+      `<a href="https://www.nvidia.com/en-us/products/rtx-spark/specifications/" target="_blank" rel="noopener">${esc(t('mx_src_link'))}</a>`));
+    mxLive();
+  }
+  function mxMark() {  // classes, not new markup: the rows open and close with their transitions
+    $$('#mx-list .mx-row').forEach(b => {
+      const on = b.dataset.mx === MXS.sel;
+      b.classList.toggle('on', on);
+      b.setAttribute('aria-selected', on);
+      b.tabIndex = on ? 0 : -1;
+    });
+  }
+  function mxSelect(k, byUser) {
+    if (!MX.includes(k)) return;
+    if (byUser) { MXS.touring = false; MXS.resumeAt = Date.now() + 25000; }
+    const changed = MXS.sel !== k;
+    MXS.sel = k;
+    mxMark();
+    mxLive();
+    if (changed) mxEnter();
+    if (MXS.inView && window.Die) Die.inspect(MX_REGION[k]);
+    mxTour();
+  }
+  // The new readout settles in; the memory map fills cell by cell.
+  function mxEnter() {
+    if (!MOTION) return;
+    const box = $('#mx-live');
+    finishSoon(gsap.fromTo(box.querySelectorAll('.lv > div, .lv-big, .legend li, .note-s'), {autoAlpha: 0, y: 14},
+      {autoAlpha: 1, y: 0, duration: 0.7, stagger: 0.06, ease: 'expo.out', overwrite: true, clearProps: 'opacity,visibility,transform'}), 1600);
+    const cells = box.querySelectorAll('.waffle i');
+    if (cells.length) finishSoon(gsap.fromTo(cells, {autoAlpha: 0, scale: 0.3},
+      {autoAlpha: 1, scale: 1, duration: 0.5, stagger: 0.005, ease: 'back.out(2)', overwrite: true, clearProps: 'opacity,visibility,transform'}), 1600);
+  }
+  $('#mx-list').addEventListener('click', e => { const r = e.target.closest('.mx-row'); if (r) mxSelect(r.dataset.mx, true); });
+  $('#mx-list').addEventListener('keydown', e => {
+    if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+    e.preventDefault();
+    const i = MX.indexOf(MXS.sel) + (e.key === 'ArrowDown' ? 1 : -1);
+    mxSelect(MX[(i + MX.length) % MX.length], true);
+    const b = $(`#mx-list [data-mx="${MXS.sel}"]`);
+    if (b) b.focus();
+  });
+  // A slow tour of the chip while the section is on screen and nobody touches it; a click
+  // holds the tour for a while. The bar under the open row shows when it moves on.
+  let mxTimer = 0;
+  function mxTour() {
+    clearTimeout(mxTimer);
+    const list = $('#mx-list');
+    list.classList.remove('touring');
+    if (!MXS.inView || current !== 'home') return;
+    if (!MXS.touring && Date.now() >= MXS.resumeAt) MXS.touring = true;
+    void list.offsetWidth;  // restart the bar
+    list.classList.toggle('touring', MXS.touring);
+    mxTimer = setTimeout(() => {
+      if (MXS.touring) mxSelect(MX[(MX.indexOf(MXS.sel) + 1) % MX.length], false);
+      else mxTour();
+    }, MXS.touring ? MX_TOUR : Math.max(500, MXS.resumeAt - Date.now()));
+  }
+  function mxLive() {
+    const box = $('#mx-live');
+    if (!box) return;
+    const g = (TEL && TEL.gpu) || {}, pf = (TEL && TEL.platform) || {}, k = MXS.sel;
+    const cell = (label, value, wide) => `<div${wide ? ' class="wide"' : ''}><span>${esc(label)}</span><b>${value}</b></div>`;
+    const v = (x, unit) => (x == null || x === '' ? '—' : esc(x) + (unit ? `<small> ${esc(unit)}</small>` : ''));
+    const util = v(g.util != null ? num(g.util, 0) : null, '%'), temp = v(g.temp_c != null ? num(g.temp_c, 0) : null, '°C');
+    let body;
+    if (k === 'gpu') {
+      body = cell(t('lv_load'), util) + cell(t('lv_temp'), temp) +
+        cell(t('lv_clock'), v(pf.max_clock_mhz ? num(pf.max_clock_mhz, 0) : null, 'MHz')) + cell(t('lv_cc'), v(pf.compute_cap));
+    } else if (k === 'ai') {
+      const lr = L1.info && L1.info.last_run;
+      body = cell(t('lv_load'), util) + cell(t('lv_temp'), temp) +
+        cell(t('lv_train'), esc(lr ? t('lv_train_v', {steps: lr.steps, sec: num(lr.train_seconds, 0)}) : t('lv_train_none')), true);
+    } else if (k === 'cpu') {
+      body = cell(t('lv_cores'), v(MACHINE.cpuCores || (TEL && TEL.cpu && TEL.cpu.cores))) +
+        cell(t('lv_model'), v([pf.maker, pf.model].filter(Boolean).join(' '))) +
+        cell(t('lv_cpu'), esc((TEL && TEL.cpu && TEL.cpu.name) || '—'), true);
+    } else if (k === 'npu') {
+      body = cell(t('lv_npu'), esc(t(pf.npu ? 'lv_npu_yes' : 'lv_npu_no'))) + cell(t('lv_driver'), v(pf.driver)) +
+        cell(t('lv_cuda'), v(pf.cuda)) + cell(t('lv_cc'), v(pf.compute_cap));
+    } else if (k === 'power') {
+      body = cell(t('lv_power'), v(g.power_w != null ? num(g.power_w, 1) : null, 'W')) + cell(t('lv_budget'), v('45–80', 'W')) +
+        cell(t('lv_temp'), temp) + cell(t('lv_load'), util);
+    }
+    setHTML(box, `<div class="plate-h"><span class="lbl"><i class="lamp on"></i>${esc(t('mx_live'))}</span><span class="count">${esc(t('mx_' + k + '_t'))}</span></div>` +
+      (k === 'mem' ? mxWaffle() : `<div class="lv">${body}</div>`));
+    if (MXS.inView) mxFollow();  // the readout's height sets where the chip sits
+  }
+  // One cell per GB: the models in memory right now (as Ollama reports them), the rest of
+  // Windows and its apps, and what is free.
+  function mxWaffle() {
+    const mem = (TEL && TEL.memory) || {};
+    const total = Math.round(mem.installed_gb || MACHINE.memGb || 128);
+    const models = ((TEL && TEL.loaded) || []).filter(m => m.vram_gb > 0).sort((a, b) => b.vram_gb - a.vram_gb);
+    const used = models.reduce((a, m) => a + m.vram_gb, 0);
+    const free = mem.available_gb != null ? mem.available_gb : total - used;
+    const other = Math.max(0, total - free - used);
+    let cells = '', n = 0;
+    const fill = (count, cls, m) => { for (let j = 0; j < count && n < total; j++, n++) cells += `<i class="${cls}" data-m="${m}"></i>`; };
+    models.forEach((m, mi) => fill(Math.max(1, Math.round(m.vram_gb)), 'm' + (mi % 6), mi));
+    fill(Math.round(other), 'mo', 'o');
+    fill(total - n, 'mf', 'f');
+    const row = (m, cls, name, gb) => `<li data-m="${m}"><i class="sw ${cls}"></i><span>${esc(name)}</span><b>${esc(num(gb, 1))} GB</b></li>`;
+    return `<p class="lv-big"><b>${esc(num(used, 0))} GB</b>${esc(t('lv_mem_of', {t: total}))}</p><div class="waffle" id="mx-waffle">${cells}</div>` +
+      (models.length ? '' : `<p class="note-s">${esc(t('lv_none'))}</p>`) +
+      '<ul class="legend">' + models.map((m, mi) => row(mi, 'm' + (mi % 6), m.name.replace(/:latest$/, ''), m.vram_gb)).join('') +
+      (other >= 0.5 ? row('o', 'mo', t('lv_mem_other'), other) : '') + row('f', 'mf', t('lv_mem_free'), free) + '</ul>';
+  }
+  // Point at a model (in the legend or on the map) and its cells stand out.
+  function mxHot(m) {
+    const w = $('#mx-waffle');
+    if (!w) return;
+    w.classList.toggle('hl', m != null);
+    w.querySelectorAll('i').forEach(c => c.classList.toggle('hot', m != null && c.dataset.m === m));
+    $$('#mx-live .legend li').forEach(li => li.classList.toggle('hot', m != null && li.dataset.m === m));
+  }
+  $('#mx-live').addEventListener('pointerover', e => {
+    const hit = e.target.closest('.legend li, .waffle i');
+    if (!hit && e.target.closest('.waffle')) return;  // the gaps between cells
+    mxHot(hit ? hit.dataset.m : null);
+  });
+  $('#mx-live').addEventListener('pointerleave', () => mxHot(null));
+  // While the section is on screen the chip behind the page moves into its stage, centred in the
+  // room above the live readout.
+  function mxFollow() {
+    const r = $('#mx-stage').getBoundingClientRect(), free = $('#mx-live').getBoundingClientRect().top - r.top;
+    if (window.Die) Die.follow((r.left + r.width * 0.5) / innerWidth, (r.top + Math.max(90, Math.min(300, free / 2))) / innerHeight);
+  }
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver(entries => {
+      const en = entries[entries.length - 1];
+      const on = en.isIntersecting && en.intersectionRatio >= 0.19 && current === 'home';
+      if (on === MXS.inView) return;
+      MXS.inView = on;
+      if (window.Die) {
+        if (on) { mxFollow(); Die.inspect(MX_REGION[MXS.sel]); }
+        else if (current === 'home') Die.focus('home', 1.2);
+      }
+      onScroll();
+      mxTour();
+    }, {threshold: [0, 0.2, 0.4]}).observe($('#machine'));
+  }
 
   /* ------------------------------------------------- streamed answers --- */
   // Tokens arrive as glowing spans; when the answer is complete it is set as formatted text.
@@ -1389,12 +1591,14 @@
       scrollQueued = false;
       const y = window.scrollY || 0;
       $('#hud').classList.toggle('solid', y > 24);
+      if (MXS.inView) mxFollow();  // the machine section holds the chip in its stage, fully lit
       const floor = current === 'home' ? 0.4 : 0.22;
       const span = current === 'home' ? 1200 : 700;
-      if (window.Die) Die.opacity(Math.max(floor, 1 - y / span));
+      if (window.Die) Die.opacity(MXS.inView ? 1 : Math.max(floor, 1 - y / span), 0.5);
     });
   }
   window.addEventListener('scroll', onScroll, {passive: true});
+  window.addEventListener('resize', onScroll);
 
   /* ------------------------------------------------------------ init --- */
   (async function init() {

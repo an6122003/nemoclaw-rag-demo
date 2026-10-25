@@ -152,7 +152,8 @@ jobs:
             if ($studio -notmatch 'studio\.js') { throw '/ is not the studio page' }
             # GSAP leaves a (possibly empty) style attribute on what it animated: allow attributes after the id.
             if ($studio -notmatch 'id="home-index"[^>]*><li><button type="button" class="chap"') { throw 'the studio page script did not render (no labs)' }
-            if ($studio -notmatch 'id="home-specs"[^>]*><div class="spec">') { throw 'the studio page script did not render (no machine specs)' }
+            if ($studio -notmatch 'id="home-specs"[^>]*><div class="spec"') { throw 'the studio page script did not render (no machine specs)' }
+            if ($studio -notmatch 'id="mx-list"[^>]*><button type="button" class="mx-row') { throw 'the studio page script did not render (no RTX Spark section)' }
             Write-Host 'both pages render in Edge with the Windows edition'
           } else { Write-Host 'Edge not found: browser check skipped' }
           Stop-Process -Id $server.Id -Force

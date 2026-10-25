@@ -95,15 +95,25 @@ _telemetry_lock = threading.Lock()
 
 
 def _machine() -> dict:
-    """CPU name, cores and installed memory: read once."""
+    """What does not change while the app runs: the CPU, installed memory, the maker and
+    model of the computer, and the GPU's driver, CUDA version and capabilities. Read once."""
     if _telemetry["static"] is None:
-        cpu, installed = "", common.memory_gb()["total"]
+        cpu, installed, maker, model = "", common.memory_gb()["total"], "", ""
         if common.IS_WINDOWS:
             import ctypes
             import winreg
             try:
                 with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"HARDWARE\DESCRIPTION\System\CentralProcessor\0") as k:
                     cpu = str(winreg.QueryValueEx(k, "ProcessorNameString")[0]).strip()
+            except OSError:
+                pass
+            try:
+                with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"HARDWARE\DESCRIPTION\System\BIOS") as k:
+                    maker = str(winreg.QueryValueEx(k, "SystemManufacturer")[0]).strip()
+                    try:
+                        model = str(winreg.QueryValueEx(k, "SystemFamily")[0]).strip()
+                    except OSError:
+                        model = str(winreg.QueryValueEx(k, "SystemProductName")[0]).strip()
             except OSError:
                 pass
             kb = ctypes.c_ulonglong(0)  # memory the GPU reserved for itself included
@@ -117,8 +127,39 @@ def _machine() -> dict:
                         break
             except OSError:
                 pass
-        _telemetry["static"] = {"name": cpu, "cores": os.cpu_count() or 0, "installed_gb": round(installed)}
+            dmi = Path("/sys/class/dmi/id")
+            try:
+                maker = (dmi / "sys_vendor").read_text(encoding="utf-8").strip()
+                model = (dmi / "product_name").read_text(encoding="utf-8").strip()
+            except OSError:
+                pass
+        _telemetry["static"] = {"name": cpu, "cores": os.cpu_count() or 0, "installed_gb": round(installed),
+                                "maker": maker, "model": model, **_gpu_platform()}
     return _telemetry["static"]
+
+
+def _gpu_platform() -> dict:
+    """Driver, CUDA version, compute capability, top GPU clock, and whether there is an NPU."""
+    out = {"driver": "", "cuda": "", "compute_cap": "", "max_clock_mhz": None, "npu": False}
+    try:
+        p = subprocess.run(["nvidia-smi", "--query-gpu=name,driver_version,compute_cap,clocks.max.sm",
+                            "--format=csv,noheader,nounits"], capture_output=True, text=True, timeout=5)
+        for line in (p.stdout or "").splitlines():
+            parts = [x.strip() for x in line.split(",")]
+            if len(parts) < 4:
+                continue
+            if "NPU" in parts[0].upper():
+                out["npu"] = True
+            elif not out["driver"]:
+                out["driver"] = parts[1]
+                out["compute_cap"] = parts[2] if parts[2][:1].isdigit() else ""
+                out["max_clock_mhz"] = float(parts[3]) if parts[3].replace(".", "", 1).isdigit() else None
+        m = re.search(r"CUDA (?:UMD )?Version:\s*([\d.]+)",
+                      subprocess.run(["nvidia-smi"], capture_output=True, text=True, timeout=5).stdout or "")
+        out["cuda"] = m.group(1) if m else ""
+    except Exception:
+        pass
+    return out
 
 
 def _gpu_readout() -> dict:
@@ -155,6 +196,7 @@ def telemetry() -> dict:
         machine, mem = _machine(), common.memory_gb()
         value = {"gpu": _gpu_readout(), "cpu": {"name": machine["name"], "cores": machine["cores"]},
                  "memory": {"installed_gb": machine["installed_gb"], "available_gb": round(mem["available"], 1)},
+                 "platform": {k: machine[k] for k in ("maker", "model", "driver", "cuda", "compute_cap", "max_clock_mhz", "npu")},
                  "loaded": loaded, "batch_engine": ent.available() and ent.engine_ready(timeout=0.3)}
         _telemetry.update(at=time.time(), value=value)
         return value

@@ -29,7 +29,8 @@
     <span class="bt"><b data-i18n="brand_t"></b><span data-i18n="brand_s"></span></span>
   </a>
   <ol class="chapters">
-    <li><a href="#home" data-go="home"><span class="t" data-i18n="ch_home"></span></a></li>
+    <li class="ch-word"><a href="#home" data-go="home"><span class="t" data-i18n="ch_home"></span></a></li>
+    <li class="ch-word"><a href="#home" data-go="home" data-scroll="machine-h"><span class="t">RTX Spark</span></a></li>
     <li><a href="#lab1" data-go="lab1"><span class="n">01</span><span class="t" data-i18n="ch_lab1"></span><i class="lamp" id="lamp-lab1"></i></a></li>
     <li><a href="#lab2" data-go="lab2"><span class="n">02</span><span class="t" data-i18n="ch_lab2"></span><i class="lamp" id="lamp-lab2"></i></a></li>
     <li><a href="#lab3" data-go="lab3"><span class="n">03</span><span class="t" data-i18n="ch_lab3"></span><i class="lamp" id="lamp-lab3"></i></a></li>
@@ -58,6 +59,19 @@
     <dl class="specs reveal" id="home-specs"></dl>
   </div>
 
+  <div class="section-h" id="machine-h"><span class="lbl" data-i18n="sec_machine"></span><h2 data-i18n="sec_machine_h"></h2></div>
+  <p class="lead mx-lead" data-i18n="mx_lead"></p>
+  <div class="machine" id="machine">
+    <div class="mx-list" id="mx-list" role="tablist" aria-label="NVIDIA RTX Spark"></div>
+    <div class="mx-stage" id="mx-stage">
+      <div class="mx-live" id="mx-live" aria-live="polite"></div>
+    </div>
+  </div>
+  <div class="mx-foot">
+    <p class="mx-feat" id="mx-feat"></p>
+    <p class="note-s" id="mx-src"></p>
+  </div>
+
   <div class="section-h"><span class="lbl" data-i18n="sec_labs"></span><h2 data-i18n="sec_labs_h"></h2></div>
   <ol class="index" id="home-index"></ol>
 
@@ -71,6 +85,7 @@
       <ul class="links">
         <li><a href="https://annguyen.work" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.8 3.9 5.8 3.9 9s-1.3 6.2-3.9 9c-2.6-2.8-3.9-5.8-3.9-9S9.4 5.8 12 3z"/></svg>annguyen.work</a></li>
         <li><a href="https://annguyen.work/proposal/" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 16h6"/></svg><span data-i18n="cr_proposal"></span></a></li>
+        <li><a href="https://linkedin.com/in/an-nguyen-quoc" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M8 10.5V17M8 7.2v.1M12 17v-6.5M12 13.4c0-1.7 1.1-2.9 2.6-2.9s2.4 1 2.4 2.9V17"/></svg>LinkedIn</a></li>
         <li><a href="https://github.com/an6122003" target="_blank" rel="noopener"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>github.com/an6122003</a></li>
         <li><a href="https://www.youtube.com/@anndaynee" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2.5" y="5.5" width="19" height="13" rx="3.5"/><path d="M10 9.2v5.6l4.8-2.8z" fill="currentColor"/></svg>YouTube · @anndaynee</a></li>
         <li><a href="https://www.tiktok.com/@anndaynee" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14 3v11.5a3.5 3.5 0 1 1-3.5-3.5"/><path d="M14 3c.4 2.6 2.1 4.2 5 4.4"/></svg>TikTok · @anndaynee</a></li>
@@ -80,6 +95,21 @@
       <div class="stat"><i>YouTube</i><b>481K</b><span data-i18n="cr_yt"></span></div>
       <div class="stat"><i>TikTok</i><b>1.1M</b><span data-i18n="cr_tt"></span></div>
       <div class="asof" data-i18n="cr_asof"></div>
+    </div>
+  </article>
+  <article class="plate workwith reveal" id="contact">
+    <div>
+      <span class="lbl ember" data-i18n="ww_kicker"></span>
+      <h3 data-i18n="ww_h"></h3>
+      <p data-i18n="ww_p"></p>
+    </div>
+    <div class="ww-actions">
+      <a class="ww-mail" href="mailto:annnguyen612@gmail.com">annnguyen612@gmail.com</a>
+      <div class="acts">
+        <a class="act primary" href="mailto:annnguyen612@gmail.com"><span data-i18n="ww_write"></span><span class="arr">→</span></a>
+        <button type="button" class="act ghost" data-copy="annnguyen612@gmail.com"><span data-i18n="ww_copy"></span></button>
+        <a class="act ghost" href="https://linkedin.com/in/an-nguyen-quoc" target="_blank" rel="noopener">LinkedIn <span class="arr">↗</span></a>
+      </div>
     </div>
   </article>
 
@@ -281,6 +311,8 @@
     <span class="role" data-i18n="col_by"></span>
     <b>An À Ha</b>
     <ul>
+      <li><a href="mailto:annnguyen612@gmail.com">annnguyen612@gmail.com</a></li>
+      <li><a href="https://linkedin.com/in/an-nguyen-quoc" target="_blank" rel="noopener">LinkedIn</a></li>
       <li><a href="https://annguyen.work" target="_blank" rel="noopener">annguyen.work</a></li>
       <li><a href="https://github.com/an6122003" target="_blank" rel="noopener">github.com/an6122003</a></li>
       <li><a href="https://github.com/an6122003/nemoclaw-rag-demo" target="_blank" rel="noopener" data-i18n="col_src"></a></li>
