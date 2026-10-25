@@ -21,6 +21,10 @@ $env:PYTHONIOENCODING = 'utf-8'
 $Root = Split-Path -Parent $PSScriptRoot
 $Run = Join-Path $Root '.run'
 New-Item -ItemType Directory -Force -Path $Run | Out-Null
+# The Pythons uv installs live in the workshop folder, not in %APPDATA%: a packaged (MSIX)
+# terminal redirects %APPDATA% writes into its own folder, and the link uv makes from
+# 3.13 to 3.13.x then points at nothing ("Missing expected target directory").
+$env:UV_PYTHON_INSTALL_DIR = Join-Path $Run 'python'
 if (-not $Log) { $Log = Join-Path $Root 'setup-log.txt' }
 $Interactive = [Environment]::UserInteractive -and -not $env:CI
 
